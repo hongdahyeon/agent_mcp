@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP 도구 테스터 대시보드</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ECharts CDN -->
+    <script src="https://fastly.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        /* 추가적인 커스텀 스타일이 필요한 경우 여기에 작성 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex overflow-hidden">
+
+    <!-- 사이드바 메뉴 -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div class="h-16 flex items-center justify-center border-b border-gray-200">
+            <h1 class="text-xl font-bold text-blue-600">MCP Agent</h1>
+        </div>
+        <nav class="flex-1 p-4 space-y-2">
+            <!-- 대시보드 메뉴 버튼 -->
+            <button onclick="showView('dashboard')" id="btn-dashboard" class="w-full flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                대시보드
+            </button>
+            <!-- 테스터 메뉴 버튼 -->
+            <button onclick="showView('tester')" id="btn-tester" class="w-full flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                도구 테스터
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gray-200">
+            <!-- 연결 상태 표시 -->
+            <div id="connectionStatus" class="flex items-center justify-center px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">
+                <span class="w-2 h-2 mr-2 bg-red-500 rounded-full"></span>
+                Disconnected
+            </div>
+        </div>
+    </aside>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="flex-1 overflow-y-auto p-8">
+        
+        <!-- 대시보드 뷰 -->
+        <div id="view-dashboard" class="space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">시스템 현황</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 도구 사용 통계 차트 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">도구별 사용 횟수</h3>
+                    <div id="chart-usage" class="w-full h-64"></div>
+                </div>
+                
+                <!-- 성공/실패 통계 차트 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">요청 처리 결과</h3>
+                    <div id="chart-status" class="w-full h-64"></div>
+                </div>
+            </div>
+
+            <!-- 최근 로그 (간략) -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">최근 활동 로그</h3>
+                <div id="dashboard-log" class="h-40 overflow-y-auto font-mono text-sm text-gray-600 space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- 테스터 뷰 (초기 숨김) -->
+        <div id="view-tester" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">도구 테스트</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 좌측: 입력 및 버튼 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col justify-center">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">값 A</label>
+                            <input type="number" id="inputA" value="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">값 B</label>
+                            <input type="number" id="inputB" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="callTool('add')" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            더하기 (Add)
+                        </button>
+                        <button onclick="callTool('subtract')" class="flex-1 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                            빼기 (Subtract)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 우측: 결과 표시 영역 -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center min-h-[200px]">
+                    <h3 class="text-lg font-semibold text-gray-500 mb-2">실행 결과</h3>
+                    <div id="execution-result" class="text-4xl font-bold text-gray-800 text-center">
+                        -
+                    </div>
+                </div>
+            </div>
+
+            <!-- 하단: 실행 로그 -->
+            <div class="bg-gray-900 p-6 rounded-xl shadow-sm text-gray-300 font-mono text-sm">
+                <h3 class="text-gray-400 font-bold mb-3 border-b border-gray-700 pb-2">실행 로그</h3>
+                <div id="tester-log" class="h-64 overflow-y-auto space-y-1"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 클라이언트 스크립트 연결 -->
+    <script src="client.js"></script>
+</body>
+</html>
