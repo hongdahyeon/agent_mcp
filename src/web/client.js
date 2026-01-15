@@ -8,21 +8,32 @@ let postEndpoint = '/messages'; // 서버로부터 'endpoint' 이벤트를 통�
 let requestId = 0;
 let isInitialized = false;
 
-// 통계 데이터 저장용 객체
+// 통계 데이터 저장용 객체 (도구별/결과별 집계)
 const usageStats = {
-    add: 0,
-    subtract: 0,
-    success: 0,
-    failure: 0
+    // 구조 예시: { "add": { count: 0, success: 0, failure: 0 }, ... }
+    tools: {}
 };
+
+// 요청 추적용 (ID -> 메타데이터 매핑)
+const pendingRequests = new Map();
+
+// 사용 가능한 도구 목록 (init 시 조회)
+let availableTools = [];
 
 // ECharts 인스턴스 변수
 let usageChart = null;
 let statusChart = null;
 
+
 // ==========================================
 // 유틸리티 함수
 // ==========================================
+
+function ensureToolStats(toolName) {
+    if (!usageStats.tools[toolName]) {
+        usageStats.tools[toolName] = { count: 0, success: 0, failure: 0 };
+    }
+}
 
 /**
  * 로그 메시지를 화면에 출력합니다.
@@ -73,118 +84,93 @@ function updateStatus(connected, text) {
  * 버튼 활성화/비활성화 제어
  */
 function setButtonsEnabled(enabled) {
-    document.querySelectorAll('button:not(#btn-dashboard):not(#btn-tester)').forEach(btn => {
+    document.querySelectorAll('button:not(#btn-dashboard):not(#btn-tester):not(#btn-logs)').forEach(btn => {
         btn.disabled = !enabled;
     });
 }
 
 /**
  * 화면 전환 함수
- * @param {string} viewName - 전환할 뷰 이름 ('dashboard' or 'tester')
+ * @param {string} viewName - 전환할 뷰 이름 ('dashboard', 'tester', 'logs')
  */
 function showView(viewName) {
     // 모든 뷰 숨김
     document.getElementById('view-dashboard').classList.add('hidden');
     document.getElementById('view-tester').classList.add('hidden');
+    document.getElementById('view-logs').classList.add('hidden');
     
     // 메뉴 버튼 스타일 초기화
-    document.getElementById('btn-dashboard').className = 'w-full flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors';
-    document.getElementById('btn-tester').className = 'w-full flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors';
+    ['dashboard', 'tester', 'logs'].forEach(name => {
+        const btn = document.getElementById(`btn-${name}`);
+        if(btn) btn.className = 'w-full flex items-center px-4 py-2 text-gray-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors';
+    });
     
     // 선택된 뷰 보이기 및 버튼 활성화 스타일 적용
+    const selectedView = document.getElementById(`view-${viewName}`);
+    if (selectedView) selectedView.classList.remove('hidden');
+    
+    const selectedBtn = document.getElementById(`btn-${viewName}`);
+    if (selectedBtn) selectedBtn.className = 'w-full flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium text-blue-600';
+
     if (viewName === 'dashboard') {
-        document.getElementById('view-dashboard').classList.remove('hidden');
-        document.getElementById('btn-dashboard').className = 'w-full flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium text-blue-600';
-        updateCharts(); // 차트 리사이즈를 위해 호출
-    } else {
-        document.getElementById('view-tester').classList.remove('hidden');
-        document.getElementById('btn-tester').className = 'w-full flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg font-medium text-blue-600';
+        updateCharts();
+    } else if (viewName === 'logs') {
+        loadLogFiles();
     }
 }
 
-// 전역으로 노출 (HTML에서 호출 가능하도록)
+// 전역으로 노출
 window.showView = showView;
-window.callTool = callTool;
+window.callSelectedTool = callSelectedTool;
+window.loadLogFiles = loadLogFiles;
+
 
 // ==========================================
 // ECharts 차트 관리
 // ==========================================
-
+// (Chart code remains mostly same, slightly compacted)
 function initCharts() {
-    // 1. 도구 사용량 차트
     usageChart = echarts.init(document.getElementById('chart-usage'));
-    const usageOption = {
+    usageChart.setOption({
         tooltip: { trigger: 'item' },
         legend: { bottom: '0%' },
         series: [{
-            name: '도구 사용',
-            type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-            label: { show: false, position: 'center' },
-            emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
-            data: [
-                { value: 0, name: 'Add' },
-                { value: 0, name: 'Subtract' }
-            ]
+            name: '도구 사용', type: 'pie', radius: ['40%', '70%'],
+            avoidLabelOverlap: false, itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false, position: 'center' }, emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
+            data: []
         }]
-    };
-    usageChart.setOption(usageOption);
-
-    // 2. 성공/실패 차트
-    statusChart = echarts.init(document.getElementById('chart-status'));
-    const statusOption = {
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'category', data: ['성공', '실패'] },
-        yAxis: { type: 'value' },
-        series: [{
-            name: '횟수',
-            type: 'bar',
-            data: [
-                { value: 0, itemStyle: { color: '#4CAF50' } },
-                { value: 0, itemStyle: { color: '#F44336' } }
-            ]
-        }]
-    };
-    statusChart.setOption(statusOption);
-
-    // 반응형 리사이즈 처리
-    window.addEventListener('resize', () => {
-        usageChart.resize();
-        statusChart.resize();
     });
+
+    statusChart = echarts.init(document.getElementById('chart-status'));
+    statusChart.setOption({
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['성공', '실패'], bottom: '0%' },
+        grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+        xAxis: { type: 'category', data: [] },
+        yAxis: { type: 'value' },
+        series: [
+            { name: '성공', type: 'bar', stack: 'total', itemStyle: { color: '#4CAF50' }, data: [] },
+            { name: '실패', type: 'bar', stack: 'total', itemStyle: { color: '#F44336' }, data: [] }
+        ]
+    });
+
+    window.addEventListener('resize', () => { usageChart.resize(); statusChart.resize(); });
 }
 
-/**
- * 차트 데이터를 업데이트합니다.
- */
 function updateCharts() {
     if (!usageChart || !statusChart) return;
+    const tools = Object.keys(usageStats.tools);
+    const chartDataUsage = tools.map(t => ({ value: usageStats.tools[t].count, name: t }));
+    const chartDataSuccess = tools.map(t => usageStats.tools[t].success);
+    const chartDataFailure = tools.map(t => usageStats.tools[t].failure);
 
-    // 통계 데이터 반영
-    usageChart.setOption({
-        series: [{
-            data: [
-                { value: usageStats.add, name: 'Add' },
-                { value: usageStats.subtract, name: 'Subtract' }
-            ]
-        }]
-    });
-
+    usageChart.setOption({ series: [{ data: chartDataUsage }] });
     statusChart.setOption({
-        series: [{
-            data: [
-                { value: usageStats.success, itemStyle: { color: '#4CAF50' } },
-                { value: usageStats.failure, itemStyle: { color: '#F44336' } }
-            ]
-        }]
+        xAxis: { data: tools },
+        series: [{ data: chartDataSuccess }, { data: chartDataFailure }]
     });
-    
-    // 탭 전환 시 차트 크기가 깨지는 것 방지
-    usageChart.resize();
-    statusChart.resize();
+    usageChart.resize(); statusChart.resize();
 }
 
 
@@ -192,178 +178,253 @@ function updateCharts() {
 // 통신 로직 (SSE & JSON-RPC)
 // ==========================================
 
-/**
- * SSE 연결 초기화
- */
 function connect() {
     setButtonsEnabled(false);
     updateStatus(false, 'Connecting...');
-    
     log('SYSTEM', '서버(SSE)에 연결을 시도합니다...');
     const source = new EventSource(SSE_ENDPOINT);
 
-    source.onopen = () => {
-        log('SYSTEM', 'SSE 연결이 열렸습니다.');
-        updateStatus(true, 'Connected (Init)');
-    };
+    source.onopen = () => { log('SYSTEM', 'SSE 연결이 열렸습니다.'); updateStatus(true, 'Connected (Init)'); };
 
-    // 'endpoint' 이벤트 수신: 세션 ID가 포함된 POST URL을 받음
     source.addEventListener('endpoint', (event) => {
-        const endpointUri = event.data;
-        log('SYSTEM', `POST 통신 엔드포인트 수신: ${endpointUri}`);
-        postEndpoint = endpointUri;
-        
-        // MCP 초기화 핸드셰이크 시작
+        postEndpoint = event.data;
+        log('SYSTEM', `POST EndPoint: ${postEndpoint}`);
         initializeSession();
     });
 
     source.onmessage = (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            handleMessage(data);
-        } catch (e) {
-            log('ERROR', '메시지 파싱 실패: ' + event.data);
-        }
+        try { handleMessage(JSON.parse(event.data)); }
+        catch (e) { log('ERROR', '메시지 파싱 실패'); }
     };
 
-    source.onerror = (err) => {
-        log('ERROR', '연결 오류 발생. 재연결 시도 중...');
-        updateStatus(false, 'Reconnecting...');
-        // EventSource는 자동으로 재연결을 시도합니다.
-    };
+    source.onerror = (err) => { log('ERROR', '연결 오류. 재연결...'); updateStatus(false, 'Reconnecting...'); };
 }
 
-/**
- * MCP 세션 초기화 요청 전송 ('initialize')
- */
 async function initializeSession() {
-    log('MCP', '세션 초기화 요청(initialize) 전송...');
+    log('MCP', '세션 초기화 요청(initialize)...');
     await sendRpc('initialize', {
         protocolVersion: '2024-11-05',
         capabilities: { sampling: {} },
         clientInfo: { name: 'mcp-web-dashboard', version: '2.0.0' }
-    });
+    }, { type: 'initialize' });
 }
 
-/**
- * 서버로부터 수신된 JSON-RPC 메시지 처리
- */
 function handleMessage(data) {
-    // 1. 초기화 응답 처리
-    if (data.result && data.result.protocolVersion) {
-        log('MCP', '초기화 응답 수신 완료. initialized 알림 전송.');
+    // 1. 요청 컨텍스트 확인
+    const context = data.id ? pendingRequests.get(data.id) : null;
+    if (data.id) pendingRequests.delete(data.id);
+
+    // 2. 초기화 응답
+    if (context && context.type === 'initialize' && data.result) {
+        log('MCP', '초기화 완료. 도구 목록 요청.');
         sendRpc('notifications/initialized', {});
-        
         isInitialized = true;
         updateStatus(true, 'Connected & Ready');
+        
+        // 도구 목록 가져오기
+        sendRpc('tools/list', {}, { type: 'list_tools' });
         return;
     }
 
-    // 2. 초기화 완료 알림
-    if (data.method === 'notifications/initialized') {
-        log('MCP', '서버 세션 초기화 완료.');
+    // 3. 도구 목록 응답
+    if (context && context.type === 'list_tools' && data.result) {
+        log('SYSTEM', '도구 목록 수신 완료.');
+        availableTools = data.result.tools || [];
+        renderToolSelect();
+        return;
     }
-    
-    // 3. 도구 실행 결과 처리
-    if (data.result) {
-        log('RESULT', JSON.stringify(data.result));
-        
-        usageStats.success++; // 성공 카운트 증가
-        updateCharts();
 
-        if (data.result.content) {
-            data.result.content.forEach(c => {
-                if (c.type === 'text') {
-                    // 결과 영역 업데이트
-                    const resultEl = document.getElementById('execution-result');
-                    if (resultEl) {
-                        resultEl.innerText = c.text;
-                        resultEl.className = 'text-5xl font-bold text-blue-600 animate-bounce'; // 애니메이션 효과 추가
-                        
-                        // 애니메이션 재실행을 위한 타이머
-                        setTimeout(() => {
-                            resultEl.className = 'text-5xl font-bold text-blue-600';
-                        }, 1000);
-                    }
-                }
-            });
+    // 4. 도구 실행 결과
+    if (context && context.type === 'call_tool') {
+        const toolName = context.toolName;
+        ensureToolStats(toolName);
+
+        if (data.error) {
+            log('ERROR', `RPC 에러 (${toolName}): ${data.error.message}`);
+            usageStats.tools[toolName].failure++;
+            updateResultView(data.error); // 에러도 JSON으로 표시
+        } else {
+            log('RESULT', `성공 (${toolName})`);
+            usageStats.tools[toolName].success++;
+            updateResultView(data.result);
         }
-    }
-    
-    // 4. 에러 처리
-    if (data.error) {
-        log('ERROR', `RPC 에러: ${data.error.message}`);
-        
-        usageStats.failure++; // 실패 카운트 증가
         updateCharts();
-        
-        alert(`오류 발생: ${data.error.message}`);
     }
 }
 
-/**
- * JSON-RPC 메시지 전송
- */
-async function sendRpc(method, params) {
+async function sendRpc(method, params, context = null) {
     requestId++;
-    const message = {
-        jsonrpc: "2.0",
-        method: method,
-        params: params,
-        id: requestId
-    };
+    const message = { jsonrpc: "2.0", method, params, id: requestId };
+    if (context) pendingRequests.set(requestId, context);
+    if (method.startsWith('notifications/')) delete message.id;
 
-    // 알림류 메서드는 id 제외 (스펙에 따라 다를 수 있으나 일반적인 처리)
-    if (method.startsWith('notifications/')) {
-        delete message.id;
-    }
-
-    log('SEND', `메서드 요청: ${method}`);
-
+    log('SEND', method);
     try {
-        const response = await fetch(postEndpoint, {
+        await fetch(postEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(message)
         });
-
-        if (!response.ok) {
-            throw new Error(`HTTP 상태 오류: ${response.status}`);
-        }
     } catch (e) {
         log('ERROR', `전송 실패: ${e.message}`);
-        usageStats.failure++;
-        updateCharts();
     }
 }
 
-/**
- * 도구 호출 (Add/Subtract)
- */
-async function callTool(toolName) {
-    if (!isInitialized) {
-        alert("초기화되지 않았습니다. 잠시만 기다려주세요.");
+
+// ==========================================
+// 동적 도구 테스터 로직
+// ==========================================
+
+function renderToolSelect() {
+    const select = document.getElementById('tool-select');
+    select.innerHTML = '<option value="">선택하세요</option>';
+    availableTools.forEach(tool => {
+        const option = document.createElement('option');
+        option.value = tool.name;
+        option.textContent = tool.name;
+        select.appendChild(option);
+    });
+
+    select.onchange = (e) => renderToolInputs(e.target.value);
+}
+
+function renderToolInputs(toolName) {
+    const container = document.getElementById('dynamic-inputs');
+    container.innerHTML = '';
+    
+    if (!toolName) return;
+
+    const tool = availableTools.find(t => t.name === toolName);
+    if (!tool || !tool.inputSchema || !tool.inputSchema.properties) return;
+
+    const props = tool.inputSchema.properties;
+    
+    Object.keys(props).forEach(key => {
+        const prop = props[key];
+        const wrapper = document.createElement('div');
+        
+        const label = document.createElement('label');
+        label.className = 'block text-sm font-medium text-gray-700 mb-1';
+        label.textContent = key + (prop.description ? ` (${prop.description})` : '');
+        
+        const input = document.createElement('input');
+        input.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors';
+        input.id = `input-${key}`;
+        input.name = key;
+        
+        if (prop.type === 'integer' || prop.type === 'number') {
+            input.type = 'number';
+            input.value = 0;
+        } else {
+            input.type = 'text';
+        }
+        
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        container.appendChild(wrapper);
+    });
+}
+
+function updateResultView(resultData) {
+    const el = document.getElementById('execution-result');
+    el.textContent = JSON.stringify(resultData, null, 2);
+    // 애니메이션
+    el.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+    setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+    }, 500);
+}
+
+async function callSelectedTool() {
+    const toolSelect = document.getElementById('tool-select');
+    const toolName = toolSelect ? toolSelect.value : null;
+
+    if (!toolName) {
+        alert('도구를 선택해주세요.');
         return;
     }
 
-    const a = parseInt(document.getElementById('inputA').value);
-    const b = parseInt(document.getElementById('inputB').value);
+    const tool = availableTools.find(t => t.name === toolName);
+    const args = {};
 
-    // 통계 카운트 증가
-    if (toolName === 'add') usageStats.add++;
-    if (toolName === 'subtract') usageStats.subtract++;
+    // 입력값 수집
+    const inputs = document.getElementById('dynamic-inputs').querySelectorAll('input');
+    inputs.forEach(input => {
+        const key = input.name;
+        const type = tool.inputSchema.properties[key].type;
+        
+        if (type === 'integer') args[key] = parseInt(input.value);
+        else if (type === 'number') args[key] = parseFloat(input.value);
+        else args[key] = input.value;
+    });
+
+    ensureToolStats(toolName);
+    usageStats.tools[toolName].count++;
     updateCharts();
 
     await sendRpc("tools/call", {
         name: toolName,
-        arguments: { a, b }
-    });
+        arguments: args
+    }, { type: 'call_tool', toolName: toolName });
 }
+
+
+// ==========================================
+// 로그 뷰어 로직
+// ==========================================
+
+async function loadLogFiles() {
+    const listEl = document.getElementById('log-file-list');
+    listEl.innerHTML = '<li class="text-center py-4 text-gray-500">로딩 중...</li>';
+
+    try {
+        const res = await fetch('/logs');
+        const data = await res.json();
+        
+        if (data.files && data.files.length > 0) {
+            listEl.innerHTML = '';
+            data.files.forEach(file => {
+                const li = document.createElement('li');
+                li.className = 'px-3 py-2 hover:bg-blue-50 cursor-pointer rounded text-sm text-gray-600 transition-colors';
+                li.textContent = file;
+                li.onclick = () => loadLogContent(file);
+                listEl.appendChild(li);
+            });
+        } else {
+            listEl.innerHTML = '<li class="text-center py-4 text-gray-400">파일이 없습니다.</li>';
+        }
+    } catch (e) {
+        listEl.innerHTML = `<li class="text-center py-4 text-red-500">로드 실패: ${e.message}</li>`;
+    }
+}
+
+async function loadLogContent(filename) {
+    const contentEl = document.getElementById('log-file-content');
+    const titleEl = document.getElementById('current-log-filename');
+    
+    titleEl.textContent = filename;
+    contentEl.textContent = '로딩 중...';
+    
+    try {
+        const res = await fetch(`/logs/${filename}`);
+        const data = await res.json();
+        
+        if (data.content) {
+            contentEl.textContent = data.content;
+            // 스크롤 최하단으로
+            contentEl.scrollTop = contentEl.scrollHeight;
+        } else {
+            contentEl.textContent = '내용을 불러올 수 없습니다.';
+        }
+    } catch (e) {
+        contentEl.textContent = `오류 발생: ${e.message}`;
+    }
+}
+
 
 // ==========================================
 // 앱 시작
 // ==========================================
-// DOM 로드 후 차트 초기화 및 연결 시작
 document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     connect();
