@@ -13,6 +13,12 @@ def subtract(a: int, b: int) -> int:
     """Subtract two numbers"""
     return a - b
 
+@mcp.tool()
+def hellouser(a: string) -> string:
+    """Hello user"""
+    return f"Hello {a}"
+
+
 if __name__ == "__main__":
     # Initialize and run the server
     mcp.run()
