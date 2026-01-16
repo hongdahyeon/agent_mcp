@@ -9,3 +9,4 @@ dist/
 *.egg-info/
 docs/
 logs/
+agent_mcp.db
