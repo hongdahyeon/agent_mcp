@@ -3,7 +3,10 @@ import { useMcp } from './hooks/useMcp';
 import { Dashboard } from './components/Dashboard';
 import { Tester } from './components/Tester';
 import { LogViewer } from './components/LogViewer';
-import { Activity, Terminal, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { Login } from './components/Login';
+import { LoginHistViewer } from './components/LoginHistViewer';
+import { Activity, Terminal, FileText, CheckCircle2, XCircle, History, LogOut, User as UserIcon } from 'lucide-react';
+import type { User } from './types/auth'; // Import User type
 import clsx from 'clsx';
 
 /* 
@@ -12,13 +15,34 @@ import clsx from 'clsx';
 */
 
 function App() {
-  const [activeView, setActiveView] = useState<'dashboard'|'tester'|'logs'>('dashboard');
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  
+  // View State
+  const [activeView, setActiveView] = useState<'dashboard'|'tester'|'logs'|'history'>('dashboard');
+  
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
+
+  const handleLogin = (loggedInUser: User) => {
+      setUser(loggedInUser);
+      setActiveView('dashboard');
+  };
+
+  const handleLogout = () => {
+      setUser(null);
+      // Optional: Clear session/token if stored
+  };
+
+  // If not logged in, show Login Screen
+  if (!user) {
+      return <Login onLogin={handleLogin} />;
+  }
 
   const menuItems = [
     { id: 'dashboard', label: '대시보드', icon: Activity },
     { id: 'tester', label: '도구 테스터', icon: Terminal },
     { id: 'logs', label: '로그 뷰어', icon: FileText },
+    { id: 'history', label: '접속 이력', icon: History },
   ] as const;
 
   return (
@@ -32,6 +56,22 @@ function App() {
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
             Agent MCP
           </h1>
+        </div>
+
+        {/* User Profile Summary */}
+        <div className="px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center">
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+                    <UserIcon className="w-4 h-4" />
+                </div>
+                <div className="overflow-hidden">
+                    <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
+                </div>
+            </div>
+            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="로그아웃">
+                <LogOut className="w-4 h-4" />
+            </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -78,6 +118,7 @@ function App() {
            {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
            {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} />}
            {activeView === 'logs' && <LogViewer />}
+           {activeView === 'history' && <LoginHistViewer />}
         </div>
       </main>
     </div>

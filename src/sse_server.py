@@ -139,6 +139,64 @@ async def call_tool(name: str, arguments: dict):
 # 3. Log Viewer API (Requirement #4)
 # ==========================================
 
+# ==========================================
+# 3. Log Viewer & Auth API
+# ==========================================
+
+try:
+    from src.db_manager import init_db, get_user, verify_password, log_login_attempt, get_login_history
+except ImportError:
+    from db_manager import init_db, get_user, verify_password, log_login_attempt, get_login_history
+
+from pydantic import BaseModel
+
+# Initialize Database on startup
+init_db()
+
+class LoginRequest(BaseModel):
+    user_id: str
+    password: str
+
+@app.post("/auth/login")
+async def login(req: LoginRequest, request: Request):
+    """Handle login and log history."""
+    if not req.user_id or not req.password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+
+    # Get user
+    user = get_user(req.user_id)
+    ip_addr = request.client.host
+
+    if user and verify_password(req.password, user['password']):
+        # Success
+        log_login_attempt(user['uid'], ip_addr, True, "Login Successful")
+        logger.info(f"Login success: {req.user_id} from {ip_addr}")
+        
+        return {
+            "success": True,
+            "user": {
+                "user_id": user['user_id'],
+                "user_nm": user['user_nm'],
+                "role": user['role']
+            }
+        }
+    else:
+        # Failure
+        user_uid = user['uid'] if user else None
+        log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
+        logger.warning(f"Login failed: {req.user_id} from {ip_addr}")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+@app.get("/auth/history")
+async def login_history():
+    """Get recent login history."""
+    try:
+        history = get_login_history(50)
+        return {"history": history}
+    except Exception as e:
+        logger.error(f"Failed to fetch login history: {e}")
+        return {"error": str(e)}
+
 @app.get("/logs")
 async def get_logs_list():
     """Returns a list of log files sorted by modification time (descending)."""
