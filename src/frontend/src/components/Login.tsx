@@ -2,6 +2,10 @@ import { useState } from 'react';
 import type { User } from '../types/auth';
 import { Lock, User as UserIcon, LogIn, AlertCircle } from 'lucide-react';
 
+/* 
+* 로그인 화면에 대한 컴포넌트
+*/
+
 interface Props {
     onLogin: (user: User) => void;
 }
@@ -31,6 +35,7 @@ export function Login({ onLogin }: Props) {
 
             if (!res.ok) {
                 if (res.status === 401) throw new Error('아이디 또는 비밀번호가 잘못되었습니다.');
+                if (res.status === 403) throw new Error('계정이 비활성화되었습니다.');
                 throw new Error('로그인 중 오류가 발생했습니다.');
             }
 
@@ -112,7 +117,7 @@ export function Login({ onLogin }: Props) {
                             {!loading && <LogIn className="ml-2 w-4 h-4" />}
                         </button>
                     </form>
-                    
+
                     <div className="mt-6 text-center text-xs text-gray-400">
                         초기 계정: admin / 1234
                     </div>

@@ -5,7 +5,12 @@ import { Tester } from './components/Tester';
 import { LogViewer } from './components/LogViewer';
 import { Login } from './components/Login';
 import { LoginHistViewer } from './components/LoginHistViewer';
-import { Activity, Terminal, FileText, CheckCircle2, XCircle, History, LogOut, User as UserIcon } from 'lucide-react';
+import { Users } from './components/Users';
+import {
+  Activity, Terminal, FileText,
+  CheckCircle2, XCircle, History, LogOut,
+  User as UserIcon, Users as UsersIcon
+} from 'lucide-react';
 import type { User } from './types/auth'; // Import User type
 import clsx from 'clsx';
 
@@ -16,34 +21,52 @@ import clsx from 'clsx';
 
 function App() {
   // Auth State
-  const [user, setUser] = useState<User | null>(null);
-  
+  // Auth State: 세션 저장
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('user_session');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        localStorage.removeItem('user_session');
+      }
+    }
+    return null;
+  });
+
   // View State
-  const [activeView, setActiveView] = useState<'dashboard'|'tester'|'logs'|'history'>('dashboard');
-  
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'>('dashboard');
+
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
 
   const handleLogin = (loggedInUser: User) => {
-      setUser(loggedInUser);
-      setActiveView('dashboard');
+    localStorage.setItem('user_session', JSON.stringify(loggedInUser));
+    setUser(loggedInUser);
+    setActiveView('dashboard');
   };
 
   const handleLogout = () => {
-      setUser(null);
-      // Optional: Clear session/token if stored
+    // 로그아웃 시점에 세션 remove
+    localStorage.removeItem('user_session');
+    setUser(null);
   };
 
   // If not logged in, show Login Screen
   if (!user) {
-      return <Login onLogin={handleLogin} />;
+    return <Login onLogin={handleLogin} />;
   }
 
+  // 기본 구성되는 메뉴 목록
   const menuItems = [
     { id: 'dashboard', label: '대시보드', icon: Activity },
     { id: 'tester', label: '도구 테스터', icon: Terminal },
     { id: 'logs', label: '로그 뷰어', icon: FileText },
     { id: 'history', label: '접속 이력', icon: History },
-  ] as const;
+  ];
+  // role 값이 'ROLE_ADMIN'인 경우에만 '사용자 관리' 메뉴를 추가한다
+  if (user.role === 'ROLE_ADMIN') {
+    menuItems.push({ id: 'users', label: '사용자 관리', icon: UsersIcon });
+  }
 
   return (
     <div className="flex h-full bg-gray-50">
@@ -60,29 +83,29 @@ function App() {
 
         {/* User Profile Summary */}
         <div className="px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
-                    <UserIcon className="w-4 h-4" />
-                </div>
-                <div className="overflow-hidden">
-                    <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
-                </div>
+          <div className="flex items-center">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+              <UserIcon className="w-4 h-4" />
             </div>
-            <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="로그아웃">
-                <LogOut className="w-4 h-4" />
-            </button>
+            <div className="overflow-hidden">
+              <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
+              <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="로그아웃">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveView(item.id)}
+              onClick={() => setActiveView(item.id as any)}
               className={clsx(
                 "w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ease-in-out",
-                activeView === item.id 
-                  ? "bg-blue-50 text-blue-600 font-semibold shadow-sm translate-x-1" 
+                activeView === item.id
+                  ? "bg-blue-50 text-blue-600 font-semibold shadow-sm translate-x-1"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
@@ -110,15 +133,16 @@ function App() {
             {menuItems.find(i => i.id === activeView)?.label}
           </h2>
           <div className="text-xs text-gray-400 font-mono">
-           {statusText}
+            {statusText}
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-           {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
-           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} />}
-           {activeView === 'logs' && <LogViewer />}
-           {activeView === 'history' && <LoginHistViewer />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
+          {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} />}
+          {activeView === 'logs' && <LogViewer />}
+          {activeView === 'history' && <LoginHistViewer />}
+          {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}
         </div>
       </main>
     </div>

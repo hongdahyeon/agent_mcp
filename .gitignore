@@ -9,3 +9,6 @@ dist/
 *.egg-info/
 logs/
 agent_mcp.db
+
+Scripts/
+Lib/

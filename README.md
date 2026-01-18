@@ -43,6 +43,7 @@
 ```bash
 # 의존성 설치
 pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### 2. Claude Desktop 설정 (Optional)
