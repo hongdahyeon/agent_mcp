@@ -3,7 +3,8 @@ import ReactECharts from 'echarts-for-react';
 import type { UsageStats } from '../types';
 
 /* 
-* 서버 상태, 도구 사용 통계(차트), 실시간 로그를 한눈에 보여준다.
+* 메인 대시보드에 대한 컴포넌트
+* - 서버 상태, 도구 사용 통계(차트), 실시간 로그를 한눈에 보여준다.
 */
 
 interface Props {
@@ -57,10 +58,10 @@ export function Dashboard({ stats, logs }: Props) {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h3 className="text-lg font-semibold text-gray-700 mb-4">최근 활동 로그</h3>
         <div className="h-48 overflow-y-auto font-mono text-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            {logs.map((log, i) => (
-                <div key={i} className="mb-1 border-b border-gray-100 last:border-0 pb-1">{log}</div>
-            ))}
-            {logs.length === 0 && <div className="text-gray-400 text-center py-10">로그 데이터 없음</div>}
+          {logs.map((log, i) => (
+            <div key={i} className="mb-1 border-b border-gray-100 last:border-0 pb-1">{log}</div>
+          ))}
+          {logs.length === 0 && <div className="text-gray-400 text-center py-10">로그 데이터 없음</div>}
         </div>
       </div>
     </div>

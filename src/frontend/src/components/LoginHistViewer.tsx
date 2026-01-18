@@ -3,6 +3,10 @@ import type { LoginHistory } from '../types/auth';
 import { History, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import clsx from 'clsx';
 
+/* 
+* 로그인 이력 화면에 대한 컴포넌트
+*/
+
 export function LoginHistViewer() {
     const [history, setHistory] = useState<LoginHistory[]>([]);
     const [loading, setLoading] = useState(false);
@@ -38,7 +42,7 @@ export function LoginHistViewer() {
                         <p className="text-sm text-gray-500">최근 로그인 시도 기록을 조회합니다.</p>
                     </div>
                 </div>
-                <button 
+                <button
                     onClick={fetchHistory}
                     disabled={loading}
                     className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"

@@ -4,6 +4,7 @@ import type { Tool } from '../types';
 import { Play, RotateCcw } from 'lucide-react';
 
 /* 
+* 도구 사용하기 화면에 대한 컴포넌트
 * 서버에서 제공하는 도구 목록(`tools/list`)을 동적으로 불러온다.
 * 선택한 도구의 스키마(`inputSchema`)에 맞춰 입력폼을 자동 생성한다.
 * 실행 결과를 JSON 형태로 보여준다.
@@ -30,11 +31,11 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
 
     const handleExecute = () => {
         if (!currentTool) return;
-        
+
         // Convert types based on schema
         const args: Record<string, any> = {};
         const props = currentTool.inputSchema.properties;
-        
+
         Object.keys(formValues).forEach(key => {
             const type = props[key]?.type;
             if (type === 'integer' || type === 'number') {
@@ -54,7 +55,7 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">테스트할 도구 선택</label>
-                    <select 
+                    <select
                         value={selectedTool}
                         onChange={handleToolChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
@@ -73,23 +74,23 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     {key} {prop.description && <span className="text-gray-400 text-xs">({prop.description})</span>}
                                 </label>
-                                <input 
+                                <input
                                     type={prop.type === 'integer' || prop.type === 'number' ? 'number' : 'text'}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    onChange={(e) => setFormValues(prev => ({...prev, [key]: e.target.value}))}
+                                    onChange={(e) => setFormValues(prev => ({ ...prev, [key]: e.target.value }))}
                                     value={formValues[key] || ''}
                                 />
                             </div>
                         )
                     }) : (
                         <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                             <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
-                             <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
+                            <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
+                            <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
                         </div>
                     )}
                 </div>
 
-                <button 
+                <button
                     onClick={handleExecute}
                     disabled={!selectedTool}
                     className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group"
