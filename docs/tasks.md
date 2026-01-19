@@ -42,7 +42,6 @@
 - [x] 테스터 화면 레이아웃 개선 (Result 영역 추가)
 
 ## 9. 26-01-14 Todo 수행
-## 9. 26-01-14 Todo 수행
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. 대시보드 통계 개선 (도구별 성공/실패 차트)
 - [x] 2. 서버 사이드 로깅 구현 (logs/yyyy-mm-dd-hh:mm.txt)
@@ -60,7 +59,7 @@
 - [x] 5. 서버 연동 및 빌드 설정 (Python 정적 서빙 변경)
 - [x] 6. 마이그레이션 후 검증 및 디버깅 (SSE 연결 수정, ID 타입 체크 수정)
 
-## 11. DB & 로그인 기능 구현 (26-01-15 Todo)
+## 11. DB & 로그인 기능 구현
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. SQLite DB 구조 설계 및 연동 (h_user, h_login_hist)
 - [x] 2. 초기 데이터 시딩 (Admin/User 계정)
@@ -68,3 +67,34 @@
 - [x] 4. Frontend 로그인 페이지 구현
 - [x] 5. Frontend 인증 상태 관리 (Protected Route)
 - [x] 6. 기능 검증
+
+## 12. 유저 테이블 스키마 변경 (is_enable 추가)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 변경 (h_user 테이블 is_enable 컬럼 추가)
+- [x] 2. Backend 로그인 로직 수정 (is_enable 체크)
+- [x] 3. 초기 데이터 시딩 추가 (user/1234, is_enable=N)
+- [x] 4. Frontend 로그인 에러 처리 (403: 계정 비활성화 메시지)
+- [x] 5. Frontend 테스트 및 검증
+
+## 13. 사용자 관리 페이지 구현 (Admin Only)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend API 구현 (목록, 추가, 수정, 중복체크)
+- [x] 2. Frontend 관리자 메뉴 및 접근 제어 처리
+- [x] 3. 사용자 목록 UI 구현 (테이블, 활성/비활성 토글)
+- [x] 4. 사용자 추가 모달 구현 (ID 중복체크)
+- [x] 5. 사용자 수정 모달 구현 (Row 클릭)
+- [x] 6. 기능 검증
+
+## 14. 로그인 세션 유지 구현
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Frontend: 로그인 성공 시 localStorage 저장
+- [x] 2. Frontend: App 초기화 시 localStorage 확인 및 복구
+- [x] 3. Frontend: 로그아웃 시 localStorage 제거
+- [x] 4. 기능 검증
+
+## 15. MCP Tool 사용 이력 저장 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 추가 (h_mcp_tool_usage 테이블) 및 저장 함수 구현
+- [x] 2. Server Side: Tool 실행 핸들러(log_tool_usage) 연동 및 로깅 구현
+- [x] 3. Frontend Support: Tool 호출 시 사용자 ID 전달 (Optional)
+- [x] 4. 기능 검증

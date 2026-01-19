@@ -111,68 +111,125 @@
 
 ---
 
-## Phase 6: Database & Authentication [Current]
+## Phase 6: Database & Authentication [Completed]
 
 ### Goal
 Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메모리(또는 파일 기반) DB를 구축하고, 사용자 인증(로그인) 및 이력 관리 기능을 구현합니다.
 
-### 1. Database Schema Design
-SQLite (`:memory:` 모드 또는 파일) 사용.
-서버 시작 시 테이블이 없으면 자동 생성합니다.
+### Implemented Changes
+- **[NEW] `src/db_manager.py`**: SQLite DB 연동 및 사용자/이력 관리 함수 구현
+- **[MODIFY] `src/sse_server.py`**: 로그인/이력 API 구현
+- **[NEW] `src/frontend` Components**: 로그인 페이지, 이력 조회 페이지 및 인증 상태 관리 구현
 
-#### Table: `h_user` (사용자 정보)
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| uid | INTEGER | PK, Auto Increment | 고유 ID |
-| user_id | TEXT | UNIQUE, NOT NULL | 로그인 ID |
-| password | TEXT | NOT NULL | 암호화된 비밀번호 (또는 해시) |
-| user_nm | TEXT | NOT NULL | 사용자 이름 |
-| role | TEXT | DEFAULT 'ROLE_USER' | 권한 (ROLE_ADMIN, ROLE_USER) |
-| last_cnn_dt | TEXT | | 마지막 접속일시 (YYYY-MM-DD HH:MM:SS) |
+---
 
-#### Table: `h_login_hist` (로그인 이력)
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| uid | INTEGER | PK, Auto Increment | 고유 ID |
-| user_uid | INTEGER | FK (h_user.uid) | 사용자 FK |
-| login_dt | TEXT | NOT NULL | 로그인 시도 일시 |
-| login_ip | TEXT | | 접속 IP |
-| login_success | TEXT | 'SUCCESS' / 'FAIL' | 로그인 결과 |
-| login_msg | TEXT | | 실패 사유 등 메시지 |
+## Phase 7: User Table Schema Update [Completed]
 
-### 2. Backend Implementation (`src/sse_server.py` & New Modules)
-구조적 깔끔함을 위해 DB 관련 로직을 분리하는 것을 권장하나, 현재 단일 파일 구조를 유지한다면 `src/db_manager.py` (신규) 생성을 고려합니다.
+### Goal
+`h_user` 테이블에 계정 활성화 여부를 제어하는 `is_enable` 컬럼을 추가하고, 로그인 시 이를 검증하는 로직을 추가합니다. 테스트 편의를 위해 비활성화된 테스트 유저를 자동 시딩합니다.
 
-- **[NEW] `src/db_manager.py`**:
-    - `init_db()`: 
-        - 테이블 자동 생성
-        - 초기 관리자 계정 시딩: `admin` / `1234` (Role: `ROLE_ADMIN`)
-    - `get_user(user_id)`: 사용자 조회
-    - `verify_password(plain, hashed)`: 
-        - 비밀번호 정책: 숫자, 문자, 특수문자 포함 무관, **길이 4자리 이상**
-    - `log_login_attempt(...)`: 이력 저장
-    - `get_login_history()`: 로그인 이력 목록 조회 (최신순)
+### Implemented Changes
+- **Schema**: `is_enable` check & migration. (Default 'Y')
+- **Policy**: `is_enable = 'N'` login block with "Account is disabled" error.
+- **Data Seeding**: Auto-created `user` / `1234` with `is_enable='N'`.
+- **Frontend**: Handle 403 Forbidden error in `Login.tsx`.
 
-- **[MODIFY] `src/sse_server.py`**:
-    - **API**: 
-        - `POST /auth/login`: 로그인 처리 (성공 시 성공 이력, 실패 시 실패 이력 저장)
-        - `GET /auth/history`: 로그인 이력 조회 (로그인된 유저만 접근 가능하도록)
-    - **Dependency**: `request` 객체에서 IP 추출하여 이력 저장 시 사용
+---
 
-### 3. Frontend Implementation (`src/frontend`)
-- **[NEW] `src/types/auth.ts`**: User, LoginResponse, LoginHistory 타입 정의
-- **[NEW] `src/components/Login.tsx`**:
-    - ID/PW 입력 폼 (비밀번호 4자리 이상 유효성 체크)
-    - 로그인 버튼 -> API 호출 -> 성공 시 전역 상태 업데이트 및 대시보드 리다이렉트
-- **[NEW] `src/components/LoginHistViewer.tsx`**:
-    - 로그인 이력(`h_login_hist`) 조회 및 테이블(Grid) 형태로 표시
-- **[MODIFY] `src/App.tsx`**:
-    - `RequireAuth` 컴포넌트 추가
-    - 메인 메뉴(Sidebar)에 **"접속 이력"** 메뉴 추가 (로그인 성공 시 표시)
-    - 라우팅 구조 변경: `/login` (Public), `/` (Protected), `/history` (Protected)
+## Phase 8: User Management Page (Admin Only) [Pending]
 
-### 4. Verification Plan
-1. **DB 구축 확인**: 서버 시작 로그에 "Database initialized" 확인.
-2. **로그인 실패 테스트**: 틀린 비번 입력 -> `h_login_hist`에 'FAIL' 기록 확인.
-3. **로그인 성공 테스트**: `admin`/`1234` 입력 -> `h_login_hist`에 'SUCCESS' 기록 및 대시보드 진입 확인.
-4. **접근 제어**: 로그아웃 상태에서 대시보드 접근 시 로그인 페이지로 튕기는지 확인.
+### Goal
+시스템 관리자가 사용자를 관리할 수 있는 전용 페이지를 구현합니다. 사용자 목록 조회, 추가, 수정, 활성/비활성 제어 기능을 포함합니다.
+
+### Requirement Analysis
+1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
+2. **List**: ID, 이름, 권한, 활성상태 표시.
+3. **Add**: ID(중복체크), PW, 이름, 권한 선택.
+4. **Edit**: 이름, 권한, is_enable 수정 (Row 클릭 시 모달).
+5. **Toggle**: 목록에서 버튼으로 즉시 활성/비활성 전환.
+
+### Proposed Changes
+
+#### 1. Backend API (`src/sse_server.py`, `src/db_manager.py`)
+- **DB Manager**:
+    - `get_all_users()`: 전체 사용자 목록 (PW 제외)
+    - `create_user(user_data)`: INSERT 쿼리 (PW 해싱)
+    - `update_user(user_id, update_data)`: UPDATE 쿼리 (Dynamic)
+    - `check_user_id(user_id)`: 존재 여부 확인
+- **Server API** (prefix: `/api/users`):
+    - `GET /`: 목록 조회 (Admin check)
+    - `POST /`: 사용자 생성
+    - `PUT /{user_id}`: 사용자 정보 수정
+    - `GET /check/{user_id}`: ID 중복 체크
+
+#### 2. Frontend (`src/frontend`)
+- **Type**: `User` 타입 확장 (목록 조회용)
+- **Component**: `src/components/Users.tsx`
+    - **Header**: "사용자 추가" 버튼.
+    - **Table**: 사용자 목록 표시 (Tailwind Styled).
+        - Columns: ID, 이름, 권한(Badge), 상태(Toggle/Badge), 가입일/접속일.
+    - **Modal (Add/Edit)**:
+        - Mode: Create / Update
+        - Fields: ID(Create only + Check btn), PW(Create only), Name, Role(Select), Enable(Select/Toggle).
+- **Route**: `App.tsx`에서 `/users` 라우트 추가 및 `RoleGuard` 적용 (Admin only).
+- **Navigation**: Sidebar에 "사용자 관리" 메뉴 추가 (`ROLE_ADMIN`일 때만 표시).
+
+### Verification Plan
+1. **Access Control**: `user` 계정(비활성 풀고)으로 로그인 -> 메뉴 안보임 / URL 접근 시 차단 확인. `admin` 계정 -> 메뉴 보임 / 접근 가능.
+2. **CRUD Flow**:
+    - 사용자 추가 (ID 중복 체크) -> 목록 갱신 확인.
+    - 사용자 정보 수정 (이름 변경) -> 확인.
+    - 상태 토글 (활성 <-> 비활성) -> 해당 유저 로그인 시도하여 반영 확인.
+
+# [Phase 9] 로그인 세션 유지 (Session Persistence)
+
+## 목표 (Goal Description)
+페이지를 새로고침하거나 브라우저 탭을 닫았다가 다시 열어도 로그인 상태가 유지되도록 세션 지속성을 구현합니다.
+
+## 변경 제안 (Proposed Changes)
+
+### Frontend
+#### [MODIFY] [App.tsx](file:///d:/hong/9.%20project/agent_mcp/src/frontend/src/App.tsx)
+- **초기화 (Initialization)**: 앱 시작 시 `localStorage.getItem('user_session')`을 확인하여 로그인 상태를 복구합니다.
+- **로그인 (Login)**: 로그인 성공 시 `localStorage.setItem('user_session', JSON.stringify(user))`로 사용자 정보를 저장합니다.
+- **로그아웃 (Logout)**: 로그아웃 시 `localStorage.removeItem('user_session')`으로 저장된 정보를 삭제합니다.
+
+## 검증 계획 (Verification Plan)
+1.  **새로고침 테스트**: 로그인 -> 페이지 새로고침 -> 여전히 로그인 상태인지 확인.
+2.  **로그아웃 테스트**: 로그아웃 -> 페이지 새로고침 -> 로그아웃 상태가 유지되는지 확인.
+
+---
+
+## Phase 10: MCP Tool Usage Tracking
+
+### Goal
+MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 활용 통계 및 감사 로그(Audit Log)로 활용할 수 있도록 합니다.
+
+### Proposed Changes
+
+#### 1. Database Schema (`src/db_manager.py`)
+- **[MODIFY] `init_db()`**: `h_mcp_tool_usage` 테이블 생성 쿼리 추가.
+    - `id` (PK, Auto Increment)
+    - `user_uid` (FK, `h_user.uid`)
+    - `tool_nm` (Text)
+    - `tool_params` (Text)
+    - `tool_success` (Text - 'SUCCESS'/'FAIL')
+    - `tool_result` (Text)
+    - `reg_dt` (Text - Timestamp)
+- **[NEW] `log_tool_usage(...)`**: Tool 사용 이력을 INSERT 하는 함수 구현.
+
+#### 2. Backend Logic (`src/sse_server.py`)
+- **[MODIFY] `call_tool` handler**:
+    - `arguments`에서 `user_id` (또는 `uid`) 추출 로직 추가.
+    - Tool 실행 전후에 DB 조회 및 로깅 함수(`log_tool_usage`) 호출.
+    - 예외 발생 시에도 'FAIL' 상태와 에러 메시지로 로깅.
+
+#### 3. Frontend Implementation (`src/frontend/src/hooks/useMcp.ts`)
+- **[MODIFY] `useMcp.ts`** or related logic:
+    - Tool 호출 메시지(JSON-RPC `tools/call`)를 보낼 때, `arguments`에 현재 로그인한 사용자 정보를 주입하는 로직 추가. 
+    - (참고: 로그인한 사용자의 `uid`를 찾아서 `_user_uid` 필드로 전송)
+
+### Verification Plan
+1. **DB Table Check**: 서버 재시작 후 `h_mcp_tool_usage` 테이블 생성 여부 확인.
+2. **Tool Execution**: 웹 인터페이스에서 `add` 또는 `hellouser` 툴 실행.
+3. **Log Retrieval**: DB를 조회하여 정상적으로 Insert 되었는지 확인.

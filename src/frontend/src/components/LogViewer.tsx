@@ -5,6 +5,7 @@ import type { LogFileResponse, LogContentResponse } from '../types';
 import clsx from 'clsx';
 
 /* 
+* 로그 이력 보기 화면에 대한 컴포넌트
 * 서버에 저장된 일별 로그 파일(`logs/YYYY-MM-DD.txt`) 목록을 조회하고 내용을 보여준다.
 */
 
@@ -45,12 +46,12 @@ export function LogViewer() {
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
-             <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-800 flex items-center">
                     <FileText className="w-6 h-6 mr-2 text-blue-600" />
                     서버 로그 뷰어
                 </h2>
-                <button 
+                <button
                     onClick={fetchFiles}
                     className="flex items-center text-sm bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-gray-700"
                 >
@@ -67,13 +68,13 @@ export function LogViewer() {
                     </div>
                     <ul className="flex-1 overflow-y-auto p-2 space-y-1">
                         {files.map(file => (
-                            <li 
+                            <li
                                 key={file}
                                 onClick={() => fetchContent(file)}
                                 className={clsx(
                                     "px-3 py-2 cursor-pointer rounded-lg text-sm transition-all duration-200",
-                                    currentFile === file 
-                                        ? "bg-blue-50 text-blue-700 font-medium shadow-sm" 
+                                    currentFile === file
+                                        ? "bg-blue-50 text-blue-700 font-medium shadow-sm"
                                         : "text-gray-600 hover:bg-gray-50"
                                 )}
                             >
