@@ -99,32 +99,53 @@ async def call_tool(name: str, arguments: dict):
     logger.info(log_msg)
     print(f"[DEBUG] {log_msg}") # 콘솔 직접 출력 (fallback)
     
+    # 사용자 식별 (Frontend에서 _user_uid 전달 가정)
+    user_uid = arguments.get("_user_uid")
+    print(f">>arguments: {arguments}")
+    # 실제 Tool 인자에서 _user_uid 제거 (Tool 로직에 방해되지 않도록 cleaning)
+    tool_args = arguments.copy()
+    if "_user_uid" in tool_args:
+        del tool_args["_user_uid"]
+        
     try:
+        result_val = ""
         if name == "add":
-            a = arguments.get("a", 0)
-            b = arguments.get("b", 0)
-            result = str(a + b)
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a + b)
             
-            success_msg = f"Tool execution success: {name} -> {result}"
+            success_msg = f"Tool execution success: {name} -> {result_val}"
             logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+                
+            return [TextContent(type="text", text=result_val)]
             
         elif name == "subtract":
-            a = arguments.get("a", 0)
-            b = arguments.get("b", 0)
-            result = str(a - b)
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a - b)
             
-            success_msg = f"Tool execution success: {name} -> {result}"
+            success_msg = f"Tool execution success: {name} -> {result_val}"
             logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            
+            return [TextContent(type="text", text=result_val)]
             
         elif name == "hellouser":
-            user_name = arguments.get("name", "User")
-            result = f"Hello {user_name}"
+            user_name = tool_args.get("name", "User")
+            result_val = f"Hello {user_name}"
             
-            success_msg = f"Tool execution success: {name} -> {result}"
+            success_msg = f"Tool execution success: {name} -> {result_val}"
             logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            
+            return [TextContent(type="text", text=result_val)]
             
         raise ValueError(f"Unknown tool: {name}")
     
@@ -132,6 +153,10 @@ async def call_tool(name: str, arguments: dict):
         error_msg = f"Tool execution failed: {name} - {str(e)}"
         logger.error(error_msg)
         print(f"[ERROR] {error_msg}")
+        
+        if user_uid:
+             log_tool_usage(user_uid, name, str(tool_args), False, str(e))
+             
         raise e
 
 
@@ -146,12 +171,12 @@ async def call_tool(name: str, arguments: dict):
 try:
     from src.db_manager import (
         init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage
     )
 except ImportError:
     from db_manager import (
         init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage
     )
 
 from pydantic import BaseModel
@@ -188,6 +213,7 @@ async def login(req: LoginRequest, request: Request):
         return {
             "success": True,
             "user": {
+                "uid": user['uid'],
                 "user_id": user['user_id'],
                 "user_nm": user['user_nm'],
                 "role": user['role']

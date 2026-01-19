@@ -21,9 +21,7 @@ interface UseMcpResult {
     statusText: string;
 }
 
-export function useMcp(
-    sseEndpoint: string = '/sse'
-): UseMcpResult {
+export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
     const [stats, setStats] = useState<UsageStats>({ tools: {} });
     const [availableTools, setAvailableTools] = useState<Tool[]>([]);
     const [initialized, setInitialized] = useState(false);
@@ -58,6 +56,25 @@ export function useMcp(
             params,
             id
         };
+
+        // [Phase 10] Inject User ID for Tool Usage Tracking
+        if (method === 'tools/call' && params) {
+            try {
+                const sessionStr = localStorage.getItem('user_session');
+                if (sessionStr) {
+                    const session = JSON.parse(sessionStr);
+                    const uid = session.uid || (session.user && session.user.uid);
+                    if (uid) {
+                        params.arguments._user_uid = uid;
+                    } else {
+                        console.warn("User ID (uid) not found in session, usage will not be logged.");
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to inject user info", e);
+            }
+        }
+        
         if (method.startsWith('notifications/')) delete message.id;
 
         addLog('SEND', method);

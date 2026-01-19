@@ -42,7 +42,6 @@
 - [x] 테스터 화면 레이아웃 개선 (Result 영역 추가)
 
 ## 9. 26-01-14 Todo 수행
-## 9. 26-01-14 Todo 수행
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. 대시보드 통계 개선 (도구별 성공/실패 차트)
 - [x] 2. 서버 사이드 로깅 구현 (logs/yyyy-mm-dd-hh:mm.txt)
@@ -60,7 +59,7 @@
 - [x] 5. 서버 연동 및 빌드 설정 (Python 정적 서빙 변경)
 - [x] 6. 마이그레이션 후 검증 및 디버깅 (SSE 연결 수정, ID 타입 체크 수정)
 
-## 11. DB & 로그인 기능 구현 (26-01-15 Todo)
+## 11. DB & 로그인 기능 구현
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. SQLite DB 구조 설계 및 연동 (h_user, h_login_hist)
 - [x] 2. 초기 데이터 시딩 (Admin/User 계정)
@@ -91,4 +90,11 @@
 - [x] 1. Frontend: 로그인 성공 시 localStorage 저장
 - [x] 2. Frontend: App 초기화 시 localStorage 확인 및 복구
 - [x] 3. Frontend: 로그아웃 시 localStorage 제거
+- [x] 4. 기능 검증
+
+## 15. MCP Tool 사용 이력 저장 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 추가 (h_mcp_tool_usage 테이블) 및 저장 함수 구현
+- [x] 2. Server Side: Tool 실행 핸들러(log_tool_usage) 연동 및 로깅 구현
+- [x] 3. Frontend Support: Tool 호출 시 사용자 ID 전달 (Optional)
 - [x] 4. 기능 검증

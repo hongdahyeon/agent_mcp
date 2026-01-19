@@ -197,3 +197,39 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 ## 검증 계획 (Verification Plan)
 1.  **새로고침 테스트**: 로그인 -> 페이지 새로고침 -> 여전히 로그인 상태인지 확인.
 2.  **로그아웃 테스트**: 로그아웃 -> 페이지 새로고침 -> 로그아웃 상태가 유지되는지 확인.
+
+---
+
+## Phase 10: MCP Tool Usage Tracking
+
+### Goal
+MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 활용 통계 및 감사 로그(Audit Log)로 활용할 수 있도록 합니다.
+
+### Proposed Changes
+
+#### 1. Database Schema (`src/db_manager.py`)
+- **[MODIFY] `init_db()`**: `h_mcp_tool_usage` 테이블 생성 쿼리 추가.
+    - `id` (PK, Auto Increment)
+    - `user_uid` (FK, `h_user.uid`)
+    - `tool_nm` (Text)
+    - `tool_params` (Text)
+    - `tool_success` (Text - 'SUCCESS'/'FAIL')
+    - `tool_result` (Text)
+    - `reg_dt` (Text - Timestamp)
+- **[NEW] `log_tool_usage(...)`**: Tool 사용 이력을 INSERT 하는 함수 구현.
+
+#### 2. Backend Logic (`src/sse_server.py`)
+- **[MODIFY] `call_tool` handler**:
+    - `arguments`에서 `user_id` (또는 `uid`) 추출 로직 추가.
+    - Tool 실행 전후에 DB 조회 및 로깅 함수(`log_tool_usage`) 호출.
+    - 예외 발생 시에도 'FAIL' 상태와 에러 메시지로 로깅.
+
+#### 3. Frontend Implementation (`src/frontend/src/hooks/useMcp.ts`)
+- **[MODIFY] `useMcp.ts`** or related logic:
+    - Tool 호출 메시지(JSON-RPC `tools/call`)를 보낼 때, `arguments`에 현재 로그인한 사용자 정보를 주입하는 로직 추가. 
+    - (참고: 로그인한 사용자의 `uid`를 찾아서 `_user_uid` 필드로 전송)
+
+### Verification Plan
+1. **DB Table Check**: 서버 재시작 후 `h_mcp_tool_usage` 테이블 생성 여부 확인.
+2. **Tool Execution**: 웹 인터페이스에서 `add` 또는 `hellouser` 툴 실행.
+3. **Log Retrieval**: DB를 조회하여 정상적으로 Insert 되었는지 확인.

@@ -56,6 +56,12 @@
 
 ## 로그인 성공 이후 세션 유지 (v)
 
-## MCP TOOL 사용자별 사용량 저장 테이블 추가
+## MCP TOOL 사용자별 사용량 저장 테이블 추가 (v)
 MCP TOOL 사용자별 사용량 저장 테이블 추가
 - h_mcp_tool_usage 테이블 : id(pk), tool_nm, .. 너가 생각하기에 필요한 정보, user_uid(fk)
+
+
+## 관리자로 로그인시 > MCP TOOL 사용자별 사용 이력 조회
+h_mcp_tool_usage 테이블 조회 화면 추가
+- 테이블을 통한 조회
+- echart를 통한 조회 함께 진행

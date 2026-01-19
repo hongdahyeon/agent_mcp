@@ -40,6 +40,20 @@ def init_db():
     )
     ''')
     
+    # MCP Tool 사용 이력 테이블 (MCP Tool Usage Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_mcp_tool_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_uid INTEGER,
+        tool_nm TEXT NOT NULL,
+        tool_params TEXT,
+        tool_success TEXT,
+        tool_result TEXT,
+        reg_dt TEXT NOT NULL,
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+    )
+    ''')
+    
     # ... existing code ...
     # 관리자 계정이 없으면 시딩 (Seed Admin User if not exists)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('admin',))
@@ -196,5 +210,18 @@ def update_user(user_id: str, update_data: dict):
     query = f"UPDATE h_user SET {', '.join(fields)} WHERE user_id = ?"
     
     conn.execute(query, tuple(values))
+    conn.commit()
+    conn.close()
+
+def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool, result: str):
+    """MCP Tool 사용 이력을 기록."""
+    conn = get_db_connection()
+    status = 'SUCCESS' if success else 'FAIL'
+    
+    conn.execute('''
+    INSERT INTO h_mcp_tool_usage (user_uid, tool_nm, tool_params, tool_success, tool_result, reg_dt)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ''', (user_uid, tool_nm, tool_params, status, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    
     conn.commit()
     conn.close()
