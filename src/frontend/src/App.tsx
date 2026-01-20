@@ -6,10 +6,11 @@ import { LogViewer } from './components/LogViewer';
 import { Login } from './components/Login';
 import { LoginHistViewer } from './components/LoginHistViewer';
 import { Users } from './components/Users';
+import { UsageHistory } from './components/UsageHistory'; // Import UsageHistory
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon
+  User as UserIcon, Users as UsersIcon, BarChart4 // Import BarChart4 icon
 } from 'lucide-react';
 import type { User } from './types/auth'; // Import User type
 import clsx from 'clsx';
@@ -35,7 +36,7 @@ function App() {
   });
 
   // View State
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history'>('dashboard');
 
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
 
@@ -66,6 +67,7 @@ function App() {
   // role 값이 'ROLE_ADMIN'인 경우에만 '사용자 관리' 메뉴를 추가한다
   if (user.role === 'ROLE_ADMIN') {
     menuItems.push({ id: 'users', label: '사용자 관리', icon: UsersIcon });
+    menuItems.push({ id: 'usage-history', label: '사용 이력', icon: BarChart4 }); // Add Usage History menu
   }
 
   return (
@@ -142,7 +144,8 @@ function App() {
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'history' && <LoginHistViewer />}
-          {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}
+          {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}  {/* 관리자 전용 */}
+          {activeView === 'usage-history' && user.role === 'ROLE_ADMIN' && <UsageHistory />} {/* 관리자 전용 */}
         </div>
       </main>
     </div>

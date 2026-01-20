@@ -98,3 +98,10 @@
 - [x] 2. Server Side: Tool 실행 핸들러(log_tool_usage) 연동 및 로깅 구현
 - [x] 3. Frontend Support: Tool 호출 시 사용자 ID 전달 (Optional)
 - [x] 4. 기능 검증
+
+## 16. MCP Tool 사용 이력 조회 (Admin Only) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend API 구현 (이력 조회, 페이징)
+- [x] 2. Frontend 컴포넌트 추가 (UsageHistory.tsx)
+- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly)
+- [x] 4. 기능 검증
