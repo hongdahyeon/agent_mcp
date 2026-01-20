@@ -5,11 +5,13 @@ import os
 
 DB_PATH = "agent_mcp.db"
 
+# db 연결
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+# db 초기화
 def init_db():
     """데이터베이스 테이블 초기화 및 관리자 계정 시딩."""
     conn = get_db_connection()
@@ -87,12 +89,14 @@ def init_db():
     conn.commit()
     conn.close()
 
+# 비밀번호 검증
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """비밀번호 검증 (SHA256) 및 길이 체크."""
     if len(plain_password) < 4:
         return False
     return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
+# 유저 ID 값으로 조회
 def get_user(user_id: str):
     """ID로 사용자 조회."""
     conn = get_db_connection()
@@ -100,6 +104,7 @@ def get_user(user_id: str):
     conn.close()
     return user
 
+# 유저들의 로그인 시도를 이력 테이블에 저장
 def log_login_attempt(user_uid: int, ip_address: str, success: bool, msg: str = ""):
     """로그인 시도를 이력 테이블에 기록."""
     conn = get_db_connection()
@@ -118,6 +123,7 @@ def log_login_attempt(user_uid: int, ip_address: str, success: bool, msg: str = 
     conn.commit()
     conn.close()
 
+# 유저들의 로그인 이력 조회
 def get_login_history(limit: int = 100):
     """로그인 이력 조회 (사용자 정보 포함)."""
     conn = get_db_connection()
@@ -134,10 +140,10 @@ def get_login_history(limit: int = 100):
     # Row 객체를 dict로 변환
     return [dict(row) for row in rows]
 
-# ==========================================
-# 사용자 관리 함수 (관리자용)
-# ==========================================
 
+# ==========================================
+# >> 사용자 관리 함수 (관리자용)
+# ==========================================
 def get_all_users():
     """모든 사용자 조회 (비밀번호 제외, 관리자 목록용)."""
     conn = get_db_connection()
@@ -213,6 +219,10 @@ def update_user(user_id: str, update_data: dict):
     conn.commit()
     conn.close()
 
+
+# ==========================================
+# >> MCP Tool 사용 이력 관리 함수 (관리자용)
+# ==========================================
 def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool, result: str):
     """MCP Tool 사용 이력을 기록."""
     conn = get_db_connection()
@@ -225,3 +235,54 @@ def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool,
     
     conn.commit()
     conn.close()
+
+def get_tool_usage_logs(page: int = 1, size: int = 20):
+    """MCP Tool 사용 이력을 조회 (페이징 포함)."""
+    conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 전체 개수 조회
+    cursor = conn.execute('SELECT COUNT(*) FROM h_mcp_tool_usage')
+    total = cursor.fetchone()[0]
+    
+    # 이력 조회 (사용자 정보 조인)
+    query = '''
+        SELECT 
+            t.id,
+            t.tool_nm,
+            t.tool_params,
+            t.tool_success,
+            t.tool_result,
+            t.reg_dt,
+            u.user_id,
+            u.user_nm
+        FROM h_mcp_tool_usage t
+        LEFT JOIN h_user u ON t.user_uid = u.uid
+        ORDER BY t.reg_dt DESC
+        LIMIT ? OFFSET ?
+    '''
+    cursor = conn.execute(query, (size, offset))
+    rows = cursor.fetchall()
+    
+    conn.close()
+    
+    # dict 형태로 변환
+    items = []
+    for row in rows:
+        items.append({
+            "id": row['id'],
+            "tool_nm": row['tool_nm'],
+            "tool_params": row['tool_params'],
+            "tool_success": row['tool_success'],
+            "tool_result": row['tool_result'],
+            "reg_dt": row['reg_dt'],
+            "user_id": row['user_id'],
+            "user_nm": row['user_nm']
+        })
+        
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": items
+    }

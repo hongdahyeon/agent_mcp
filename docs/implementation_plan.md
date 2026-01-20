@@ -233,3 +233,38 @@ MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 �
 1. **DB Table Check**: 서버 재시작 후 `h_mcp_tool_usage` 테이블 생성 여부 확인.
 2. **Tool Execution**: 웹 인터페이스에서 `add` 또는 `hellouser` 툴 실행.
 3. **Log Retrieval**: DB를 조회하여 정상적으로 Insert 되었는지 확인.
+
+---
+
+## Phase 11: MCP Tool Usage History (Admin)
+
+관리자가 사용자들의 Tool 사용 이력을 조회할 수 있는 기능을 구현한다.
+
+### Backend Changes
+
+#### [MODIFY] [sse_server.py](src/sse_server.py)
+- **API 추가**: `GET /mcp/usage-history`
+    - Query Params: `page`, `size`
+    - Response: `{ total: number, items: UsageLog[] }`
+
+#### [MODIFY] [db_manager.py](src/db_manager.py)
+- **Function 추가**: `get_tool_usage_logs(page, size)`
+    - `h_mcp_tool_usage`와 `h_user` 테이블 조인 조회
+    - 최신순 정렬
+
+### Frontend Changes
+
+#### [NEW] [UsageHistory.tsx](src/frontend/src/components/UsageHistory.tsx)
+- 관리자 전용 사용 이력 조회 컴포넌트
+- 테이블 형태로 데이터 표시 (Time, User, Tool, Success, Params, Result)
+- 간단한 페이징 (더보기 또는 페이지네이션)
+
+#### [MODIFY] [App.tsx](src/frontend/src/App.tsx)
+- 라우팅 및 메뉴 추가 ('usage-history', '사용 이력')
+- `ROLE_ADMIN` 체크하여 접근 제어
+
+### Verification Plan
+- 관리자 계정으로 로그인 후 메뉴 접근 가능 여부 확인
+- 데이터 조회 및 테이블 표시 확인
+- 일반 사용자로 접근 시 메뉴 미표시 확인
+

@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse
 import uvicorn
@@ -171,12 +171,14 @@ async def call_tool(name: str, arguments: dict):
 try:
     from src.db_manager import (
         init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id, log_tool_usage
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage,
+        get_tool_usage_logs
     )
 except ImportError:
     from db_manager import (
         init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id, log_tool_usage
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage,
+        get_tool_usage_logs
     )
 
 from pydantic import BaseModel
@@ -354,9 +356,35 @@ async def handle_sse(request: Request):
 async def handle_messages(request: Request):
     await sse.handle_post_message(request.scope, request.receive, request._send)
 
+# [Moved Here] API 정의는 app.mount 보다 먼저 되어야 함
+# -> FastAPI는 요청이 들어오게 되면 코드에 정의도니 순서대로 라우팅(경로)를 매칭한다
+# -> 따라서 하단에 app.mount("/", ...) 하위로 위치하게 ㅚ면 경로를 찾지 못하게 돤다.
+# -> 즉, 구체적인 API 경로들을 먼저 상위에 정의해두어야 한다.
+@app.get("/api/mcp/usage-history")
+async def get_usage_history(
+    page: int = 1, 
+    size: int = 20, 
+    x_user_id: str | None = Header(default=None, alias="X-User-Id")
+):
+    """MCP Tool 사용 이력 조회 (관리자 전용)."""
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Missing User ID header")
+        
+    user = get_user(x_user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid User")
+        
+    if user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
+        
+    result = get_tool_usage_logs(page, size)
+    return result
+
 # React 빌드 파일 서빙 (우선순위: dist 먼저 확인)
 static_dir = "src/frontend/dist"
 if os.path.exists(static_dir):
+    # app.mount("/", ...) : 루트 경로(/) 이하의 모든 요청을 잡아서 처리하겠다.
+    # => 루트 경로(/)로 이동해 버린다.
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
     logger.info(f"Serving React static files from {static_dir}")
 else:
@@ -367,6 +395,7 @@ else:
          @app.get("/")
          async def root():
              return RedirectResponse(url="/static/index.html")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
