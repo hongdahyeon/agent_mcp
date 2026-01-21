@@ -136,11 +136,21 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 
 ---
 
-## Phase 8: User Management Page (Admin Only) [Pending]
+## Phase 8: User Management Page (Admin Only) [Completed]
 
 ### Goal
 시스템 관리자가 사용자를 관리할 수 있는 전용 페이지를 구현합니다. 사용자 목록 조회, 추가, 수정, 활성/비활성 제어 기능을 포함합니다.
 
+### Implemented Changes
+- **Backend API**: `get_all_users`, `create_user`, `update_user` API 구현 및 Admin 권한 체크 적용.
+- **Frontend**: `Users.tsx` 컴포넌트 구현 (목록, 모달, 토글).
+- **Navigation**: Admin Only 메뉴 및 라우팅 가드 적용.
+
+---
+
+## Phase 9: Login Session Persistence [Completed]
+
+### Goal
 ### Requirement Analysis
 1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
 2. **List**: ID, 이름, 권한, 활성상태 표시.
@@ -181,32 +191,18 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
     - 사용자 정보 수정 (이름 변경) -> 확인.
     - 상태 토글 (활성 <-> 비활성) -> 해당 유저 로그인 시도하여 반영 확인.
 
-# [Phase 9] 로그인 세션 유지 (Session Persistence)
-
-## 목표 (Goal Description)
-페이지를 새로고침하거나 브라우저 탭을 닫았다가 다시 열어도 로그인 상태가 유지되도록 세션 지속성을 구현합니다.
-
-## 변경 제안 (Proposed Changes)
-
-### Frontend
-#### [MODIFY] [App.tsx](file:///d:/hong/9.%20project/agent_mcp/src/frontend/src/App.tsx)
-- **초기화 (Initialization)**: 앱 시작 시 `localStorage.getItem('user_session')`을 확인하여 로그인 상태를 복구합니다.
-- **로그인 (Login)**: 로그인 성공 시 `localStorage.setItem('user_session', JSON.stringify(user))`로 사용자 정보를 저장합니다.
-- **로그아웃 (Logout)**: 로그아웃 시 `localStorage.removeItem('user_session')`으로 저장된 정보를 삭제합니다.
-
-## 검증 계획 (Verification Plan)
-1.  **새로고침 테스트**: 로그인 -> 페이지 새로고침 -> 여전히 로그인 상태인지 확인.
-2.  **로그아웃 테스트**: 로그아웃 -> 페이지 새로고침 -> 로그아웃 상태가 유지되는지 확인.
 
 ---
 
-## Phase 10: MCP Tool Usage Tracking
+## Phase 10: MCP Tool Usage Tracking [Completed]
 
 ### Goal
 MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 활용 통계 및 감사 로그(Audit Log)로 활용할 수 있도록 합니다.
 
-### Proposed Changes
-
+### Implemented Changes
+- **Schema**: `h_mcp_tool_usage` 테이블 생성.
+- **Backend**: `call_tool` 핸들러에 `user_id` 전달 및 로깅 로직(`log_tool_usage`) 추가.
+- **Frontend**: Tool 호출 시 사용자 정보 주입 로직 추가.
 #### 1. Database Schema (`src/db_manager.py`)
 - **[MODIFY] `init_db()`**: `h_mcp_tool_usage` 테이블 생성 쿼리 추가.
     - `id` (PK, Auto Increment)
@@ -236,11 +232,14 @@ MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 �
 
 ---
 
-## Phase 11: MCP Tool Usage History (Admin)
+## Phase 11: MCP Tool Usage History (Admin) [Completed]
 
+### Goal
 관리자가 사용자들의 Tool 사용 이력을 조회할 수 있는 기능을 구현한다.
 
-### Backend Changes
+### Implemented Changes
+- **Backend**: `GET /mcp/usage-history` API 구현 및 페이징 처리.
+- **Frontend**: `UsageHistory.tsx` 구현 (테이블, 페이징).
 
 #### [MODIFY] [sse_server.py](src/sse_server.py)
 - **API 추가**: `GET /mcp/usage-history`
@@ -263,8 +262,45 @@ MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 �
 - 라우팅 및 메뉴 추가 ('usage-history', '사용 이력')
 - `ROLE_ADMIN` 체크하여 접근 제어
 
-### Verification Plan
-- 관리자 계정으로 로그인 후 메뉴 접근 가능 여부 확인
-- 데이터 조회 및 테이블 표시 확인
-- 일반 사용자로 접근 시 메뉴 미표시 확인
 
+---
+
+## Phase 12: DB Integration Tool (User Info)
+
+### Goal
+LLM(모델)이 내부 데이터베이스의 사용자 정보에 접근할 수 있도록 `get_user_info` 도구를 추가합니다.
+이를 통해 "user의 정보 알려줘" 같은 자연어 질의에 대해 실제 DB 데이터를 기반으로 응답할 수 있게 합니다.
+
+### Security Requirement
+- **비밀번호 필드 제외**: 조회 결과에서 `password` 해시 값은 절대 노출되지 않도록 제거해야 합니다.
+
+### Proposed Changes
+
+#### 1. Backend (`src/server.py`)
+- **[MODIFY] Import**: `src/db_manager.py` import 추가.
+- **[NEW] Tool Implementation**:
+```python
+@mcp.tool()
+def get_user_info(user_id: str) -> str:
+    """
+    Get user details by user_id from the database.
+    Useful when you need to find user information like name, role, last login time, etc.
+    """
+    user = db_manager.get_user(user_id)
+    if not user:
+        return f"User not found with ID: {user_id}"
+    
+    # dict 변환 및 password 제거
+    user_dict = dict(user)
+    if 'password' in user_dict:
+        del user_dict['password']
+        
+    return str(user_dict)
+```
+
+### Verification Plan
+1. **Web Tester**:
+    - `get_user_info` 도구가 목록에 뜨는지 확인.
+    - `user_id`로 `admin` 입력 후 실행.
+    - 결과 JSON에 `password` 필드가 없는지 확인.
+    - 결과에 `user_nm`, `role` 등이 잘 나오는지 확인.

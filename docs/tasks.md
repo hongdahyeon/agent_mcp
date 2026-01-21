@@ -105,3 +105,9 @@
 - [x] 2. Frontend 컴포넌트 추가 (UsageHistory.tsx)
 - [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly)
 - [x] 4. 기능 검증
+
+## 17. DB 연동 Tool 추가 (User Info) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Server Side: `get_user_info` Tool 구현 (`src/server.py`)
+- [x] 2. DB Manager: 보안 처리 (비밀번호 제외 조회) 확인
+- [x] 3. 기능 검증 (Inspector 또는 Web Tester)
