@@ -8,6 +8,7 @@ export interface User {
     role: string;
     is_enable?: string;
     last_cnn_dt?: string;
+    login_ts?: number; // 세션 로그인 timestamp
 }
 
 export interface LoginResponse {
