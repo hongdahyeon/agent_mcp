@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMcp } from './hooks/useMcp';
 import { Dashboard } from './components/Dashboard';
 import { Tester } from './components/Tester';
@@ -20,14 +20,22 @@ import clsx from 'clsx';
 * useMcp 훅을 사용하여 상태를 관리한다
 */
 
+// 세션은 최대 3시간까지 유지할 수 있다.
+const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
+
 function App() {
-  // Auth State
   // Auth State: 세션 저장
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user_session');
     if (stored) {
       try {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // 세션 만료 체크 (3시간)
+        if (parsed.login_ts && (Date.now() - parsed.login_ts > SESSION_TIMEOUT)) {
+             localStorage.removeItem('user_session');
+             return null;
+        }
+        return parsed;
       } catch {
         localStorage.removeItem('user_session');
       }
@@ -40,16 +48,58 @@ function App() {
 
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
 
-  const handleLogin = (loggedInUser: User) => {
-    localStorage.setItem('user_session', JSON.stringify(loggedInUser));
-    setUser(loggedInUser);
-    setActiveView('dashboard');
-  };
-
   const handleLogout = () => {
     // 로그아웃 시점에 세션 remove
     localStorage.removeItem('user_session');
     setUser(null);
+  };
+
+  // 세션 만료 주기적 체크 (1분마다) 대신 사용자 활동 감지
+  useEffect(() => {
+     if (!user) return;
+
+     const events = ['click', 'keypress', 'mousemove', 'scroll'];
+     
+     const handleActivity = () => {
+         // 현재 저장된 세션 확인
+         const stored = localStorage.getItem('user_session');
+         if (stored) {
+             const parsed = JSON.parse(stored);
+             const lastTs = parsed.login_ts || Date.now();
+             
+             // 이미 만료되었는지 확인
+             if (Date.now() - lastTs > SESSION_TIMEOUT) {
+                 alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                 handleLogout();
+                 return;
+             }
+             
+             // 만료되지 않았으면 타임스탬프 갱신 (1분 단위로만 갱신하여 부하 감소)
+             if (Date.now() - lastTs > 60000) {
+                 const updatedUser = { ...parsed, login_ts: Date.now() };
+                 localStorage.setItem('user_session', JSON.stringify(updatedUser));
+                 // State 업데이트는 불필요할 수 있으나 동기화를 위해 (또는 생략 가능)
+                 // setUser(updatedUser); 
+             }
+         }
+     };
+
+     // Throttling or simple addEventListener
+     // 여기서는 간단히 이벤트 등록
+     events.forEach(event => window.addEventListener(event, handleActivity));
+
+     return () => {
+         events.forEach(event => window.removeEventListener(event, handleActivity));
+     };
+  }, [user]);
+
+  // 로그인 이벤트
+  const handleLogin = (loggedInUser: User) => {
+    // 로그인 시 현재 시간(login_ts) 추가
+    const sessionUser = { ...loggedInUser, login_ts: Date.now() };
+    localStorage.setItem('user_session', JSON.stringify(sessionUser));
+    setUser(sessionUser);
+    setActiveView('dashboard');
   };
 
   // If not logged in, show Login Screen
