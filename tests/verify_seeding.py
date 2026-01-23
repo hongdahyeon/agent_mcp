@@ -8,14 +8,16 @@ import os
 import sys
 
 # Add src to path to import db_manager
-sys.path.append(os.path.join(os.getcwd(), 'src'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 try:
-    from db_manager import init_db, get_db_connection
+    from src.db_init_manager import init_db
+    from src.db_manager import get_db_connection
 except ImportError:
-    # Fallback if src is not in path or running from different dir
-    sys.path.append('src')
-    from db_manager import init_db, get_db_connection
+    from db_init_manager import init_db
+    from db_manager import get_db_connection
 
 def verify_seeding():
     print("1. Running init_db() to trigger seeding...")

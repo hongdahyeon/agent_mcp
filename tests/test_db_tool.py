@@ -4,9 +4,15 @@
 import sys
 import os
 
+# Add project root to sys.path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 # Create dummy DB if needed (init_db)
-from src import db_manager
-db_manager.init_db()
+# Create dummy DB if needed (init_db)
+from src import db_init_manager
+db_init_manager.init_db()
 
 # Import the server function
 from src.server import get_user_info
