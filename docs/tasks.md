@@ -111,3 +111,16 @@
 - [x] 1. Server Side: `get_user_info` Tool 구현 (`src/server.py`)
 - [x] 2. DB Manager: 보안 처리 (비밀번호 제외 조회) 확인
 - [x] 3. 기능 검증 (Inspector 또는 Web Tester)
+
+## 18. 스키마/테이블 관리 메뉴 구현 (Admin Only) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend API 구현
+    - [x] `GET /api/db/tables`: 전체 테이블 목록 조회
+    - [x] `GET /api/db/schema/{table_name}`: 특정 테이블 스키마 조회
+    - [x] `GET /api/db/data/{table_name}?limit=N`: 테이블 데이터 프리뷰 (limit 파라미터 지원)
+- [x] 2. Frontend 컴포넌트 구현 (SchemaManager.tsx)
+    - [x] 2-Layer Layout (Left: Table List, Right: Detail View)
+    - [x] Schema Info Table
+    - [x] Data Preview Table with Limit Input
+- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
+- [x] 4. 기능 검증

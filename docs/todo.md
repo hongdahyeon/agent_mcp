@@ -67,7 +67,10 @@ h_mcp_tool_usage 테이블 조회 화면 추가
 - echart를 통한 조회 함께 진행
 
 
-## mng_usage_mng_todo.md 파일 참고
+## mng_usage_mng_todo.md 파일 참고 - 1(v)
 1. h_user_token
 2. h_mcp_tool_limit
 테이블 추가
+
+
+## mng_usage_mng_todo.md 파일 참고 - 2
