@@ -228,14 +228,14 @@ try:
     from src.db_manager import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs
+        get_tool_usage_logs, create_user_token, get_user_token
     )
 except ImportError:
     from db_init_manager import init_db
     from db_manager import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs
+        get_tool_usage_logs, create_user_token, get_user_token
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -354,6 +354,34 @@ async def get_usage_history(
     
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
+
+
+
+# ==========================================
+# >> 사용자 토큰 관리 (Phase 1)
+# ==========================================
+@app.post("/api/user/token")
+async def api_create_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """사용자 토큰 생성/재발급."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user: raise HTTPException(status_code=401, detail="User not found")
+    
+    token = create_user_token(user['uid'])
+    return {"success": True, "token": token}
+
+@app.get("/api/user/token")
+async def api_get_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """사용자 현재 토큰 조회."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user: raise HTTPException(status_code=401, detail="User not found")
+    
+    token_data = get_user_token(user['uid'])
+    if token_data:
+        return {"exists": True, "token": token_data['token_value'], "expired_at": token_data['expired_at']}
+    else:
+        return {"exists": False}
 
 
 # ==========================================

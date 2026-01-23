@@ -13,10 +13,11 @@ import {
   User as UserIcon, Users as UsersIcon, BarChart4, Database // Import Database icon
 } from 'lucide-react';
 import { SchemaManager } from './components/SchemaManager'; // Import SchemaManager
+import { MyPage } from './components/MyPage'; // Import MyPage
 import type { User } from './types/auth'; // Import User type
 import clsx from 'clsx';
 
-/* 
+/**
 * 애플리케이션의 진입점 및 레이아웃(사이드바, 라우팅)을 관리한다
 * useMcp 훅을 사용하여 상태를 관리한다
 */
@@ -45,7 +46,7 @@ function App() {
   });
 
   // View State
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'mypage'>('dashboard');
 
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
 
@@ -137,16 +138,20 @@ function App() {
 
         {/* User Profile Summary */}
         <div className="px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+          <button 
+            onClick={() => setActiveView('mypage')}
+            className="flex items-center flex-1 hover:bg-gray-200/50 p-1.5 -ml-1.5 rounded-lg transition-colors text-left group cursor-pointer"
+            title="내 정보 관리"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2 group-hover:bg-blue-200 transition-colors">
               <UserIcon className="w-4 h-4" />
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
               <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
             </div>
-          </div>
-          <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition-colors" title="로그아웃">
+          </button>
+          <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-1" title="로그아웃">
             <LogOut className="w-4 h-4" />
           </button>
         </div>
@@ -184,7 +189,7 @@ function App() {
       <main className="flex-1 overflow-hidden flex flex-col">
         <header className="bg-white border-b border-gray-200 px-8 py-4 shadow-sm flex justify-between items-center z-10">
           <h2 className="text-xl font-semibold text-gray-800">
-            {menuItems.find(i => i.id === activeView)?.label}
+            {menuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
           </h2>
           <div className="text-xs text-gray-400 font-mono">
             {statusText}
@@ -196,6 +201,7 @@ function App() {
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'history' && <LoginHistViewer />}
+          {activeView === 'mypage' && <MyPage />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}  {/* 관리자 전용 */}
           {activeView === 'usage-history' && user.role === 'ROLE_ADMIN' && <UsageHistory />} {/* 관리자 전용 */}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />} {/* 관리자 전용 */}
