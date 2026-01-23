@@ -36,7 +36,7 @@ MCP 클라이언트(Claude Desktop 등)가 서버에 연결할 때 **인증 토�
 사용자별 API 접근 토큰 발급/관리 테이블
 - `user_uid`, `token_value`, `expired_at`, `is_active`
 
-#### `h_mcp_tool_limit` (상세 명세)
+#### `h_mcp_tool_limit` (상세 명세) (v)
 사용자 등급(Role) 또는 개별 사용자(User)별로 도구 사용량을 제한하기 위한 정책 테이블입니다.
 
 | 컬럼명 | 타입 | 설명 | 예시 값 |

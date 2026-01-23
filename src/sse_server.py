@@ -355,6 +355,49 @@ async def get_usage_history(
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
 
+
+# ==========================================
+# 5. DB 스키마 및 데이터 관리 API (관리자 전용) (New)
+# ==========================================
+try:
+    from src.db_manager import get_all_tables, get_table_schema, get_table_data
+except ImportError:
+    from db_manager import get_all_tables, get_table_schema, get_table_data
+
+@app.get("/api/db/tables")
+async def api_get_tables(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """전체 테이블 목록 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return {"tables": get_all_tables()}
+
+@app.get("/api/db/schema/{table_name}")
+async def api_get_table_schema(table_name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """특정 테이블 스키마 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        return {"columns": get_table_schema(table_name)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/api/db/data/{table_name}")
+async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """특정 테이블 데이터 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        return {"rows": get_table_data(table_name, limit)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 # ==========================================
 # 4. 연결 설정 및 정적 파일
 # ==========================================

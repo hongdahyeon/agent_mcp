@@ -10,8 +10,9 @@ import { UsageHistory } from './components/UsageHistory'; // Import UsageHistory
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4 // Import BarChart4 icon
+  User as UserIcon, Users as UsersIcon, BarChart4, Database // Import Database icon
 } from 'lucide-react';
+import { SchemaManager } from './components/SchemaManager'; // Import SchemaManager
 import type { User } from './types/auth'; // Import User type
 import clsx from 'clsx';
 
@@ -44,7 +45,7 @@ function App() {
   });
 
   // View State
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema'>('dashboard');
 
   const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult } = useMcp();
 
@@ -118,6 +119,7 @@ function App() {
   if (user.role === 'ROLE_ADMIN') {
     menuItems.push({ id: 'users', label: '사용자 관리', icon: UsersIcon });
     menuItems.push({ id: 'usage-history', label: '사용 이력', icon: BarChart4 }); // Add Usage History menu
+    menuItems.push({ id: 'schema', label: 'DB 관리', icon: Database }); // Add Schema Manager menu
   }
 
   return (
@@ -196,6 +198,7 @@ function App() {
           {activeView === 'history' && <LoginHistViewer />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}  {/* 관리자 전용 */}
           {activeView === 'usage-history' && user.role === 'ROLE_ADMIN' && <UsageHistory />} {/* 관리자 전용 */}
+          {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />} {/* 관리자 전용 */}
         </div>
       </main>
     </div>
