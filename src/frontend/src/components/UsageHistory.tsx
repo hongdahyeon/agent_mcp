@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User } from '../types/auth'; // User 타입 재사용
-import { AlertCircle, CheckCircle2, XCircle, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { User } from '../types/auth'; 
+import { AlertCircle, CheckCircle2, XCircle, RefreshCw, Search } from 'lucide-react';
 import clsx from 'clsx';
 
 interface UsageLog {
@@ -25,9 +25,16 @@ export function UsageHistory() {
   const [logs, setLogs] = useState<UsageLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const PAGE_SIZE = 20;
+
+  // Filters
+  const [searchUserId, setSearchUserId] = useState('');
+  const [searchToolNm, setSearchToolNm] = useState('');
+  const [searchSuccess, setSearchSuccess] = useState('ALL'); // 'ALL' | 'SUCCESS' | 'FAIL'
 
   const fetchLogs = useCallback(async (pageNum: number) => {
     setLoading(true);
@@ -38,7 +45,16 @@ export function UsageHistory() {
       if (!sessionStr) throw new Error("No session found");
       const user = JSON.parse(sessionStr) as User;
 
-      const res = await fetch(`/api/mcp/usage-history?page=${pageNum}&size=${PAGE_SIZE}`, {
+      // Query String 구성
+      const params = new URLSearchParams({
+        page: pageNum.toString(),
+        size: PAGE_SIZE.toString()
+      });
+      if (searchUserId) params.append('user_id', searchUserId);
+      if (searchToolNm) params.append('tool_nm', searchToolNm);
+      if (searchSuccess !== 'ALL') params.append('success', searchSuccess);
+
+      const res = await fetch(`/api/mcp/usage-history?${params.toString()}`, {
         headers: {
           'X-User-Id': user.user_id
         }
@@ -58,11 +74,22 @@ export function UsageHistory() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchUserId, searchToolNm, searchSuccess]);
 
+  // 초기 로딩 및 성공여부 필터 변경 시 자동 검색
   useEffect(() => {
     fetchLogs(1);
-  }, [fetchLogs]);
+  }, [searchSuccess]); 
+
+  const handleSearch = () => {
+    fetchLogs(1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -73,13 +100,78 @@ export function UsageHistory() {
           <h2 className="text-2xl font-bold text-gray-800">MCP Tool 사용 이력</h2>
           <p className="text-sm text-gray-500 mt-1">사용자들의 도구 실행 기록을 조회합니다.</p>
         </div>
-        <button 
-          onClick={() => fetchLogs(page)} 
-          className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-          새로고침
-        </button>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+        <div>
+           <label className="block text-xs font-medium text-gray-700 mb-1">사용자 ID</label>
+           <input 
+             type="text" 
+             value={searchUserId}
+             onChange={(e) => setSearchUserId(e.target.value)}
+             onKeyDown={handleKeyDown}
+             placeholder="Search User ID..."
+             className="px-3 py-2 border rounded-lg text-sm w-40"
+           />
+        </div>
+        <div>
+           <label className="block text-xs font-medium text-gray-700 mb-1">도구명</label>
+           <input 
+             type="text" 
+             value={searchToolNm}
+             onChange={(e) => setSearchToolNm(e.target.value)}
+             onKeyDown={handleKeyDown}
+             placeholder="Search Tool Name..."
+             className="px-3 py-2 border rounded-lg text-sm w-40"
+           />
+        </div>
+        <div>
+           <label className="block text-xs font-medium text-gray-700 mb-1">성공여부</label>
+           <select 
+             value={searchSuccess}
+             onChange={(e) => setSearchSuccess(e.target.value)}
+             className="px-3 py-2 border rounded-lg text-sm w-32 bg-white"
+           >
+             <option value="ALL">전체</option>
+             <option value="SUCCESS">In Progress / Success</option>
+             <option value="FAIL">Error / Fail</option>
+           </select>
+        </div>
+        <div className="flex gap-2">
+            <button 
+                onClick={handleSearch}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+                <Search className="w-4 h-4 mr-2" />
+                검색
+            </button>
+            <button 
+                onClick={() => {
+                    setSearchUserId('');
+                    setSearchToolNm('');
+                    setSearchSuccess('ALL');
+                    // state update is async, so we can't call fetchLogs immediately with new state here easily without extra effect or ref.
+                    // But for simplicity, let's just trigger reload which will use old state? No.
+                    // We just reset state, user clicks search again or we use effect?
+                    // Let's just reset fields. User can click search.
+                }}
+                className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
+            >
+                초기화
+            </button>
+        </div>
+        
+        <div className="flex-1 text-right">
+             <button 
+              onClick={() => fetchLogs(page)} 
+              disabled={loading}
+              className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
+              새로고침
+            </button>
+        </div>
       </div>
 
       {error && (
@@ -165,7 +257,7 @@ export function UsageHistory() {
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span> (Total <span className="font-medium">{total}</span>)
+                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
               </p>
             </div>
             <div>
@@ -175,16 +267,14 @@ export function UsageHistory() {
                   disabled={page === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Previous</span>
-                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  이전
                 </button>
                 <button
                   onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
                   disabled={page >= totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <span className="sr-only">Next</span>
-                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  다음
                 </button>
               </nav>
             </div>
