@@ -124,3 +124,40 @@
     - [x] Data Preview Table with Limit Input
 - [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
 - [x] 4. 기능 검증
+
+
+## 19. 사용자 토큰 관리 (Phase 1) (Completed)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 생성 (Token Management)
+    - [x] `h_user_token`: 사용자별 API 토큰 관리 (token_value, expired_at 등)
+- [x] 2. Backend API 구현
+    - [x] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
+    - [x] `POST /api/user/token`: 토큰 발급 API
+    - [x] `GET /api/user/token`: 현재 유효 토큰 조회 API
+- [x] 3. Frontend UI 구현
+    - [x] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
+    - [x] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
+- [x] 4. 기능 검증
+
+
+## 20. 도구 실행 보안 강화 (Phase 2) (Todo)
+- [ ] 상세 구현 계획 수립 (implementation_plan.md)
+- [ ] 1. SSE 연결 인증 (Authentication)
+    - [ ] `GET /sse`: `token` 쿼리 파라미터 수신 및 유효성 검증 로직 추가
+    - [ ] 유효하지 않은 토큰 접근 시 401 Unauthorized 반환
+- [ ] 2. 사용자 바인딩 (User Binding)
+    - [ ] 검증된 토큰으로부터 `user_uid` 식별 및 세션/컨텍스트 저장
+    - [ ] `call_tool` 실행 시 인자(`_user_uid`) 대신 검증된 세션 유저 정보 사용
+- [ ] 3. 관리자 권한 도구 보호
+    - [ ] 권한 체크 데코레이터 또는 미들웨어 구현
+
+
+## 21. 사용량 제한 구현 (Phase 3) (Todo)
+- [ ] 상세 구현 계획 수립 (implementation_plan.md)
+- [ ] 1. DB 스키마 생성 (Usage Limits)
+    - [ ] `h_mcp_tool_limit`: 사용자/등급별 제한 정책 테이블 (daily_max_count 등)
+- [ ] 2. 실행 제어 로직 구현 (Rate Limiting)
+    - [ ] 도구 실행 전 Pre-check hook 구현
+    - [ ] 금일 사용량 조회 및 한도 초과 시 `McpError` 반환
+- [ ] 3. 사용자 UI 고도화
+    - [ ] MyPage: 오늘의 사용량 / 잔여 횟수 표시

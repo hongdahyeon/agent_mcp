@@ -1,23 +1,34 @@
 import clsx from 'clsx';
 import { AlertCircle, Columns, Database, FileText, RefreshCw, Table } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { getAuthHeaders } from '../utils/auth';
 
+/**
+ * 스키마 및 데이터 관리 컴포넌트
+ * - 데이터베이스 전체 테이블 목록 조회
+ * - 선택한 테이블의 스키마(컬럼 정보) 조회
+ * - 선택한 테이블의 실제 데이터 조회 (Limit 기능 포함)
+ */
 export function SchemaManager() {
-  const [tables, setTables] = useState<string[]>([]);
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  const [schema, setSchema] = useState<any[]>([]);
-  const [dataRows, setDataRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'schema' | 'data'>('schema');
-  const [dataLimit, setDataLimit] = useState(100);
+  const [tables, setTables] = useState<string[]>([]); // 테이블 목록
+  const [selectedTable, setSelectedTable] = useState<string | null>(null); // 현재 선택된 테이블 이름
+  const [schema, setSchema] = useState<any[]>([]); // 선택된 테이블의 스키마 정보
+  const [dataRows, setDataRows] = useState<any[]>([]); // 선택된 테이블의 데이터 행
+  const [loading, setLoading] = useState(false); // 로딩 상태
+  const [error, setError] = useState<string | null>(null); // 에러 메시지
+  const [activeTab, setActiveTab] = useState<'schema' | 'data'>('schema'); // 현재 활성화된 탭 (스키마/데이터)
+  const [dataLimit, setDataLimit] = useState(100); // 데이터 조회 개수 제한
 
-  // Load table list on mount
+  /**
+   * 컴포넌트 마운트 시 테이블 목록 로드
+   */
   useEffect(() => {
     fetchTables();
   }, []);
 
-  // When table selected, load schema (and maybe data if tab active)
+  /**
+   * 테이블 선택 또는 탭 변경 시 데이터 다시 로드
+   */
   useEffect(() => {
     if (selectedTable) {
       if (activeTab === 'schema') fetchSchema(selectedTable);
@@ -25,18 +36,14 @@ export function SchemaManager() {
     }
   }, [selectedTable, activeTab]);
 
-  const getHeaders = (): Record<string, string> => {
-    const userStr = localStorage.getItem('user_session');
-    if (!userStr) return {};
-    const user = JSON.parse(userStr);
-    return user.user_id ? { 'X-User-Id': String(user.user_id) } : {};
-  };
-
+  /**
+   * 전체 테이블 목록 조회
+   */
   const fetchTables = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/db/tables', { headers: getHeaders() });
+      const res = await fetch('/api/db/tables', { headers: getAuthHeaders() });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setTables(data.tables);
@@ -47,11 +54,14 @@ export function SchemaManager() {
     }
   };
 
+  /**
+   * 특정 테이블 스키마 조회
+   */
   const fetchSchema = async (tableName: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/db/schema/${tableName}`, { headers: getHeaders() });
+      const res = await fetch(`/api/db/schema/${tableName}`, { headers: getAuthHeaders() });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setSchema(data.columns); // [{cid, name, type, notnull, dflt_value, pk}, ...]
@@ -62,11 +72,14 @@ export function SchemaManager() {
     }
   };
 
+  /**
+   * 특정 테이블 데이터 조회 (Limit 파라미터 적용)
+   */
   const fetchData = async (tableName: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/db/data/${tableName}?limit=${dataLimit}`, { headers: getHeaders() });
+      const res = await fetch(`/api/db/data/${tableName}?limit=${dataLimit}`, { headers: getAuthHeaders() });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setDataRows(data.rows);
@@ -77,6 +90,7 @@ export function SchemaManager() {
     }
   };
 
+  // 스키마 정보 테이블 렌더링
   const renderSchemaTable = () => (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -106,6 +120,7 @@ export function SchemaManager() {
     </div>
   );
 
+  // 데이터 조회 테이블 렌더링
   const renderDataTable = () => {
     if (dataRows.length === 0) return <div className="p-8 text-center text-gray-500">데이터가 없습니다.</div>;
     const columns = Object.keys(dataRows[0]);

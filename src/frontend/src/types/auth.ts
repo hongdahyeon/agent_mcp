@@ -26,3 +26,11 @@ export interface LoginHistory {
     login_success: 'SUCCESS' | 'FAIL';
     login_msg: string;
 }
+
+export interface SessionUser {
+    login_ts: number;
+    role: string;
+    uid: number;
+    user_id: string;
+    user_nm: string;
+}

@@ -73,4 +73,28 @@ h_mcp_tool_usage 테이블 조회 화면 추가
 테이블 추가
 
 
-## mng_usage_mng_todo.md 파일 참고 - 2
+## mng_usage_mng_todo.md 파일 참고 - 2 (v)
+Phase 1: 사용자 토큰 관리 (완료)
+- [x] 온디맨드 API 키 (On-Demand API Key) 모델 적용
+- [x] 사용자가 로그인 후, 버튼 클릭을 통한 토큰 발급 -> h_user_token 저장
+- [x] 내 정보 (My Page) 메뉴 추가 및 토큰 관리 UI 구현
+- [x] db_manager.py > create_user_token, get_user_token 구현
+- 현재는 h_mcp_tool_limit을 통해 제한량 정보를 저장하고, 유저에게 토큰을 발급하고 해당 정보를 h_user_token에 저장만 하는 상태
+
+
+## Phase 1: 사용자 토큰 관리 (완료)
+
+
+## Phase 2: 도구 실행 보안 적용 (TODO)
+보안 강화 및 인증 절차 추가
+- [ ] **SSE 엔드포인트 인증**: 클라이언트 연결 시 `token` 파라미터 확인 및 검증
+- [ ] **User Binding**: 검증된 토큰에서 `user_uid` 추출하여 세션/컨텍스트에 저장
+- [ ] **Argument 의존성 제거**: `call_tool`에서 인자로 받는 `_user_uid` 대신 검증된 `user_uid` 사용
+- [ ] **권한 체크**: 관리자 전용 도구(예: `get_user_info`) 실행 시 권한 검증 로직 추가
+
+
+## Phase 3: 사용량 제한 구현 (TODO)
+사용자별/권한별 도구 사용량 제어
+- [ ] **사용량 조회 로직**: 도구 실행 전, 금일 사용량(`h_mcp_tool_usage`) 카운트
+- [ ] **제한 정책 적용**: `h_mcp_tool_limit` 정책에 따라 한도 초과 시 실행 거부 (`McpError` 반환)
+- [ ] **사용자 UI 개선**: 내 정보 페이지에서 '남은 사용 가능 횟수' 또는 '오늘의 사용량' 표시

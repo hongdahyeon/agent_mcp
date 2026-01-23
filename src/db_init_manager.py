@@ -52,6 +52,8 @@ def init_db():
     ''')
     
     # 사용자 토큰 테이블 (User Token Table)
+    # 토큰 발급 시 사용자 ID와 토큰 값, 만료일, 활성화 상태를 저장
+    # expire되면 접속이 불가능하다(401)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_user_token (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +66,10 @@ def init_db():
     ''')
 
     # MCP Tool 제한 테이블 (MCP Tool Limit Table)
+    # target_type: 'ROLE' or 'USER'
+    # target_id: 'ROLE_USER' or 'hong123'
+    # limit_type: 'DAILY' or 'MONTHLY'
+    # 접속은 되지만, 한도 초과 에러 반환 (429: Too Many Requests)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_limit (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
