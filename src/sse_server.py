@@ -224,14 +224,16 @@ async def call_tool(name: str, arguments: dict):
 # ==========================================
 
 try:
+    from src.db_init_manager import init_db
     from src.db_manager import (
-        init_db, get_user, verify_password, log_login_attempt, get_login_history,
+        get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs
     )
 except ImportError:
+    from db_init_manager import init_db
     from db_manager import (
-        init_db, get_user, verify_password, log_login_attempt, get_login_history,
+        get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs
     )

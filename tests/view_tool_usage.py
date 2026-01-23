@@ -2,14 +2,15 @@ import sqlite3
 import sys
 import os
 
-# 현재 디렉토리를 path에 추가하여 src 모듈을 찾을 수 있게 함
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add src to path to import db_manager
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 try:
-    from db_manager import get_db_connection
-except ImportError:
-    # 실행 위치에 따라 import 경로가 다를 수 있음
     from src.db_manager import get_db_connection
+except ImportError:
+    from db_manager import get_db_connection
 
 def view_tool_usage_logs():
     """MCP Tool 사용 이력을 조회하여 출력합니다."""
