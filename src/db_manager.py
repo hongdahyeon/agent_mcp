@@ -123,34 +123,59 @@ def log_login_attempt(user_uid: int, ip_address: str, success: bool, msg: str = 
     conn.commit()
     conn.close()
 
-# 유저들의 로그인 이력 조회
-def get_login_history(limit: int = 100):
-    """로그인 이력 조회 (사용자 정보 포함)."""
+# 유저들의 로그인 이력 조회 
+# => 페이징 포함 (26.01.23)
+def get_login_history(page: int = 1, size: int = 20):
+    """로그인 이력 조회 (페이징 포함)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 전체 개수 조회
+    cursor = conn.execute('SELECT COUNT(*) FROM h_login_hist')
+    total = cursor.fetchone()[0]
+
     query = '''
     SELECT h.uid, u.user_id, u.user_nm, h.login_dt, h.login_ip, h.login_success, h.login_msg
     FROM h_login_hist h
     LEFT JOIN h_user u ON h.user_uid = u.uid
     ORDER BY h.login_dt DESC
-    LIMIT ?
+    LIMIT ? OFFSET ?
     '''
-    rows = conn.execute(query, (limit,)).fetchall()
+    rows = conn.execute(query, (size, offset)).fetchall()
     conn.close()
     
-    # Row 객체를 dict로 변환
-    return [dict(row) for row in rows]
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [dict(row) for row in rows]
+    }
 
 
 # ==========================================
 # >> 사용자 관리 함수 (관리자용)
 # ==========================================
-def get_all_users():
-    """모든 사용자 조회 (비밀번호 제외, 관리자 목록용)."""
+# 모든 사용자 조회 (비밀번호 제외, 페이징 포함)
+def get_all_users(page: int = 1, size: int = 20):
+    """모든 사용자 조회 (비밀번호 제외, 페이징 포함)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 전체 개수 조회
+    cursor = conn.execute('SELECT COUNT(*) FROM h_user')
+    total = cursor.fetchone()[0]
+
     # 보안을 위해 비밀번호 제외
-    users = conn.execute('SELECT uid, user_id, user_nm, role, is_enable, last_cnn_dt FROM h_user ORDER BY uid ASC').fetchall()
+    query = 'SELECT uid, user_id, user_nm, role, is_enable, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
+    users = conn.execute(query, (size, offset)).fetchall()
     conn.close()
-    return [dict(row) for row in users]
+    
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [dict(row) for row in users]
+    }
 
 def check_user_id(user_id: str) -> bool:
     """사용자 ID 중복 확인. 이미 존재하면 True 반환."""
@@ -236,17 +261,37 @@ def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool,
     conn.commit()
     conn.close()
 
-def get_tool_usage_logs(page: int = 1, size: int = 20):
-    """MCP Tool 사용 이력을 조회 (페이징 포함)."""
+# MCP Tool 사용 이력 조회 
+## => 페이징 포함 (26.01.23)
+def get_tool_usage_logs(page: int = 1, size: int = 20, 
+                        search_user_id: str = None, search_tool_nm: str = None, search_success: str = None):
+    """MCP Tool 사용 이력을 조회 (페이징 + 필터링)."""
     conn = get_db_connection()
     offset = (page - 1) * size
     
+    # 기본 쿼리 및 파라미터 구성
+    base_where = " FROM h_mcp_tool_usage t LEFT JOIN h_user u ON t.user_uid = u.uid WHERE 1=1"
+    params = []
+    
+    if search_user_id:
+        base_where += " AND u.user_id LIKE ?"
+        params.append(f"%{search_user_id}%")
+        
+    if search_tool_nm:
+        base_where += " AND t.tool_nm LIKE ?"
+        params.append(f"%{search_tool_nm}%")
+        
+    if search_success and search_success != 'ALL':
+        base_where += " AND t.tool_success = ?"
+        params.append(search_success)
+    
     # 전체 개수 조회
-    cursor = conn.execute('SELECT COUNT(*) FROM h_mcp_tool_usage')
+    count_query = "SELECT COUNT(*)" + base_where
+    cursor = conn.execute(count_query, tuple(params))
     total = cursor.fetchone()[0]
     
-    # 이력 조회 (사용자 정보 조인)
-    query = '''
+    # 이력 조회
+    query = f'''
         SELECT 
             t.id,
             t.tool_nm,
@@ -256,12 +301,14 @@ def get_tool_usage_logs(page: int = 1, size: int = 20):
             t.reg_dt,
             u.user_id,
             u.user_nm
-        FROM h_mcp_tool_usage t
-        LEFT JOIN h_user u ON t.user_uid = u.uid
+        {base_where}
         ORDER BY t.reg_dt DESC
         LIMIT ? OFFSET ?
     '''
-    cursor = conn.execute(query, (size, offset))
+    # LIMIT, OFFSET 파라미터 추가
+    params.extend([size, offset])
+    
+    cursor = conn.execute(query, tuple(params))
     rows = cursor.fetchall()
     
     conn.close()

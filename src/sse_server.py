@@ -265,10 +265,12 @@ async def login(req: LoginRequest, request: Request):
         log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+#  유저 로그인 기록 조회
+# => 페이징 포함 (26.01.23)
 @app.get("/auth/history")
-async def login_history():
+async def login_history(page: int = 1, size: int = 20):
     try:
-        return {"history": get_login_history(50)}
+        return get_login_history(page, size)
     except Exception as e:
         return {"error": str(e)}
 
@@ -287,10 +289,12 @@ class UserUpdateRequest(BaseModel):
     role: str | None = None
     is_enable: str | None = None
 
+# 모든 사용자 조회
+# => 페이징 포함 (26.01.23)
 @app.get("/api/users")
-async def api_get_users(request: Request):
-    """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 여기서는 목록 반환)."""
-    return {"users": get_all_users()}
+async def api_get_users(request: Request, page: int = 1, size: int = 20):
+    """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 페이징 포함)."""
+    return get_all_users(page, size)
 
 @app.post("/api/users")
 async def api_create_user(req: UserCreateRequest):
@@ -330,13 +334,23 @@ async def get_log_content(filename: str):
     with open(file_path, "r", encoding="utf-8") as f:
         return {"filename": filename, "content": f.read()}
 
+# MCP Tool 사용 이력 조회
+# => 페이징 + 필터링 포함 (26.01.23)
 @app.get("/api/mcp/usage-history")
-async def get_usage_history(page: int = 1, size: int = 20, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """MCP Tool 사용 이력 조회 (관리자 전용)."""
+async def get_usage_history(
+    page: int = 1, 
+    size: int = 20, 
+    user_id: str | None = None,
+    tool_nm: str | None = None,
+    success: str | None = None,
+    x_user_id: str | None = Header(default=None, alias="X-User-Id")
+):
+    """MCP Tool 사용 이력 조회 (관리자 전용, 필터링 포함)."""
     if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
     user = get_user(x_user_id)
     if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return get_tool_usage_logs(page, size)
+    
+    return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
 
 # ==========================================
