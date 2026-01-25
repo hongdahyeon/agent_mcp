@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 try:
     from .db_manager import get_db_connection
 except ImportError:
@@ -61,6 +61,7 @@ def init_db():
         token_value TEXT UNIQUE NOT NULL,
         expired_at TEXT,
         is_active TEXT DEFAULT 'Y',
+        reg_dt TEXT,
         FOREIGN KEY (user_uid) REFERENCES h_user (uid)
     )
     ''')
@@ -126,9 +127,39 @@ def init_db():
         password_hash = hashlib.sha256("1234".encode()).hexdigest()
         cursor.execute('''
         INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'N')
         ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)")
+        
+    # 5-2. 외부 연동용 유저 시딩 (external)
+    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('external',))
+    if not cursor.fetchone():
+        password_hash = hashlib.sha256("external_pass_1234".encode()).hexdigest()
+        cursor.execute('''
+        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+        VALUES (?, ?, ?, ?, ?, 'Y')
+        ''', ('external', password_hash, 'External System', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        print("[DB] 외부 연동용 유저 생성됨 (ID: external)")
+        
+        # 토큰 자동 생성
+        # (순환 참조 방지를 위해 직접 쿼리 실행)
+        import secrets
+        cursor.execute("SELECT uid FROM h_user WHERE user_id = 'external'")
+        uid = cursor.fetchone()[0]
+        token_value = f"sk_mcp_{secrets.token_urlsafe(32)}"
+        expired_at = (datetime.now() + timedelta(days=3650)).strftime("%Y-%m-%d %H:%M:%S") # 10 years
+        
+        cursor.execute('''
+            INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active, reg_dt)
+            VALUES (?, ?, ?, 'Y', ?)
+        ''', (uid, token_value, expired_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        print(f"[DB] External User Token Generated: {token_value}")
+    
+    # 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
+    cursor.execute("PRAGMA table_info(h_user_token)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'reg_dt' not in columns:
+        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가")
+        cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
         
     conn.commit()
     conn.close()

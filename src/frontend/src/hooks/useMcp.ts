@@ -21,7 +21,7 @@ interface UseMcpResult {
     statusText: string;
 }
 
-export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
+export function useMcp(sseEndpoint: string = '/sse'): UseMcpResult {
     const [stats, setStats] = useState<UsageStats>({ tools: {} });
     const [availableTools, setAvailableTools] = useState<Tool[]>([]);
     const [initialized, setInitialized] = useState(false);
@@ -42,9 +42,15 @@ export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
         setLogs(prev => [`[${time}] ${type}: ${msg}`, ...prev].slice(0, 50));
     }, []);
 
-    // Send JSON-RPC
+    /*
+        Send JSON-RPC
+        - method: 호출할 도구 이름 (ex. "add")
+        - params: 도구에 전달할 파라미터 (ex. { a: 1, b: 2 })
+        - id: 요청 ID (보통 자동으로 생성되지만, 필요시 지정 가능)
+     */
     const sendRpc = useCallback(async (method: string, params: any = {}, id?: number | string) => {
         const endpoint = postEndpointRef.current;
+        console.log('>>> sendRpc called. Method:', method, 'Endpoint:', endpoint);
         if (!endpoint) {
             addLog('ERROR', 'Cannot send RPC: No postEndpoint');
             return;
@@ -57,24 +63,14 @@ export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
             id
         };
 
-        // [Phase 10] Inject User ID for Tool Usage Tracking
-        if (method === 'tools/call' && params) {
-            try {
-                const sessionStr = localStorage.getItem('user_session');
-                if (sessionStr) {
-                    const session = JSON.parse(sessionStr);
-                    const uid = session.uid || (session.user && session.user.uid);
-                    if (uid) {
-                        params.arguments._user_uid = uid;
-                    } else {
-                        console.warn("User ID (uid) not found in session, usage will not be logged.");
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to inject user info", e);
-            }
-        }
-        
+        /*
+            기존에는 {_user_uid}를 파라미터에 넣어서 보내고,
+            해당 정보를 통해 Tool 사용 기록을 남겼음.
+
+            이제는 토큰을 통해 유저를 식별하고,
+            context.py에서 유저 정보를 가져와서 Tool 사용 기록을 남김.
+         */
+
         if (method.startsWith('notifications/')) delete message.id;
 
         addLog('SEND', method);
@@ -92,10 +88,39 @@ export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
         }
     }, [addLog]); // Removed postEndpoint dep
 
+    /*
+        DB에서 통계 데이터 가져오기
+     */
+    const fetchStats = useCallback(async () => {
+        if (!postEndpoint) return;
+        try {
+            // endpoint: /messages -> /api/mcp/stats
+            const res = await fetch('/api/mcp/stats');
+            if (res.ok) {
+                const data = await res.json();
+                setStats({ tools: data });
+            }
+        } catch (e) {
+            console.error("Failed to fetch stats:", e);
+        }
+    }, [postEndpoint]);
+
+    // Update stats when endpoint is ready
+    useEffect(() => {
+        if (postEndpoint) {
+            fetchStats();
+        }
+    }, [postEndpoint, fetchStats]);
+
     // Handle SSE Connection & Messages
     useEffect(() => {
         setStatusText('Connecting...');
-        const source = new EventSource(sseEndpoint);
+
+        // [Phase 2] Token Authentication
+        // MyPage에서 발급받아 저장된 토큰이 있다면 사용
+        const token = localStorage.getItem('mcp_api_token');
+        const url = token ? `${sseEndpoint}?token=${token}` : sseEndpoint;
+        const source = new EventSource(url);
 
         source.onopen = () => {
             addLog('SYS', 'SSE Connected');
@@ -166,42 +191,26 @@ export function useMcp( sseEndpoint: string = '/sse' ): UseMcpResult {
                     if (data.error) {
                         addLog('ERROR', `RPC Error: ${data.error.message}`);
                         setLastResult(data.error);
-
-                        // Update Stats (Failure)
-                        setStats(prev => {
-                            const current = prev.tools[toolName] || { count: 0, success: 0, failure: 0 };
-                            return {
-                                ...prev,
-                                tools: {
-                                    ...prev.tools,
-                                    [toolName]: {
-                                        ...current,
-                                        count: current.count + 1,
-                                        failure: current.failure + 1
-                                    }
-                                }
-                            };
-                        });
-
+                        // Update Stats (Failure) -> Refresh from DB
+                        fetchStats();
                     } else if (data.result) {
-                        addLog('RESULT', 'Success');
                         setLastResult(data.result);
-
-                        // Update Stats (Success)
-                        setStats(prev => {
-                            const current = prev.tools[toolName] || { count: 0, success: 0, failure: 0 };
-                            return {
-                                ...prev,
-                                tools: {
-                                    ...prev.tools,
-                                    [toolName]: {
-                                        ...current,
-                                        count: current.count + 1,
-                                        success: current.success + 1
-                                    }
-                                }
-                            };
-                        });
+                        // DB 통계로 대체되므로 로컬 카운트 로직은 제거하지만,
+                        // UX를 위해 로그는 남김
+                        let isLogicalError = data.result.isError;
+                        if (data.result.content && Array.isArray(data.result.content)) {
+                            const text = data.result.content[0]?.text || '';
+                            if (text.startsWith('Error:') || text.startsWith('User not found') || text.startsWith('Missing')) {
+                                isLogicalError = true;
+                            }
+                        }
+                        if (isLogicalError) {
+                            addLog('RESULT', 'Logical Failure');
+                        } else {
+                            addLog('RESULT', 'Success');
+                        }
+                        // Refresh DB Stats
+                        fetchStats();
                     }
                 }
 

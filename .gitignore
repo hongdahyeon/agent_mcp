@@ -2,13 +2,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 .env
-venv/
 .vscode/
 build/
 dist/
 *.egg-info/
 logs/
 agent_mcp.db
-
-Scripts/
-Lib/

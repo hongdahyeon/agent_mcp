@@ -96,9 +96,24 @@ Phase 1: 사용자 토큰 관리 (완료)
 - **권한 체크**: 관리자 전용 도구(예: `get_user_info`) 실행 시 권한 검증 로직 추가
 -> 관리자 전용 도구 실행 시, user binding된 user_uid의 권한을 확인하여 권한이 일치하지 않으면 실행 거부
 
+## phase 2 추후 : sse_server.py > @app.get("/sse") > todo 해결하기
+
 
 ## Phase 3: 사용량 제한 구현 (TODO)
 사용자별/권한별 도구 사용량 제어
 - **사용량 조회 로직**: 도구 실행 전, 금일 사용량(`h_mcp_tool_usage`) 카운트
 - **제한 정책 적용**: `h_mcp_tool_limit` 정책에 따라 한도 초과 시 실행 거부 (`McpError` 반환)
 - **사용자 UI 개선**: 내 정보 페이지에서 '남은 사용 가능 횟수' 또는 '오늘의 사용량'  
+
+
+## 추가 (v)
+- [x] user별로 토큰을 발급하고, 해당 토큰을 이용해 mcp tool 사용
+- [x] Claude Desktop와 같은 외부에서 사용시 유저의 토큰을 가져다가 넣어주어야 함
+- [x] 외부용 'external' 사용자 토큰 발급 (db_init_manager.py)
+- [x] Stdio(server.py) 사용 이력 logging 적용 (audit_log decorator)
+
+## 대시보드 통계 및 안정화 (v)
+- [x] 대시보드 차트 데이터를 Local State에서 DB 데이터(get_tool_stats)로 변경
+- [x] 통계 집계 시 "Error:", "User not found" 등 논리적 실패도 Failure로 처리
+- [x] 프론트엔드 API Proxy 설정 및 URL 호출 오류 수정 (Vite/CORS 이슈 해결)
+- [x] sse_server.py 예외 발생 시 서버 크래시 방지 (RuntimeError/Proxy Error 해결)
