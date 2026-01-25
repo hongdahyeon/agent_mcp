@@ -1,14 +1,17 @@
 from mcp.server.fastmcp import FastMCP
 try:
-    from src import db_manager
+    from src import db
 except ImportError:
-    import db_manager
+    import db
 try:
-    from src.db_init_manager import init_db
+    from src.db.init_manager import init_db
 except ImportError:
-    from db_init_manager import init_db
+    try:
+        from db.init_manager import init_db
+    except ImportError:
+         from src.db.init_manager import init_db
 
-# Initialize FastMCP server
+# FastMCP server 초기화
 mcp = FastMCP("agent-mcp-server")
 
 import os
@@ -60,17 +63,18 @@ def get_user_info(user_id: str) -> str:
     """
         사용자 ID를 입력받아 사용자 정보를 반환합니다.
         '사용자 정보'라는 키워드로 사용하더라도 호출됩니다.
+        인자로 'user' 값이 넘어와도, 해당 값을 사용자 ID로 인식하고 조회합니다.
     """
     # 권한 체크 (Admin Only) - Stdio에서는 토큰으로 유저 식별 후 체크
     token = os.environ.get('token')
     if not token:
         return "Error: Authentication token required"
         
-    current_user = db_manager.get_user_by_active_token(token)
+    current_user = db.get_user_by_active_token(token)
     if not current_user or current_user.get('role') != 'ROLE_ADMIN':
-        return "Error: Admin privileges required for this tool"
+        return "WARN: Admin privileges required for this tool"
 
-    user = db_manager.get_user(user_id)
+    user = db.get_user(user_id)
     if not user:
         return f"User not found with ID: {user_id}"
     
@@ -86,23 +90,24 @@ def get_user_info(user_id: str) -> str:
 def get_user_tokens(user_id: str) -> str:
     """
         [Admin Only] 특정 사용자의 토큰 이력을 조회합니다.
+        인자로 'user' 값이 넘어와도, 해당 값을 사용자 ID로 인식하고 조회합니다.
     """
     # 권한 체크
     token = os.environ.get('token')
     if not token:
         return "Error: Authentication token required"
         
-    current_user = db_manager.get_user_by_active_token(token)
+    current_user = db.get_user_by_active_token(token)
     if not current_user or current_user.get('role') != 'ROLE_ADMIN':
-        return "Error: Admin privileges required for this tool"
+        return "WARN: Admin privileges required for this tool"
 
-    target_user = db_manager.get_user(user_id)
+    target_user = db.get_user(user_id)
     if not target_user:
         return f"User not found: {user_id}"
         
     # get_all_user_tokens 함수 사용
     try:
-        tokens = db_manager.get_all_user_tokens(target_user['uid'])
+        tokens = db.get_all_user_tokens(target_user['uid'])
         return str(tokens)
     except AttributeError:
         # 혹시 db_manager가 갱신되지 않았을 경우

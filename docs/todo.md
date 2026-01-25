@@ -117,3 +117,8 @@ Phase 1: 사용자 토큰 관리 (완료)
 - [x] 통계 집계 시 "Error:", "User not found" 등 논리적 실패도 Failure로 처리
 - [x] 프론트엔드 API Proxy 설정 및 URL 호출 오류 수정 (Vite/CORS 이슈 해결)
 - [x] sse_server.py 예외 발생 시 서버 크래시 방지 (RuntimeError/Proxy Error 해결)
+
+
+## 추후 진행 부분
+- admin관리자는 사용자들의 사용 limit 수정 가능
+- 제한 우선순위: User 설정 > Role 설정 > 기본값

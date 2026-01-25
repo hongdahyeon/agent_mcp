@@ -125,7 +125,6 @@
 - [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
 - [x] 4. 기능 검증
 
-
 ## 19. 사용자 토큰 관리 (Phase 1) (Completed)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. DB 스키마 생성 (Token Management)
@@ -144,7 +143,6 @@
 - [x] 1. DB 경로 절대 경로화 (db_manager.py)
 - [x] 2. Server 구동 시 DB 초기화 로직 추가 (server.py)
 
-
 ## 21. 도구 실행 보안 강화 (Phase 2) (Completed)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. SSE 연결 인증 (Authentication)
@@ -156,13 +154,44 @@
 - [x] 3. 관리자 권한 도구 보호
     - [x] 권한 체크 데코레이터 또는 미들웨어 (핸들러 내 로직으로 구현)
 
+## 22. 사용량 제한 구현 (Phase 3) (Completed)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 생성 (Usage Limits)
+    - [x] `h_mcp_tool_limit`: 사용자/등급(Role)별 제한 정책 테이블 (daily_limit, role, user_uid 등)
+    - [x] 초기 데이터 시딩 (ROLE_USER: 50회/일, ROLE_ADMIN: 무제한)
+- [x] 2. 사용량 집계 및 제한 API 구현
+    - [x] `GET /api/mcp/my-usage`: 내 오늘 사용량 및 잔여 횟수 조회
+    - [x] `GET /api/mcp/usage-stats`: (Admin) 사용자별/권한별 사용 통계 조회
+    - [x] 도구 실행 시(`call_tool`) 한도 체크 로직 연동
+- [x] 3. 사용자 UI 구현
+    - [x] 공통 Header: 오늘 사용량/잔여 횟수 뱃지 표시
+    - [x] Admin UsageHistory: 상단에 사용자별/권한별 통계 요약 테이블 추가
 
-## 22. 사용량 제한 구현 (Phase 3) (Todo)
-- [ ] 상세 구현 계획 수립 (implementation_plan.md)
-- [ ] 1. DB 스키마 생성 (Usage Limits)
-    - [ ] `h_mcp_tool_limit`: 사용자/등급별 제한 정책 테이블 (daily_max_count 등)
-- [ ] 2. 실행 제어 로직 구현 (Rate Limiting)
-    - [ ] 도구 실행 전 Pre-check hook 구현
-    - [ ] 금일 사용량 조회 및 한도 초과 시 `McpError` 반환
-- [ ] 3. 사용자 UI 고도화
-    - [ ] MyPage: 오늘의 사용량 / 잔여 횟수 표시
+## 23. DB Layer 리팩토링 (Phase 4)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. `src/db` 패키지 생성 및 `connection.py` 구현
+- [x] 2. `h_user` 관련 로직 분리 (`user.py`)
+- [x] 3. `h_login_hist` 관련 로직 분리 (`login_hist.py`)
+- [x] 4. `h_mcp_tool_usage` 관련 로직 분리 (`mcp_tool_usage.py`)
+- [x] 5. `h_user_token` 관련 로직 분리 (`user_token.py`)
+- [x] 6. `h_mcp_tool_limit` 관련 로직 분리 (`mcp_tool_limit.py`)
+- [x] 7. Schema 관리 로직 분리 (`schema.py`)
+- [x] 8. `__init__.py` 작성 및 모듈 Expose
+- [x] 9. `sse_server.py` 및 기타 참조 파일 import 수정
+- [x] 10. `db_manager.py` 제거 및 테스트
+
+## 24. 버그 수정 및 최적화 (Troubleshooting) (Completed)
+- [x] 1. Invalid request parameters (-32602) 해결
+    - [x] 원인: Frontend 빌드 미반영으로 인한 토큰 누락
+    - [x] 조치: `useMcp.ts` 수정 및 Frontend 재빌드 (시도) -> 근본적인 토큰 전송 로직 수정
+- [x] 2. DB Layer 리팩토링 마무리
+    - [x] `db_init_manager.py` -> `src/db/init_manager.py` 이동
+    - [x] `src/db/__init__.py`에 `init_db` 노출 및 Import 경로 수정
+- [x] 3. MCP Stdio 연결 오류 해결 (Cloud not attach)
+    - [x] 원인: `src/db/init_manager.py` (구 `db_init_manager.py`)의 `print()`(stdout) 출력이 JSON-RPC 통신 방해
+    - [x] 조치 1: `sse_server.py`는 웹 전용이므로 로그 출력 방식을 그대로 유지 (수정 후 유저가 원복)
+    - [x] 조치 2: `db_init_manager.py` -> `init_manager.py`로 이동 후, Stdio 연결 시 문제가 되는 내부 `print`들을 `sys.stderr`로 수정
+- [x] 4. Claude Desktop 연결 설정
+    - [x] `claude_desktop_config.json`을 `src/server.py` (Stdio 모드)로 실행하도록 수정
+    - [x] `server.py`의 `db_manager` 참조 오류 수정
+    - [x] `src/utils/server_audit.py` 문법 오류(IndentationError) 수정

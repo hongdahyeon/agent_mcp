@@ -1,9 +1,10 @@
 import hashlib
 from datetime import datetime, timedelta
+import sys
 try:
-    from .db_manager import get_db_connection
+    from .connection import get_db_connection
 except ImportError:
-    from db_manager import get_db_connection
+    from connection import get_db_connection
 
 # db 초기화
 def init_db():
@@ -52,8 +53,6 @@ def init_db():
     ''')
     
     # 사용자 토큰 테이블 (User Token Table)
-    # 토큰 발급 시 사용자 ID와 토큰 값, 만료일, 활성화 상태를 저장
-    # expire되면 접속이 불가능하다(401)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_user_token (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,10 +66,6 @@ def init_db():
     ''')
 
     # MCP Tool 제한 테이블 (MCP Tool Limit Table)
-    # target_type: 'ROLE' or 'USER'
-    # target_id: 'ROLE_USER' or 'hong123'
-    # limit_type: 'DAILY' or 'MONTHLY'
-    # 접속은 되지만, 한도 초과 에러 반환 (429: Too Many Requests)
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_limit (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,25 +79,24 @@ def init_db():
     
     
     # 기본 제한 정책 시딩
-    # 1. ROLE_USER: 일일 50회
     cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")
     if not cursor.fetchone():
         cursor.execute('''
         INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
         VALUES (?, ?, ?, ?, ?)
         ''', ('ROLE', 'ROLE_USER', 'DAILY', 50, 'General User Daily Limit'))
-        print("[DB] 기본 제한 정책 생성됨 (ROLE_USER: 50/Daily)")
+        print("[DB] 기본 제한 정책 생성됨 (ROLE_USER: 50/Daily)", file=sys.stderr)
 
-    # 2. ROLE_ADMIN: 일일 50회 (사실상 무제한)
+    # - 2. ROLE_ADMIN: 일일 무제한(-1)
     cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_ADMIN'")
     if not cursor.fetchone():
         cursor.execute('''
         INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
         VALUES (?, ?, ?, ?, ?)
-        ''', ('ROLE', 'ROLE_ADMIN', 'DAILY', 50, 'Admin User Daily Limit'))
-        print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: 50/Daily)")
+        ''', ('ROLE', 'ROLE_ADMIN', 'DAILY', -1, 'Admin User Daily Unlimited'))
+        print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: Unlimited)", file=sys.stderr)
     
-    # 3. 관리자 계정이 없으면 시딩 (Seed Admin User if not exists)
+    # - 3. 관리자 계정이 없으면 시딩 (Seed Admin User if not exists)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('admin',))
     if not cursor.fetchone():
         # 데모용 간단 해시 (실제 운영 시에는 bcrypt/argon2 사용 권장)
@@ -111,26 +105,26 @@ def init_db():
         INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
         VALUES (?, ?, ?, ?, ?, 'Y')
         ''', ('admin', password_hash, '관리자', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 관리자 계정 생성됨 (ID: admin / PW: 1234)")
+        print("[DB] 관리자 계정 생성됨 (ID: admin / PW: 1234)", file=sys.stderr)
     
-    # 4. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
-    # 위 CREATE TABLE에 이미 is_enable이 있지만, 기존 DB를 위해 체크
+    # - 4. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
     cursor.execute("PRAGMA table_info(h_user)")
     columns = [info[1] for info in cursor.fetchall()]
     if 'is_enable' not in columns:
-        print("[DB] 마이그레이션: h_user 테이블에 is_enable 컬럼 추가")
+        print("[DB] 마이그레이션: h_user 테이블에 is_enable 컬럼 추가", file=sys.stderr)
         cursor.execute("ALTER TABLE h_user ADD COLUMN is_enable TEXT DEFAULT 'Y'")
 
-    # 5. 비활성 유저 시딩 (테스트용)
+    # - 5. 비활성 유저 시딩 (테스트용)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('user',))
     if not cursor.fetchone():
         password_hash = hashlib.sha256("1234".encode()).hexdigest()
         cursor.execute('''
         INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+        VALUES (?, ?, ?, ?, ?, 'Y')
         ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)")
+        print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)", file=sys.stderr)
         
-    # 5-2. 외부 연동용 유저 시딩 (external)
+    # - 5-2. 외부 연동용 유저 시딩 (external)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('external',))
     if not cursor.fetchone():
         password_hash = hashlib.sha256("external_pass_1234".encode()).hexdigest()
@@ -138,10 +132,9 @@ def init_db():
         INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
         VALUES (?, ?, ?, ?, ?, 'Y')
         ''', ('external', password_hash, 'External System', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 외부 연동용 유저 생성됨 (ID: external)")
+        print("[DB] 외부 연동용 유저 생성됨 (ID: external)", file=sys.stderr)
         
         # 토큰 자동 생성
-        # (순환 참조 방지를 위해 직접 쿼리 실행)
         import secrets
         cursor.execute("SELECT uid FROM h_user WHERE user_id = 'external'")
         uid = cursor.fetchone()[0]
@@ -152,14 +145,21 @@ def init_db():
             INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active, reg_dt)
             VALUES (?, ?, ?, 'Y', ?)
         ''', (uid, token_value, expired_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print(f"[DB] External User Token Generated: {token_value}")
+        print(f"[DB] External User Token Generated: {token_value}", file=sys.stderr)
     
-    # 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
+    # - 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
     cursor.execute("PRAGMA table_info(h_user_token)")
     columns = [info[1] for info in cursor.fetchall()]
     if 'reg_dt' not in columns:
-        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가")
+        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가", file=sys.stderr)
         cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
         
+    conn.commit()
+
+    # - 7. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션)
+    cursor.execute("UPDATE h_mcp_tool_limit SET max_count = -1 WHERE target_type='ROLE' AND target_id='ROLE_ADMIN' AND max_count = 50")
+    if cursor.rowcount > 0:
+        print("[DB] 마이그레이션: ROLE_ADMIN 일일 제한을 무제한(-1)으로 변경", file=sys.stderr)
+
     conn.commit()
     conn.close()

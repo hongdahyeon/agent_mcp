@@ -41,6 +41,10 @@ export function Login({ onLogin }: Props) {
 
             const data = await res.json();
             if (data.success && data.user) {
+                // API Token 저장 (SSE 연결용)
+                if (data.token) {
+                    localStorage.setItem('mcp_api_token', data.token);
+                }
                 onLogin(data.user);
             }
         } catch (err) {
