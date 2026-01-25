@@ -9,13 +9,13 @@ import traceback
 
 # DB 관련 함수 임포트 (경로에 따라 조정 필요할 수 있음)
 try:
-    from src import db_manager
+    from src import db
 except ImportError:
     try:
-        import db_manager
+        import db
     except ImportError:
         # 실행 위치에 따라 상대 경로가 다를 수 있음
-        from .. import db_manager
+        from .. import db
 
 def audit_log(func):
     """
@@ -36,7 +36,7 @@ def audit_log(func):
         # 사용자 식별
         if token:
             try:
-                user = db_manager.get_user_by_active_token(token)
+                user = db.get_user_by_active_token(token)
                 if user:
                     user_uid = user['uid']
             except:
@@ -64,7 +64,7 @@ def audit_log(func):
             # DB 기록에 실패해도 메인 로직은 수행되어야 함
             if user_uid:
                 try:
-                    db_manager.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
+                    db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
                 except Exception:
                     pass
                     
