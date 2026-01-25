@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse
 import uvicorn
@@ -9,6 +9,10 @@ from mcp.types import Tool, TextContent
 import logging
 import os
 from datetime import datetime
+import sys
+
+# CRITICAL DEBUG: Verify exact file execution
+print(f"!!! SERVER STARTING FROM: {os.path.abspath(__file__)} !!!")
 
 # ==========================================
 # 1. 로깅 설정 (요구사항: logs/yyyy-mm-dd-hh:mm.txt)
@@ -81,13 +85,32 @@ async def list_tools():
         # Hellouser 도구 추가
         Tool(
             name="hellouser",
-            description="Greet the user",
+            description="""
+                사용자 이름을 입력받아 인사말을 반환합니다. 
+                '인사' 또는 '안녕'이라는 키워드로 사용하더라도 이 도구를 통해 응답을 생성해야 합니다.
+            """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string"}
+                    "name": {"type": "string", "description": "인사할 사용자의 이름"}
                 },
                 "required": ["name"]
+            }
+        ),
+        # DB 연동: 사용자 정보 조회 도구 추가
+        Tool(
+            name="get_user_info",
+            description="""
+                DB에서 특정 사용자의 상세 정보를 조회합니다. (비밀번호 제외)
+                '사용자 정보', '유저 정보' 조회 요청 시 이 도구를 사용합니다.
+                파라미터로 조회할 사용자의 정확한 ID(user_id)가 필요합니다.
+            """,
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "string", "description": "조회할 사용자의 ID (예: 'admin', 'user')"}
+                },
+                "required": ["user_id"]
             }
         )
     ]
@@ -99,62 +122,130 @@ async def call_tool(name: str, arguments: dict):
     logger.info(log_msg)
     print(f"[DEBUG] {log_msg}") # 콘솔 직접 출력 (fallback)
     
+    # 사용자 식별 (Frontend에서 _user_uid 전달 가정)
+    user_uid = arguments.get("_user_uid")
+    print(f">>arguments: {arguments}")
+    # 실제 Tool 인자에서 _user_uid 제거 (Tool 로직에 방해되지 않도록 cleaning)
+    tool_args = arguments.copy()
+    if "_user_uid" in tool_args:
+        del tool_args["_user_uid"]
+        
     try:
-        if name == "add":
-            a = arguments.get("a", 0)
-            b = arguments.get("b", 0)
-            result = str(a + b)
+        result_val = ""
+        
+        # ---------------------------------------------------------
+        # 0. Import Logic (Handling src.db_manager vs db_manager)
+        # ---------------------------------------------------------
+        try:
+            from src.db_manager import get_user, log_tool_usage
+        except ImportError:
+            from db_manager import get_user, log_tool_usage
+
+        # ---------------------------------------------------------
+        # 1. get_user_info (우선순위 높임 + 포함 여부 확인)
+        # ---------------------------------------------------------
+        if "get_user_info" in name:
+            logger.info(f"DEBUG: Entered get_user_info block (Matched '{name}')")
             
-            success_msg = f"Tool execution success: {name} -> {result}"
+            target_id = tool_args.get("user_id")
+            if not target_id:
+                raise ValueError("Missing user_id parameter")
+            
+            user = get_user(target_id)
+            if not user:
+                result_val = f"User not found with ID: {target_id}"
+            else:
+                user_dict = dict(user)
+                if 'password' in user_dict:
+                    del user_dict['password']
+                result_val = str(user_dict)
+            
+            success_msg = f"Tool execution success: {name} -> found"
             logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+                
+            return [TextContent(type="text", text=result_val)]
+            
+        # ---------------------------------------------------------
+        # 2. Other Tools
+        # ---------------------------------------------------------
+        if name == "add":
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a + b) # 정상 복구
+            
+            logger.info(f"Tool execution success: {name} -> {result_val}")
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+                
+            return [TextContent(type="text", text=result_val)]
             
         elif name == "subtract":
-            a = arguments.get("a", 0)
-            b = arguments.get("b", 0)
-            result = str(a - b)
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a - b)
             
-            success_msg = f"Tool execution success: {name} -> {result}"
-            logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            logger.info(f"Tool execution success: {name} -> {result_val}")
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            
+            return [TextContent(type="text", text=result_val)]
             
         elif name == "hellouser":
-            user_name = arguments.get("name", "User")
-            result = f"Hello {user_name}"
+            user_name = tool_args.get("name", "User")
+            result_val = f"Hello {user_name}"
             
-            success_msg = f"Tool execution success: {name} -> {result}"
-            logger.info(success_msg)
-            return [TextContent(type="text", text=result)]
+            logger.info(f"Tool execution success: {name} -> {result_val}")
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
             
-        raise ValueError(f"Unknown tool: {name}")
+            return [TextContent(type="text", text=result_val)]
+
+        logger.error(f"DEBUG: No tool matched. Name='{name}'")
+        # raise ValueError(f"Unknown tool: {name}")
+        return [TextContent(type="text", text=f"DEBUG FAIL: Received name='{name}' len={len(name)} hex={name.encode('utf-8').hex()}")]
     
     except Exception as e:
         error_msg = f"Tool execution failed: {name} - {str(e)}"
         logger.error(error_msg)
         print(f"[ERROR] {error_msg}")
+        
+        if user_uid:
+             # Try import again in except block if needed, but usually redundant if 'try' block succeeded
+             try:
+                try:
+                    from src.db_manager import log_tool_usage
+                except ImportError:
+                    from db_manager import log_tool_usage
+                log_tool_usage(user_uid, name, str(tool_args), False, str(e))
+             except:
+                pass
+             
         raise e
 
-
-# ==========================================
-# 3. Log Viewer API (Requirement #4)
-# ==========================================
 
 # ==========================================
 # 3. 로그 뷰어 및 인증 API
 # ==========================================
 
 try:
+    from src.db_init_manager import init_db
     from src.db_manager import (
-        init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id
+        get_user, verify_password, log_login_attempt, get_login_history,
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage,
+        get_tool_usage_logs, create_user_token, get_user_token
     )
 except ImportError:
+    from db_init_manager import init_db
     from db_manager import (
-        init_db, get_user, verify_password, log_login_attempt, get_login_history,
-        get_all_users, create_user, update_user, check_user_id
+        get_user, verify_password, log_login_attempt, get_login_history,
+        get_all_users, create_user, update_user, check_user_id, log_tool_usage,
+        get_tool_usage_logs, create_user_token, get_user_token
     )
-
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 # 시작 시 데이터베이스 초기화
 init_db()
@@ -172,48 +263,29 @@ async def login(req: LoginRequest, request: Request):
     # 사용자 조회
     user = get_user(req.user_id)
     ip_addr = request.client.host
-
     if user and verify_password(req.password, user['password']):
-        # 계정 상태 확인
-        # 컬럼/마이그레이션 이슈 대비 .get() 기본값 'Y' 사용
         if dict(user).get('is_enable', 'Y') == 'N':
             log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
-            logger.warning(f"Login failed (Disabled): {req.user_id} from {ip_addr}")
             raise HTTPException(status_code=403, detail="Account is disabled")
-
-        # 성공
         log_login_attempt(user['uid'], ip_addr, True, "Login Successful")
-        logger.info(f"Login success: {req.user_id} from {ip_addr}")
-        
-        return {
-            "success": True,
-            "user": {
-                "user_id": user['user_id'],
-                "user_nm": user['user_nm'],
-                "role": user['role']
-            }
-        }
+        return {"success": True, "user": {"uid": user['uid'], "user_id": user['user_id'], "user_nm": user['user_nm'], "role": user['role']}}
     else:
-        # 실패
         user_uid = user['uid'] if user else None
         log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
-        logger.warning(f"Login failed: {req.user_id} from {ip_addr}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+#  유저 로그인 기록 조회
+# => 페이징 포함 (26.01.23)
 @app.get("/auth/history")
-async def login_history():
-    """최근 로그인 이력 조회."""
+async def login_history(page: int = 1, size: int = 20):
     try:
-        history = get_login_history(50)
-        return {"history": history}
+        return get_login_history(page, size)
     except Exception as e:
-        logger.error(f"Failed to fetch login history: {e}")
         return {"error": str(e)}
 
 # ==========================================
-# 사용자 관리 API (관리자 전용)
+# 4. 사용자 관리 API (관리자 전용)
 # ==========================================
-
 class UserCreateRequest(BaseModel):
     user_id: str
     password: str
@@ -226,49 +298,31 @@ class UserUpdateRequest(BaseModel):
     role: str | None = None
     is_enable: str | None = None
 
+# 모든 사용자 조회
+# => 페이징 포함 (26.01.23)
 @app.get("/api/users")
-async def api_get_users(request: Request):
-    """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 여기서는 목록 반환)."""
-    # 실제 환경에서는 세션/토큰 확인 필요
-    try:
-        users = get_all_users()
-        return {"users": users}
-    except Exception as e:
-        logger.error(f"Failed to get users: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+async def api_get_users(request: Request, page: int = 1, size: int = 20):
+    """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 페이징 포함)."""
+    return get_all_users(page, size)
 
 @app.post("/api/users")
 async def api_create_user(req: UserCreateRequest):
     """새 사용자 생성."""
-    try:
-        if check_user_id(req.user_id):
-            raise HTTPException(status_code=400, detail="User ID already exists")
-            
-        create_user(req.dict())
-        logger.info(f"User created: {req.user_id}")
-        return {"success": True}
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Failed to create user: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    if check_user_id(req.user_id):
+        raise HTTPException(status_code=400, detail="User ID already exists")
+    create_user(req.dict())
+    return {"success": True}
 
 @app.put("/api/users/{user_id}")
 async def api_update_user(user_id: str, req: UserUpdateRequest):
     """사용자 정보 수정."""
-    try:
-        update_user(user_id, req.dict(exclude_unset=True))
-        logger.info(f"User updated: {user_id}")
-        return {"success": True}
-    except Exception as e:
-        logger.error(f"Failed to update user: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    update_user(user_id, req.dict(exclude_unset=True))
+    return {"success": True}
 
 @app.get("/api/users/check/{user_id}")
 async def api_check_user_id(user_id: str):
     """사용자 ID 존재 여부 확인."""
-    exists = check_user_id(user_id)
-    return {"exists": exists}
+    return {"exists": check_user_id(user_id)}
 
 @app.get("/logs")
 async def get_logs_list():
@@ -278,7 +332,6 @@ async def get_logs_list():
         files.sort(key=lambda x: os.path.getmtime(os.path.join(LOG_DIR, x)), reverse=True)
         return {"files": files}
     except Exception as e:
-        logger.error(f"Failed to list log files: {e}")
         return {"error": str(e)}
 
 @app.get("/logs/{filename}")
@@ -287,28 +340,108 @@ async def get_log_content(filename: str):
     file_path = os.path.join(LOG_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Log file not found")
+    with open(file_path, "r", encoding="utf-8") as f:
+        return {"filename": filename, "content": f.read()}
+
+# MCP Tool 사용 이력 조회
+# => 페이징 + 필터링 포함 (26.01.23)
+@app.get("/api/mcp/usage-history")
+async def get_usage_history(
+    page: int = 1, 
+    size: int = 20, 
+    user_id: str | None = None,
+    tool_nm: str | None = None,
+    success: str | None = None,
+    x_user_id: str | None = Header(default=None, alias="X-User-Id")
+):
+    """MCP Tool 사용 이력 조회 (관리자 전용, 필터링 포함)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return get_tool_usage_logs(page, size, user_id, tool_nm, success)
+
+
+
+
+# ==========================================
+# >> 사용자 토큰 관리 (Phase 1)
+# ==========================================
+@app.post("/api/user/token")
+async def api_create_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """사용자 토큰 생성/재발급."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user: raise HTTPException(status_code=401, detail="User not found")
+    
+    token = create_user_token(user['uid'])
+    return {"success": True, "token": token}
+
+@app.get("/api/user/token")
+async def api_get_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """사용자 현재 토큰 조회."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user: raise HTTPException(status_code=401, detail="User not found")
+    
+    token_data = get_user_token(user['uid'])
+    if token_data:
+        return {"exists": True, "token": token_data['token_value'], "expired_at": token_data['expired_at']}
+    else:
+        return {"exists": False}
+
+
+# ==========================================
+# 5. DB 스키마 및 데이터 관리 API (관리자 전용) (New)
+# ==========================================
+try:
+    from src.db_manager import get_all_tables, get_table_schema, get_table_data
+except ImportError:
+    from db_manager import get_all_tables, get_table_schema, get_table_data
+
+@app.get("/api/db/tables")
+async def api_get_tables(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """전체 테이블 목록 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return {"tables": get_all_tables()}
+
+@app.get("/api/db/schema/{table_name}")
+async def api_get_table_schema(table_name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """특정 테이블 스키마 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        return {"filename": filename, "content": content}
-    except Exception as e:
-        logger.error(f"Failed to read log file {filename}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {"columns": get_table_schema(table_name)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
+@app.get("/api/db/data/{table_name}")
+async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """특정 테이블 데이터 조회 (Auth Disabled)."""
+    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    # user = get_user(x_user_id)
+    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        return {"rows": get_table_data(table_name, limit)}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 # ==========================================
 # 4. 연결 설정 및 정적 파일
 # ==========================================
 
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-
+# SSE & Static
 # Vite 개발 서버를 위한 CORS 추가
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite Dev Server
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -316,13 +449,8 @@ app.add_middleware(
 
 @app.get("/sse")
 async def handle_sse(request: Request):
-    logger.info(f"New SSE connection request from {request.client.host}")
     async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp.run(
-            streams[0], 
-            streams[1], 
-            mcp.create_initialization_options()
-        )
+        await mcp.run(streams[0], streams[1], mcp.create_initialization_options())
 
 @app.post("/messages")
 async def handle_messages(request: Request):
@@ -332,15 +460,12 @@ async def handle_messages(request: Request):
 static_dir = "src/frontend/dist"
 if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-    logger.info(f"Serving React static files from {static_dir}")
 else:
-    # 이전 웹 인터페이스 폴백 또는 경고
-    logger.warning(f"React 빌드 디렉토리를 찾을 수 없습니다: {static_dir}. src/frontend 에서 'npm run build'를 실행하세요.")
     if os.path.exists("src/web"):
-         app.mount("/static", StaticFiles(directory="src/web"), name="static")
-         @app.get("/")
-         async def root():
-             return RedirectResponse(url="/static/index.html")
+        app.mount("/static", StaticFiles(directory="src/web"), name="static")
+        @app.get("/")
+        async def root(): return RedirectResponse(url="/static/index.html")
 
 if __name__ == "__main__":
+    print("!!! STARTING ON PORT 8000 !!!")
     uvicorn.run(app, host="0.0.0.0", port=8000)

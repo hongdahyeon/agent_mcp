@@ -1,84 +1,28 @@
 import sqlite3
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import secrets
 
 DB_PATH = "agent_mcp.db"
 
+# db 연결
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
-    """데이터베이스 테이블 초기화 및 관리자 계정 시딩."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    # 사용자 테이블 (User Table)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS h_user (
-        uid INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        user_nm TEXT NOT NULL,
-        role TEXT DEFAULT 'ROLE_USER',
-        last_cnn_dt TEXT
-    )
-    ''')
-    
-    # 로그인 이력 테이블 (Login History Table)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS h_login_hist (
-        uid INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_uid INTEGER,
-        login_dt TEXT NOT NULL,
-        login_ip TEXT,
-        login_success TEXT,
-        login_msg TEXT,
-        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
-    )
-    ''')
-    
-    # ... existing code ...
-    # 관리자 계정이 없으면 시딩 (Seed Admin User if not exists)
-    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('admin',))
-    if not cursor.fetchone():
-        # 데모용 간단 해시 (실제 운영 시에는 bcrypt/argon2 사용 권장)
-        password_hash = hashlib.sha256("1234".encode()).hexdigest()
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('admin', password_hash, '관리자', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 관리자 계정 생성됨 (ID: admin / PW: 1234)")
-    
-    # ... existing code ...
-    # is_enable 컬럼 존재 여부 확인 (마이그레이션)
-    cursor.execute("PRAGMA table_info(h_user)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if 'is_enable' not in columns:
-        print("[DB] 마이그레이션: h_user 테이블에 is_enable 컬럼 추가")
-        cursor.execute("ALTER TABLE h_user ADD COLUMN is_enable TEXT DEFAULT 'Y'")
 
-    # 비활성 유저 시딩 (테스트용)
-    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('user',))
-    if not cursor.fetchone():
-        password_hash = hashlib.sha256("1234".encode()).hexdigest()
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'N')
-        ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)")
-        
-    conn.commit()
-    conn.close()
 
+# 비밀번호 검증
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """비밀번호 검증 (SHA256) 및 길이 체크."""
     if len(plain_password) < 4:
         return False
     return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
+
+# 유저 ID 값으로 조회
 def get_user(user_id: str):
     """ID로 사용자 조회."""
     conn = get_db_connection()
@@ -86,6 +30,8 @@ def get_user(user_id: str):
     conn.close()
     return user
 
+
+# 유저들의 로그인 시도를 이력 테이블에 저장
 def log_login_attempt(user_uid: int, ip_address: str, success: bool, msg: str = ""):
     """로그인 시도를 이력 테이블에 기록."""
     conn = get_db_connection()
@@ -104,33 +50,62 @@ def log_login_attempt(user_uid: int, ip_address: str, success: bool, msg: str = 
     conn.commit()
     conn.close()
 
-def get_login_history(limit: int = 100):
-    """로그인 이력 조회 (사용자 정보 포함)."""
+
+
+# 유저들의 로그인 이력 조회 
+# => 페이징 포함 (26.01.23)
+def get_login_history(page: int = 1, size: int = 20):
+    """로그인 이력 조회 (페이징 포함)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 전체 개수 조회
+    cursor = conn.execute('SELECT COUNT(*) FROM h_login_hist')
+    total = cursor.fetchone()[0]
+
     query = '''
     SELECT h.uid, u.user_id, u.user_nm, h.login_dt, h.login_ip, h.login_success, h.login_msg
     FROM h_login_hist h
     LEFT JOIN h_user u ON h.user_uid = u.uid
     ORDER BY h.login_dt DESC
-    LIMIT ?
+    LIMIT ? OFFSET ?
     '''
-    rows = conn.execute(query, (limit,)).fetchall()
+    rows = conn.execute(query, (size, offset)).fetchall()
     conn.close()
     
-    # Row 객체를 dict로 변환
-    return [dict(row) for row in rows]
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [dict(row) for row in rows]
+    }
+
+
 
 # ==========================================
-# 사용자 관리 함수 (관리자용)
+# >> 사용자 관리 함수 (관리자용)
 # ==========================================
-
-def get_all_users():
-    """모든 사용자 조회 (비밀번호 제외, 관리자 목록용)."""
+# 모든 사용자 조회 (비밀번호 제외, 페이징 포함)
+def get_all_users(page: int = 1, size: int = 20):
+    """모든 사용자 조회 (비밀번호 제외, 페이징 포함)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 전체 개수 조회
+    cursor = conn.execute('SELECT COUNT(*) FROM h_user')
+    total = cursor.fetchone()[0]
+
     # 보안을 위해 비밀번호 제외
-    users = conn.execute('SELECT uid, user_id, user_nm, role, is_enable, last_cnn_dt FROM h_user ORDER BY uid ASC').fetchall()
+    query = 'SELECT uid, user_id, user_nm, role, is_enable, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
+    users = conn.execute(query, (size, offset)).fetchall()
     conn.close()
-    return [dict(row) for row in users]
+    
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": [dict(row) for row in users]
+    }
 
 def check_user_id(user_id: str) -> bool:
     """사용자 ID 중복 확인. 이미 존재하면 True 반환."""
@@ -198,3 +173,193 @@ def update_user(user_id: str, update_data: dict):
     conn.execute(query, tuple(values))
     conn.commit()
     conn.close()
+
+
+
+
+# ==========================================
+# >> MCP Tool 사용 이력 관리 함수 (관리자용)
+# ==========================================
+def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool, result: str):
+    """MCP Tool 사용 이력을 기록."""
+    conn = get_db_connection()
+    status = 'SUCCESS' if success else 'FAIL'
+    
+    conn.execute('''
+    INSERT INTO h_mcp_tool_usage (user_uid, tool_nm, tool_params, tool_success, tool_result, reg_dt)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ''', (user_uid, tool_nm, tool_params, status, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    
+    conn.commit()
+    conn.close()
+
+# MCP Tool 사용 이력 조회 
+## => 페이징 포함 (26.01.23)
+def get_tool_usage_logs(page: int = 1, size: int = 20, 
+                        search_user_id: str = None, search_tool_nm: str = None, search_success: str = None):
+    """MCP Tool 사용 이력을 조회 (페이징 + 필터링)."""
+    conn = get_db_connection()
+    offset = (page - 1) * size
+    
+    # 기본 쿼리 및 파라미터 구성
+    base_where = " FROM h_mcp_tool_usage t LEFT JOIN h_user u ON t.user_uid = u.uid WHERE 1=1"
+    params = []
+    
+    if search_user_id:
+        base_where += " AND u.user_id LIKE ?"
+        params.append(f"%{search_user_id}%")
+        
+    if search_tool_nm:
+        base_where += " AND t.tool_nm LIKE ?"
+        params.append(f"%{search_tool_nm}%")
+        
+    if search_success and search_success != 'ALL':
+        base_where += " AND t.tool_success = ?"
+        params.append(search_success)
+    
+    # 전체 개수 조회
+    count_query = "SELECT COUNT(*)" + base_where
+    cursor = conn.execute(count_query, tuple(params))
+    total = cursor.fetchone()[0]
+    
+    # 이력 조회
+    query = f'''
+        SELECT 
+            t.id,
+            t.tool_nm,
+            t.tool_params,
+            t.tool_success,
+            t.tool_result,
+            t.reg_dt,
+            u.user_id,
+            u.user_nm
+        {base_where}
+        ORDER BY t.reg_dt DESC
+        LIMIT ? OFFSET ?
+    '''
+    # LIMIT, OFFSET 파라미터 추가
+    params.extend([size, offset])
+    
+    cursor = conn.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    
+    conn.close()
+    
+    # dict 형태로 변환
+    items = []
+    for row in rows:
+        items.append({
+            "id": row['id'],
+            "tool_nm": row['tool_nm'],
+            "tool_params": row['tool_params'],
+            "tool_success": row['tool_success'],
+            "tool_result": row['tool_result'],
+            "reg_dt": row['reg_dt'],
+            "user_id": row['user_id'],
+            "user_nm": row['user_nm']
+        })
+        
+    return {
+        "total": total,
+        "page": page,
+        "size": size,
+        "items": items
+    }
+
+
+# ==========================================
+# >> DB 스키마 및 데이터 관리 함수 (관리자용)
+# ==========================================
+
+def get_all_tables():
+    """DB 내의 모든 테이블 목록 조회."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # sqlite_sequence 등 시스템 테이블은 제외
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    tables = [row['name'] for row in cursor.fetchall()]
+    conn.close()
+    return tables
+
+def get_table_schema(table_name: str):
+    """특정 테이블의 스키마 정보 조회 (PRAGMA table_info)."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Table 존재 여부 확인 (SQL Injection 방지)
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError(f"Table '{table_name}' not found")
+        
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return columns
+
+def get_table_data(table_name: str, limit: int = 100):
+    """특정 테이블의 데이터 조회 (단순 조회, Limit 지원)."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Table 존재 여부 확인
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+    if not cursor.fetchone():
+        conn.close()
+        raise ValueError(f"Table '{table_name}' not found")
+    
+    # 데이터 조회 (f-string 사용하되, table_name은 위에서 검증됨)
+    # limit는 int로 강제되므로 안전
+    query = f"SELECT * FROM {table_name} LIMIT ?"
+    cursor.execute(query, (limit,))
+    rows = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+# ==========================================
+# >> 사용자 토큰 관리 함수 (Phase 1)
+# ==========================================
+def create_user_token(user_uid: int, days_valid: int = 365) -> str:
+    """사용자 API 토큰 생성 및 저장 (기존 토큰 만료 처리)."""
+    conn = get_db_connection()
+    
+    # 안전한 랜덤 토큰 생성 (43 chars)
+    token_value = f"sk_mcp_{secrets.token_urlsafe(32)}"
+    
+    # 만료일 계산
+    expired_at = (datetime.now() + timedelta(days=days_valid)).strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 기존 활성 토큰 만료 처리 (단일 토큰 정책 유지를 위해)
+    conn.execute("UPDATE h_user_token SET is_active = 'N' WHERE user_uid = ?", (user_uid,))
+    
+    # 새 토큰 저장
+    conn.execute('''
+        INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active)
+        VALUES (?, ?, ?, 'Y')
+    ''', (user_uid, token_value, expired_at))
+    
+    conn.commit()
+    conn.close()
+    
+    return token_value
+
+def get_user_token(user_uid: int) -> dict | None:
+    """사용자의 현재 유효한 토큰 조회."""
+    conn = get_db_connection()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    token = conn.execute('''
+        SELECT token_value, expired_at 
+        FROM h_user_token 
+        WHERE user_uid = ? 
+          AND is_active = 'Y' 
+          AND expired_at > ?
+        ORDER BY id DESC LIMIT 1
+    ''', (user_uid, now_str)).fetchone()
+    
+    conn.close()
+    
+    if token:
+        return dict(token)
+    return None

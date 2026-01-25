@@ -136,11 +136,21 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 
 ---
 
-## Phase 8: User Management Page (Admin Only) [Pending]
+## Phase 8: User Management Page (Admin Only) [Completed]
 
 ### Goal
 시스템 관리자가 사용자를 관리할 수 있는 전용 페이지를 구현합니다. 사용자 목록 조회, 추가, 수정, 활성/비활성 제어 기능을 포함합니다.
 
+### Implemented Changes
+- **Backend API**: `get_all_users`, `create_user`, `update_user` API 구현 및 Admin 권한 체크 적용.
+- **Frontend**: `Users.tsx` 컴포넌트 구현 (목록, 모달, 토글).
+- **Navigation**: Admin Only 메뉴 및 라우팅 가드 적용.
+
+---
+
+## Phase 9: Login Session Persistence [Completed]
+
+### Goal
 ### Requirement Analysis
 1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
 2. **List**: ID, 이름, 권한, 활성상태 표시.
@@ -181,19 +191,202 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
     - 사용자 정보 수정 (이름 변경) -> 확인.
     - 상태 토글 (활성 <-> 비활성) -> 해당 유저 로그인 시도하여 반영 확인.
 
-# [Phase 9] 로그인 세션 유지 (Session Persistence)
 
-## 목표 (Goal Description)
-페이지를 새로고침하거나 브라우저 탭을 닫았다가 다시 열어도 로그인 상태가 유지되도록 세션 지속성을 구현합니다.
+---
 
-## 변경 제안 (Proposed Changes)
+## Phase 10: MCP Tool Usage Tracking [Completed]
 
-### Frontend
-#### [MODIFY] [App.tsx](file:///d:/hong/9.%20project/agent_mcp/src/frontend/src/App.tsx)
-- **초기화 (Initialization)**: 앱 시작 시 `localStorage.getItem('user_session')`을 확인하여 로그인 상태를 복구합니다.
-- **로그인 (Login)**: 로그인 성공 시 `localStorage.setItem('user_session', JSON.stringify(user))`로 사용자 정보를 저장합니다.
-- **로그아웃 (Logout)**: 로그아웃 시 `localStorage.removeItem('user_session')`으로 저장된 정보를 삭제합니다.
+### Goal
+MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 활용 통계 및 감사 로그(Audit Log)로 활용할 수 있도록 합니다.
 
-## 검증 계획 (Verification Plan)
-1.  **새로고침 테스트**: 로그인 -> 페이지 새로고침 -> 여전히 로그인 상태인지 확인.
-2.  **로그아웃 테스트**: 로그아웃 -> 페이지 새로고침 -> 로그아웃 상태가 유지되는지 확인.
+### Implemented Changes
+- **Schema**: `h_mcp_tool_usage` 테이블 생성.
+- **Backend**: `call_tool` 핸들러에 `user_id` 전달 및 로깅 로직(`log_tool_usage`) 추가.
+- **Frontend**: Tool 호출 시 사용자 정보 주입 로직 추가.
+#### 1. Database Schema (`src/db_manager.py`)
+- **[MODIFY] `init_db()`**: `h_mcp_tool_usage` 테이블 생성 쿼리 추가.
+    - `id` (PK, Auto Increment)
+    - `user_uid` (FK, `h_user.uid`)
+    - `tool_nm` (Text)
+    - `tool_params` (Text)
+    - `tool_success` (Text - 'SUCCESS'/'FAIL')
+    - `tool_result` (Text)
+    - `reg_dt` (Text - Timestamp)
+- **[NEW] `log_tool_usage(...)`**: Tool 사용 이력을 INSERT 하는 함수 구현.
+
+#### 2. Backend Logic (`src/sse_server.py`)
+- **[MODIFY] `call_tool` handler**:
+    - `arguments`에서 `user_id` (또는 `uid`) 추출 로직 추가.
+    - Tool 실행 전후에 DB 조회 및 로깅 함수(`log_tool_usage`) 호출.
+    - 예외 발생 시에도 'FAIL' 상태와 에러 메시지로 로깅.
+
+#### 3. Frontend Implementation (`src/frontend/src/hooks/useMcp.ts`)
+- **[MODIFY] `useMcp.ts`** or related logic:
+    - Tool 호출 메시지(JSON-RPC `tools/call`)를 보낼 때, `arguments`에 현재 로그인한 사용자 정보를 주입하는 로직 추가. 
+    - (참고: 로그인한 사용자의 `uid`를 찾아서 `_user_uid` 필드로 전송)
+
+### Verification Plan
+1. **DB Table Check**: 서버 재시작 후 `h_mcp_tool_usage` 테이블 생성 여부 확인.
+2. **Tool Execution**: 웹 인터페이스에서 `add` 또는 `hellouser` 툴 실행.
+3. **Log Retrieval**: DB를 조회하여 정상적으로 Insert 되었는지 확인.
+
+---
+
+## Phase 11: MCP Tool Usage History (Admin) [Completed]
+
+### Goal
+관리자가 사용자들의 Tool 사용 이력을 조회할 수 있는 기능을 구현한다.
+
+### Implemented Changes
+- **Backend**: `GET /mcp/usage-history` API 구현 및 페이징 처리.
+- **Frontend**: `UsageHistory.tsx` 구현 (테이블, 페이징).
+
+#### [MODIFY] [sse_server.py](src/sse_server.py)
+- **API 추가**: `GET /mcp/usage-history`
+    - Query Params: `page`, `size`
+    - Response: `{ total: number, items: UsageLog[] }`
+
+#### [MODIFY] [db_manager.py](src/db_manager.py)
+- **Function 추가**: `get_tool_usage_logs(page, size)`
+    - `h_mcp_tool_usage`와 `h_user` 테이블 조인 조회
+    - 최신순 정렬
+
+### Frontend Changes
+
+#### [NEW] [UsageHistory.tsx](src/frontend/src/components/UsageHistory.tsx)
+- 관리자 전용 사용 이력 조회 컴포넌트
+- 테이블 형태로 데이터 표시 (Time, User, Tool, Success, Params, Result)
+- 간단한 페이징 (더보기 또는 페이지네이션)
+
+#### [MODIFY] [App.tsx](src/frontend/src/App.tsx)
+- 라우팅 및 메뉴 추가 ('usage-history', '사용 이력')
+- `ROLE_ADMIN` 체크하여 접근 제어
+
+
+---
+
+## Phase 12: DB Integration Tool (User Info)
+
+### Goal
+LLM(모델)이 내부 데이터베이스의 사용자 정보에 접근할 수 있도록 `get_user_info` 도구를 추가합니다.
+이를 통해 "user의 정보 알려줘" 같은 자연어 질의에 대해 실제 DB 데이터를 기반으로 응답할 수 있게 합니다.
+
+### Security Requirement
+- **비밀번호 필드 제외**: 조회 결과에서 `password` 해시 값은 절대 노출되지 않도록 제거해야 합니다.
+
+### Proposed Changes
+
+#### 1. Backend (`src/server.py`)
+- **[MODIFY] Import**: `src/db_manager.py` import 추가.
+- **[NEW] Tool Implementation**:
+```python
+@mcp.tool()
+def get_user_info(user_id: str) -> str:
+    """
+    Get user details by user_id from the database.
+    Useful when you need to find user information like name, role, last login time, etc.
+    """
+    user = db_manager.get_user(user_id)
+    if not user:
+        return f"User not found with ID: {user_id}"
+    
+    # dict 변환 및 password 제거
+    user_dict = dict(user)
+    if 'password' in user_dict:
+        del user_dict['password']
+        
+    return str(user_dict)
+```
+
+### Verification Plan
+1. **Web Tester**:
+    - `get_user_info` 도구가 목록에 뜨는지 확인.
+    - `user_id`로 `admin` 입력 후 실행.
+    - 결과 JSON에 `password` 필드가 없는지 확인.
+    - 결과에 `user_nm`, `role` 등이 잘 나오는지 확인.
+
+
+# Phase 1: 사용자 토큰 관리 (Completed)
+
+## 1. 개요
+MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(On-Demand User Token)** 시스템을 구축합니다. 사용자는 웹 인터페이스에서 직접 API 키를 발급받고 관리할 수 있습니다.
+
+## 2. 변경 사항
+
+### A. DB 스키마 설계
+#### [NEW] h_user_token 테이블
+- 사용자별 토큰 발급 이력을 관리합니다.
+- 컬럼: `id`, `user_uid` (FK), `token_value` (Unique), `expired_at`, `is_active`
+
+### B. Backend 구현
+#### [NEW] src/db_manager.py
+- `create_user_token(user_uid, days_valid=365)`: 안전한 랜덤 토큰 생성, 기존 토큰 만료 처리, 새 토큰 저장
+- `get_user_token(user_uid)`: 현재 유효한 토큰 조회
+
+#### [MODIFY] src/sse_server.py
+- `POST /api/user/token`: 토큰 발급 요청 (로그인 필수)
+- `GET /api/user/token`: 토큰 조회 요청
+
+### C. Frontend 구현
+#### [NEW] src/frontend/src/components/MyPage.tsx
+- 내 정보 컴포넌트 신규 추가
+- 토큰이 없으면 [토큰 발급받기] 버튼 표시
+- 토큰이 있으면 토큰 값, 만료일, 복사/재발급 버튼 표시
+
+#### [MODIFY] src/frontend/src/App.tsx
+- 사이드바 하단 프로필 영역 클릭 시 'mypage' 뷰로 전환 기능 추가
+
+
+---
+
+# Phase 2: 도구 실행 보안 적용 (Security Implementation)
+
+## 1. 개요
+현재 MCP 서버는 인증 없이 누구나 접근 가능하며, 도구 실행 시 사용자 식별을 클라이언트가 보낸 인자(`_user_uid`)에 의존하고 있습니다. Phase 2에서는 **토큰 기반 인증**을 도입하고, **서버 측 세션 바인딩(User Binding)**을 통해 보안을 강화합니다.
+
+## 2. 변경 사항
+
+### A. Context 관리 (New)
+요청(Request) 스코프 내에서 인증된 사용자 정보를 저장하고 접근하기 위한 `ContextVar` 유틸리티를 추가합니다.
+
+#### [NEW] src/utils/context.py
+- `user_context: ContextVar[dict]`: 현재 요청의 사용자 정보를 담는 컨텍스트 변수
+- `set_current_user(user: dict)`: 사용자 정보 설정
+- `get_current_user() -> dict`: 사용자 정보 조회 (없으면 None)
+
+### B. SSE 연결 인증 (Modify)
+`src/sse_server.py`의 `/sse` 엔드포인트를 수정하여 토큰 검증 로직을 추가합니다.
+
+#### [MODIFY] src/sse_server.py
+1.  `handle_sse` 함수 수정:
+    - `token` 쿼리 파라미터 수신
+    - `db_manager.get_user_by_active_token(token)` 호출 (함수 신규 추가 필요)
+    - 유효한 토큰이면 `set_current_user()`로 컨텍스트 설정
+    - 유효하지 않으면 `HTTP 401 Unauthorized` 반환
+
+### C. DB Manager 확장 (Modify)
+토큰으로 사용자 정보를 조회하는 함수를 추가합니다.
+
+#### [MODIFY] src/db_manager.py
+- `get_user_by_active_token(token: str) -> dict`: 활성 토큰으로 사용자 정보 조회 (만료일 체크 포함)
+
+### D. 도구 실행 로직 개선 (Modify)
+도구 핸들러(`handle_call_tool`)에서 인자(`arguments`) 대신 컨텍스트(`get_current_user`)를 사용하도록 변경합니다.
+
+#### [MODIFY] src/sse_server.py (@mcp.call_tool)
+- 기존: `user_uid = arguments.get("_user_uid")`
+- 변경: `user = get_current_user(); user_uid = user['uid'] if user else None`
+- 인자 정리 로직 유지 (`_user_uid`가 들어오더라도 무시하거나 제거)
+
+### E. 관리자 권한 체크 (Modify)
+관리자 전용 도구(`get_user_info`) 실행 시 권한을 검증합니다.
+
+#### [MODIFY] src/sse_server.py
+- `get_user_info` 블록 내에서 `user['role'] == 'ROLE_ADMIN'` 체크 추가
+- 권한 부족 시 에러 메시지 반환 또는 실행 거부
+
+## 3. 검증 계획 (Verification Plan)
+1.  **인증 실패 테스트**: 토큰 없이 `/sse` 접근 시 401 에러 확인
+2.  **인증 성공 테스트**: 유효한 토큰으로 `/sse` 접근 시 연결 성공 확인
+3.  **User Binding 테스트**: 도구 실행 시 `h_mcp_tool_usage` 테이블에 올바른 `user_uid`가 기록되는지 확인 (클라이언트가 `_user_uid`를 보내지 않아도)
+4.  **권한 체크 테스트**: 일반 사용자 토큰으로 `get_user_info` 실행 시 거부 확인

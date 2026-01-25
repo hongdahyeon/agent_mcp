@@ -42,7 +42,6 @@
 - [x] 테스터 화면 레이아웃 개선 (Result 영역 추가)
 
 ## 9. 26-01-14 Todo 수행
-## 9. 26-01-14 Todo 수행
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. 대시보드 통계 개선 (도구별 성공/실패 차트)
 - [x] 2. 서버 사이드 로깅 구현 (logs/yyyy-mm-dd-hh:mm.txt)
@@ -60,7 +59,7 @@
 - [x] 5. 서버 연동 및 빌드 설정 (Python 정적 서빙 변경)
 - [x] 6. 마이그레이션 후 검증 및 디버깅 (SSE 연결 수정, ID 타입 체크 수정)
 
-## 11. DB & 로그인 기능 구현 (26-01-15 Todo)
+## 11. DB & 로그인 기능 구현
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. SQLite DB 구조 설계 및 연동 (h_user, h_login_hist)
 - [x] 2. 초기 데이터 시딩 (Admin/User 계정)
@@ -92,3 +91,73 @@
 - [x] 2. Frontend: App 초기화 시 localStorage 확인 및 복구
 - [x] 3. Frontend: 로그아웃 시 localStorage 제거
 - [x] 4. 기능 검증
+
+## 15. MCP Tool 사용 이력 저장 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 추가 (h_mcp_tool_usage 테이블) 및 저장 함수 구현
+- [x] 2. Server Side: Tool 실행 핸들러(log_tool_usage) 연동 및 로깅 구현
+- [x] 3. Frontend Support: Tool 호출 시 사용자 ID 전달 (Optional)
+- [x] 4. 기능 검증
+
+## 16. MCP Tool 사용 이력 조회 (Admin Only) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend API 구현 (이력 조회, 페이징)
+- [x] 2. Frontend 컴포넌트 추가 (UsageHistory.tsx)
+- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly)
+- [x] 4. 기능 검증
+
+## 17. DB 연동 Tool 추가 (User Info) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Server Side: `get_user_info` Tool 구현 (`src/server.py`)
+- [x] 2. DB Manager: 보안 처리 (비밀번호 제외 조회) 확인
+- [x] 3. 기능 검증 (Inspector 또는 Web Tester)
+
+## 18. 스키마/테이블 관리 메뉴 구현 (Admin Only) (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend API 구현
+    - [x] `GET /api/db/tables`: 전체 테이블 목록 조회
+    - [x] `GET /api/db/schema/{table_name}`: 특정 테이블 스키마 조회
+    - [x] `GET /api/db/data/{table_name}?limit=N`: 테이블 데이터 프리뷰 (limit 파라미터 지원)
+- [x] 2. Frontend 컴포넌트 구현 (SchemaManager.tsx)
+    - [x] 2-Layer Layout (Left: Table List, Right: Detail View)
+    - [x] Schema Info Table
+    - [x] Data Preview Table with Limit Input
+- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
+- [x] 4. 기능 검증
+
+
+## 19. 사용자 토큰 관리 (Phase 1) (Completed)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 스키마 생성 (Token Management)
+    - [x] `h_user_token`: 사용자별 API 토큰 관리 (token_value, expired_at 등)
+- [x] 2. Backend API 구현
+    - [x] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
+    - [x] `POST /api/user/token`: 토큰 발급 API
+    - [x] `GET /api/user/token`: 현재 유효 토큰 조회 API
+- [x] 3. Frontend UI 구현
+    - [x] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
+    - [x] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
+- [x] 4. 기능 검증
+
+
+## 20. 도구 실행 보안 강화 (Phase 2) (Todo)
+- [ ] 상세 구현 계획 수립 (implementation_plan.md)
+- [ ] 1. SSE 연결 인증 (Authentication)
+    - [ ] `GET /sse`: `token` 쿼리 파라미터 수신 및 유효성 검증 로직 추가
+    - [ ] 유효하지 않은 토큰 접근 시 401 Unauthorized 반환
+- [ ] 2. 사용자 바인딩 (User Binding)
+    - [ ] 검증된 토큰으로부터 `user_uid` 식별 및 세션/컨텍스트 저장
+    - [ ] `call_tool` 실행 시 인자(`_user_uid`) 대신 검증된 세션 유저 정보 사용
+- [ ] 3. 관리자 권한 도구 보호
+    - [ ] 권한 체크 데코레이터 또는 미들웨어 구현
+
+
+## 21. 사용량 제한 구현 (Phase 3) (Todo)
+- [ ] 상세 구현 계획 수립 (implementation_plan.md)
+- [ ] 1. DB 스키마 생성 (Usage Limits)
+    - [ ] `h_mcp_tool_limit`: 사용자/등급별 제한 정책 테이블 (daily_max_count 등)
+- [ ] 2. 실행 제어 로직 구현 (Rate Limiting)
+    - [ ] 도구 실행 전 Pre-check hook 구현
+    - [ ] 금일 사용량 조회 및 한도 초과 시 `McpError` 반환
+- [ ] 3. 사용자 UI 고도화
+    - [ ] MyPage: 오늘의 사용량 / 잔여 횟수 표시

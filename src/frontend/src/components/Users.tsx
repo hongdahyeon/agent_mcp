@@ -14,6 +14,9 @@ export function Users() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const PAGE_SIZE = 20;
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,31 +34,31 @@ export function Users() {
     const [idCheckStatus, setIdCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
     useEffect(() => {
-        fetchUsers();
+        fetchUsers(1);
     }, []);
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (pageNum: number = 1) => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/users');
-            console.log("res>> ", res);
+            const res = await fetch(`/api/users?page=${pageNum}&size=${PAGE_SIZE}`);
 
             if (!res.ok) {
-                const text = await res.text();
-                console.error("Fetch failed:", res.status, text);
+
                 throw new Error(`Failed to fetch users: ${res.status}`);
             }
 
-            const text = await res.text();
-            console.log("Response body:", text);
-
-            try {
-                const data = JSON.parse(text);
-                console.log("Parsed data:", data);
+            const data = await res.json();
+            
+            // API response structure changed to { total, page, size, items }
+            if (data.items) {
+                setUsers(data.items);
+                setTotal(data.total);
+                setPage(data.page);
+            } else if (data.users) {
+                 // Fallback
                 setUsers(data.users);
-            } catch (e) {
-                console.error("JSON Parse error:", e);
-                throw new Error('Invalid JSON response');
             }
+
         } catch (err: any) {
             console.error("Error in fetchUsers:", err);
             setError(`사용자 목록을 불러오는데 실패했습니다: ${err.message}`);
@@ -131,7 +134,8 @@ export function Users() {
             }
 
             setIsModalOpen(false);
-            fetchUsers();
+            // 생성시 1페이지, 수정시 현재페이지 유지
+            fetchUsers(modalMode === 'create' ? 1 : page);
             alert('저장되었습니다.');
         } catch (err) {
             if (err instanceof Error) alert(err.message);
@@ -150,13 +154,15 @@ export function Users() {
             });
             if (!res.ok) throw new Error('상태 변경 실패');
 
-            fetchUsers();
+            fetchUsers(page); // 현재 페이지 유지
         } catch {
             alert('상태 변경 중 오류가 발생했습니다.');
         }
     };
+    
+    const totalPages = Math.ceil(total / PAGE_SIZE);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
+    if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
 
     return (
         <div className="space-y-6">
@@ -248,6 +254,52 @@ export function Users() {
                         ))}
                     </tbody>
                 </table>
+                
+                 {/* Pagination */}
+                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                 {/* Mobile Pagination */}
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <button
+                        onClick={() => fetchUsers(Math.max(1, page - 1))}
+                        disabled={page === 1}
+                        className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+                    >
+                        이전
+                    </button>
+                    <button
+                        onClick={() => fetchUsers(Math.min(totalPages, page + 1))}
+                        disabled={page >= totalPages}
+                        className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+                    >
+                        다음
+                    </button>
+                  </div>
+                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm text-gray-700">
+                            Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button
+                                onClick={() => fetchUsers(Math.max(1, page - 1))}
+                                disabled={page === 1}
+                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                이전
+                            </button>
+                            <button
+                                onClick={() => fetchUsers(Math.min(totalPages, page + 1))}
+                                disabled={page >= totalPages}
+                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                                다음
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
             </div>
 
             {/* Modal */}

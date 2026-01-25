@@ -10,13 +10,23 @@ import clsx from 'clsx';
 export function LoginHistViewer() {
     const [history, setHistory] = useState<LoginHistory[]>([]);
     const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const PAGE_SIZE = 20;
 
-    const fetchHistory = async () => {
+    const fetchHistory = async (pageNum: number = 1) => {
         setLoading(true);
         try {
-            const res = await fetch('/auth/history');
+            const res = await fetch(`/auth/history?page=${pageNum}&size=${PAGE_SIZE}`);
             const data = await res.json();
-            if (data.history) {
+            
+            // API response structure changed to { total, page, size, items }
+            if (data.items) {
+                setHistory(data.items);
+                setTotal(data.total);
+                setPage(data.page);
+            } else if (data.history) {
+                // Fallback for old API (just in case)
                 setHistory(data.history);
             }
         } catch (error) {
@@ -27,8 +37,10 @@ export function LoginHistViewer() {
     };
 
     useEffect(() => {
-        fetchHistory();
+        fetchHistory(1);
     }, []);
+
+    const totalPages = Math.ceil(total / PAGE_SIZE);
 
     return (
         <div className="h-full flex flex-col space-y-6">
@@ -43,7 +55,7 @@ export function LoginHistViewer() {
                     </div>
                 </div>
                 <button
-                    onClick={fetchHistory}
+                    onClick={() => fetchHistory(page)}
                     disabled={loading}
                     className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
                 >
@@ -96,6 +108,35 @@ export function LoginHistViewer() {
                             )}
                         </tbody>
                     </table>
+                </div>
+                
+                 {/* Pagination */}
+                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm text-gray-700">
+                                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
+                            </p>
+                        </div>
+                        <div>
+                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button
+                                    onClick={() => fetchHistory(Math.max(1, page - 1))}
+                                    disabled={page === 1}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                >
+                                    이전
+                                </button>
+                                <button
+                                    onClick={() => fetchHistory(Math.min(totalPages, page + 1))}
+                                    disabled={page >= totalPages}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                >
+                                    다음
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
