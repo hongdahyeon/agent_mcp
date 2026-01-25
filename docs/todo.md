@@ -87,14 +87,18 @@ Phase 1: 사용자 토큰 관리 (완료)
 
 ## Phase 2: 도구 실행 보안 적용 (TODO)
 보안 강화 및 인증 절차 추가
-- [ ] **SSE 엔드포인트 인증**: 클라이언트 연결 시 `token` 파라미터 확인 및 검증
-- [ ] **User Binding**: 검증된 토큰에서 `user_uid` 추출하여 세션/컨텍스트에 저장
-- [ ] **Argument 의존성 제거**: `call_tool`에서 인자로 받는 `_user_uid` 대신 검증된 `user_uid` 사용
-- [ ] **권한 체크**: 관리자 전용 도구(예: `get_user_info`) 실행 시 권한 검증 로직 추가
+- **SSE 엔드포인트 인증**: 클라이언트 연결 시 `token` 파라미터 확인 및 검증
+-> /sse?token={token} : {token}값이 h_user_token 테이블에 보관중인 유저벌 토큰
+- **User Binding**: 검증된 토큰에서 `user_uid` 추출하여 세션/컨텍스트에 저장
+-> /sse 연결을 통해 user binding이 된 이후, 도구 사용을 하게 되면, 서버는 user binding된 user_uid를 사용하여 도구 실행
+- **Argument 의존성 제거**: `call_tool`에서 인자로 받는 `_user_uid` 대신 검증된 `user_uid` 사용
+-> args(_user_uid)를 없애고, user binding된 user_uid를 사용
+- **권한 체크**: 관리자 전용 도구(예: `get_user_info`) 실행 시 권한 검증 로직 추가
+-> 관리자 전용 도구 실행 시, user binding된 user_uid의 권한을 확인하여 권한이 일치하지 않으면 실행 거부
 
 
 ## Phase 3: 사용량 제한 구현 (TODO)
 사용자별/권한별 도구 사용량 제어
-- [ ] **사용량 조회 로직**: 도구 실행 전, 금일 사용량(`h_mcp_tool_usage`) 카운트
-- [ ] **제한 정책 적용**: `h_mcp_tool_limit` 정책에 따라 한도 초과 시 실행 거부 (`McpError` 반환)
-- [ ] **사용자 UI 개선**: 내 정보 페이지에서 '남은 사용 가능 횟수' 또는 '오늘의 사용량' 표시
+- **사용량 조회 로직**: 도구 실행 전, 금일 사용량(`h_mcp_tool_usage`) 카운트
+- **제한 정책 적용**: `h_mcp_tool_limit` 정책에 따라 한도 초과 시 실행 거부 (`McpError` 반환)
+- **사용자 UI 개선**: 내 정보 페이지에서 '남은 사용 가능 횟수' 또는 '오늘의 사용량'  
