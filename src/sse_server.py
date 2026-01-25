@@ -85,11 +85,14 @@ async def list_tools():
         # Hellouser 도구 추가
         Tool(
             name="hellouser",
-            description="Greet the user",
+            description="""
+                사용자 이름을 입력받아 인사말을 반환합니다. 
+                '인사' 또는 '안녕'이라는 키워드로 사용하더라도 이 도구를 통해 응답을 생성해야 합니다.
+            """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "name": {"type": "string"}
+                    "name": {"type": "string", "description": "인사할 사용자의 이름"}
                 },
                 "required": ["name"]
             }
@@ -97,11 +100,15 @@ async def list_tools():
         # DB 연동: 사용자 정보 조회 도구 추가
         Tool(
             name="get_user_info",
-            description="Get user details by user_id (excluding password)",
+            description="""
+                DB에서 특정 사용자의 상세 정보를 조회합니다. (비밀번호 제외)
+                '사용자 정보', '유저 정보' 조회 요청 시 이 도구를 사용합니다.
+                파라미터로 조회할 사용자의 정확한 ID(user_id)가 필요합니다.
+            """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "user_id": {"type": "string"}
+                    "user_id": {"type": "string", "description": "조회할 사용자의 ID (예: 'admin', 'user')"}
                 },
                 "required": ["user_id"]
             }
