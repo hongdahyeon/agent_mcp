@@ -4,7 +4,11 @@ from datetime import datetime, timedelta
 import os
 import secrets
 
-DB_PATH = "agent_mcp.db"
+# DB 경로 설정 (절대 경로)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 상위 디렉토리(프로젝트 루트)로 이동하여 DB 파일 저장
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+DB_PATH = os.path.join(PROJECT_ROOT, "agent_mcp.db")
 
 # db 연결
 def get_db_connection():
@@ -193,7 +197,7 @@ def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool,
     conn.commit()
     conn.close()
 
-# MCP Tool 사용 이력 조회 
+# MCP Tool 사용 이력 조회
 ## => 페이징 포함 (26.01.23)
 def get_tool_usage_logs(page: int = 1, size: int = 20, 
                         search_user_id: str = None, search_tool_nm: str = None, search_success: str = None):
@@ -205,6 +209,7 @@ def get_tool_usage_logs(page: int = 1, size: int = 20,
     base_where = " FROM h_mcp_tool_usage t LEFT JOIN h_user u ON t.user_uid = u.uid WHERE 1=1"
     params = []
     
+    # 조회 조건에 따라 -> where 쿼리 추가
     if search_user_id:
         base_where += " AND u.user_id LIKE ?"
         params.append(f"%{search_user_id}%")
@@ -262,9 +267,43 @@ def get_tool_usage_logs(page: int = 1, size: int = 20,
     return {
         "total": total,
         "page": page,
-        "size": size,
         "items": items
     }
+
+# 도구별 사용 통계 집계 데이터 반환
+# => 대시보드에서 사용
+def get_tool_stats() -> dict:
+    """도구별 사용 통계 집계 (Total, Success, Failure)."""
+    conn = get_db_connection()
+    
+    # 도구별/성공여부별 카운트
+    query = '''
+        SELECT tool_nm, tool_success, COUNT(*) as cnt
+        FROM h_mcp_tool_usage
+        GROUP BY tool_nm, tool_success
+    '''
+    cursor = conn.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    stats = {}
+    for row in rows:
+        tool_nm = row['tool_nm']
+        success_flag = row['tool_success'] # 'SUCCESS' or 'FAIL'
+        count = row['cnt']
+        
+        if tool_nm not in stats:
+            stats[tool_nm] = {'count': 0, 'success': 0, 'failure': 0}
+            
+        stats[tool_nm]['count'] += count
+        
+        # 성공 조건 체크 ('SUCCESS', 'True', 1 등)
+        if str(success_flag).upper() in ['SUCCESS', 'TRUE', '1']:
+            stats[tool_nm]['success'] += count
+        else:
+            stats[tool_nm]['failure'] += count
+            
+    return stats
 
 
 # ==========================================
@@ -334,10 +373,11 @@ def create_user_token(user_uid: int, days_valid: int = 365) -> str:
     conn.execute("UPDATE h_user_token SET is_active = 'N' WHERE user_uid = ?", (user_uid,))
     
     # 새 토큰 저장
+    reg_dt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute('''
-        INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active)
-        VALUES (?, ?, ?, 'Y')
-    ''', (user_uid, token_value, expired_at))
+        INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active, reg_dt)
+        VALUES (?, ?, ?, 'Y', ?)
+    ''', (user_uid, token_value, expired_at, reg_dt))
     
     conn.commit()
     conn.close()
@@ -363,3 +403,34 @@ def get_user_token(user_uid: int) -> dict | None:
     if token:
         return dict(token)
     return None
+
+def get_user_by_active_token(token: str) -> dict | None:
+    """활성 토큰으로 사용자 정보 조회 (만료일 체크 포함)."""
+    conn = get_db_connection()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    query = '''
+        SELECT u.uid, u.user_id, u.user_nm, u.role, u.is_enable, t.expired_at
+        FROM h_user_token t
+        JOIN h_user u ON t.user_uid = u.uid
+        WHERE t.token_value = ?
+          AND t.is_active = 'Y'
+          AND t.expired_at > ?
+    '''
+    
+    user = conn.execute(query, (token, now_str)).fetchone()
+    conn.close()
+    
+    if user:
+        return dict(user)
+    return None
+
+def get_all_user_tokens(user_uid: int) -> list[dict]:
+    """특정 사용자의 모든 토큰 이력 조회 (관리자용)."""
+    conn = get_db_connection()
+    tokens = conn.execute(
+        "SELECT token_value, expired_at, is_active, reg_dt FROM h_user_token WHERE user_uid = ? ORDER BY reg_dt DESC", 
+        (user_uid,)
+    ).fetchall()
+    conn.close()
+    return [dict(t) for t in tokens]

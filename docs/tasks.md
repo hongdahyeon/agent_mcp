@@ -139,20 +139,25 @@
     - [x] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
 - [x] 4. 기능 검증
 
-
-## 20. 도구 실행 보안 강화 (Phase 2) (Todo)
-- [ ] 상세 구현 계획 수립 (implementation_plan.md)
-- [ ] 1. SSE 연결 인증 (Authentication)
-    - [ ] `GET /sse`: `token` 쿼리 파라미터 수신 및 유효성 검증 로직 추가
-    - [ ] 유효하지 않은 토큰 접근 시 401 Unauthorized 반환
-- [ ] 2. 사용자 바인딩 (User Binding)
-    - [ ] 검증된 토큰으로부터 `user_uid` 식별 및 세션/컨텍스트 저장
-    - [ ] `call_tool` 실행 시 인자(`_user_uid`) 대신 검증된 세션 유저 정보 사용
-- [ ] 3. 관리자 권한 도구 보호
-    - [ ] 권한 체크 데코레이터 또는 미들웨어 구현
+## 20. 버그 수정: get_user_info DB 오류 (Completed)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB 경로 절대 경로화 (db_manager.py)
+- [x] 2. Server 구동 시 DB 초기화 로직 추가 (server.py)
 
 
-## 21. 사용량 제한 구현 (Phase 3) (Todo)
+## 21. 도구 실행 보안 강화 (Phase 2) (Completed)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. SSE 연결 인증 (Authentication)
+    - [x] `GET /sse`: `token` 쿼리 파라미터 수신 및 유효성 검증 로직 추가
+    - [x] 유효하지 않은 토큰 접근 시 401 Unauthorized 반환
+- [x] 2. 사용자 바인딩 (User Binding)
+    - [x] 검증된 토큰으로부터 `user_uid` 식별 및 세션/컨텍스트 저장
+    - [x] `call_tool` 실행 시 인자(`_user_uid`) 대신 검증된 세션 유저 정보 사용
+- [x] 3. 관리자 권한 도구 보호
+    - [x] 권한 체크 데코레이터 또는 미들웨어 (핸들러 내 로직으로 구현)
+
+
+## 22. 사용량 제한 구현 (Phase 3) (Todo)
 - [ ] 상세 구현 계획 수립 (implementation_plan.md)
 - [ ] 1. DB 스키마 생성 (Usage Limits)
     - [ ] `h_mcp_tool_limit`: 사용자/등급별 제한 정책 테이블 (daily_max_count 등)
