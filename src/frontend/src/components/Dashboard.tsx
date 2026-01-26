@@ -6,7 +6,6 @@ import type { UsageStats } from '../types';
 * 메인 대시보드에 대한 컴포넌트
 * - 서버 상태, 도구 사용 통계(차트), 실시간 로그를 한눈에 보여준다.
 */
-
 interface Props {
   stats: UsageStats;
   logs: string[];

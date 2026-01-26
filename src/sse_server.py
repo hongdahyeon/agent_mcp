@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi import FastAPI, Request, HTTPException, Header, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse
 import uvicorn
@@ -10,6 +10,10 @@ import logging
 import os
 from datetime import datetime
 import sys
+try:
+    from src.utils.context import set_current_user, get_current_user, clear_current_user
+except ImportError:
+    from utils.context import set_current_user, get_current_user, clear_current_user
 
 # CRITICAL DEBUG: Verify exact file execution
 print(f"!!! SERVER STARTING FROM: {os.path.abspath(__file__)} !!!")
@@ -55,6 +59,7 @@ app = FastAPI()
 mcp = Server("agent-mcp-sse")
 sse = SseServerTransport("/messages")
 
+# 2-1. Tool 목록 조회
 @mcp.list_tools()
 async def list_tools():
     return [
@@ -112,9 +117,29 @@ async def list_tools():
                 },
                 "required": ["user_id"]
             }
+        ),
+        # 관리자 전용: 사용자 토큰 이력 조회
+        Tool(
+            name="get_user_tokens",
+            description="""
+                [Admin Only] 특정 사용자의 토큰 발급 이력을 조회합니다.
+                사용자의 ID(user_id)를 입력하면 발급된 토큰 목록과 활성(is_active), 만료일 정보를 반환합니다.
+            """,
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "user_id": {"type": "string", "description": "조회할 사용자의 ID"}
+                },
+                "required": ["user_id"]
+            }
         )
     ]
 
+# 2-2. 도구 실행시, 호출되는 함수
+# (1) context에서 사용자 정보 가져오기: get_current_user()
+# (2) 도구 사용량 체크: get_user_daily_usage(), get_user_limit()
+# (3) 도구 실행: {name}에 해당하는 도구 실행
+# (4) 도구 사용 기록 남기기: log_tool_usage
 @mcp.call_tool()
 async def call_tool(name: str, arguments: dict):
     # 파일 및 콘솔에 로그 기록
@@ -122,61 +147,132 @@ async def call_tool(name: str, arguments: dict):
     logger.info(log_msg)
     print(f"[DEBUG] {log_msg}") # 콘솔 직접 출력 (fallback)
     
-    # 사용자 식별 (Frontend에서 _user_uid 전달 가정)
-    user_uid = arguments.get("_user_uid")
-    print(f">>arguments: {arguments}")
-    # 실제 Tool 인자에서 _user_uid 제거 (Tool 로직에 방해되지 않도록 cleaning)
-    tool_args = arguments.copy()
-    if "_user_uid" in tool_args:
-        del tool_args["_user_uid"]
+    try:
+        from src.db import get_user, log_tool_usage, get_user_daily_usage, get_user_limit
+    except ImportError:
+        from db import get_user, log_tool_usage, get_user_daily_usage, get_user_limit
+
+    # [1] Context에서 사용자 정보 가져오기
+    # => {token} 없는 인증되지 않은 유저의 경우 도구 실행 불가능
+    current_user = get_current_user()
+    print(f"current_user:: {current_user}")
+    if current_user:
+        user_uid = current_user['uid']
+        logger.info(f"Tool executed by authenticated user: {current_user['user_id']} ({current_user['role']})")
+    else:
+        # 인증되지 않은 사용자의 도구 실행 시도 -> 차단
+        logger.warning("Tool execution blocked: Unauthenticated")
+        return [TextContent(type="text", text="Error: Authentication required to execute tools. Please refresh token.")]
         
+
+    # [2] 사용량 제한 체크 (Rate Limiting)
+    # => Admin(-1)은 무제한, User(50)은 제한
+    daily_usage = get_user_daily_usage(user_uid)
+    daily_limit = get_user_limit(user_uid, current_user.get('role', 'ROLE_USER'))
+    
+    if daily_limit != -1 and daily_usage >= daily_limit:
+        logger.warning(f"Tool execution blocked: Daily limit exceeded ({user_uid}, Usage: {daily_usage}/{daily_limit})")
+        return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}). Please contact admin.")]
+
+    # [3] 도구 실행 준비
+    tool_args = arguments.copy()
+    # 혹시라도 클라이언트가 보냈을 _user_uid가 있다면 제거 (Clean args)
+    if "_user_uid" in tool_args:
+            del tool_args["_user_uid"]
+
+    # [4] 도구 실행
     try:
         result_val = ""
         
-        # ---------------------------------------------------------
-        # 0. Import Logic (Handling src.db_manager vs db_manager)
-        # ---------------------------------------------------------
-        try:
-            from src.db_manager import get_user, log_tool_usage
-        except ImportError:
-            from db_manager import get_user, log_tool_usage
-
         # ---------------------------------------------------------
         # 1. get_user_info (우선순위 높임 + 포함 여부 확인)
         # ---------------------------------------------------------
         if "get_user_info" in name:
             logger.info(f"DEBUG: Entered get_user_info block (Matched '{name}')")
-            
-            target_id = tool_args.get("user_id")
-            if not target_id:
-                raise ValueError("Missing user_id parameter")
-            
-            user = get_user(target_id)
-            if not user:
-                result_val = f"User not found with ID: {target_id}"
+
+            # 권한 체크 (Admin Only)
+            if not current_user or current_user.get('role') != 'ROLE_ADMIN':
+                result_val = "WARN: Admin privileges required for this tool"
+                is_success = False
             else:
-                user_dict = dict(user)
-                if 'password' in user_dict:
-                    del user_dict['password']
-                result_val = str(user_dict)
+                target_id = tool_args.get("user_id")
+                if not target_id:
+                    result_val = "Missing user_id parameter"
+                    is_success = False
+                    # raise 제거
+                    # raise ValueError("Missing user_id parameter")
+                else:
+                    # 대상 사용자 조회 (UID 획득용)
+                    target_user = get_user(target_id)
+                    
+                if not target_user:
+                    result_val = f"User not found with ID: {target_id}"
+                    is_success = False
+                else:
+                    user_dict = dict(target_user)
+                    if 'password' in user_dict:
+                        del user_dict['password']
+                    result_val = str(user_dict)
+                    is_success = True
             
-            success_msg = f"Tool execution success: {name} -> found"
-            logger.info(success_msg)
+            logger.info(f"Tool execution: {name} -> success={is_success}")
             
+            # {user_uid}가 있을 경우, usage 정보 저장
+            # => h_mcp_tool_usage 테이블의 {user_uid}컬럼이 not-null이기 때문에, user_uid가 없다면 저장 불가능
             if user_uid:
-                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+                log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
                 
+            return [TextContent(type="text", text=result_val)]
+
+        # ---------------------------------------------------------
+        # 2. get_user_tokens (Admin Only)
+        # ---------------------------------------------------------
+        if name == "get_user_tokens":
+            logger.info(f"DEBUG: Entered get_user_tokens block (Matched '{name}')")
+
+            # 권한 체크 (Admin Only)
+            if not current_user or current_user.get('role') != 'ROLE_ADMIN':
+                 result_val = "WARN: Admin privileges required for this tool"
+                 is_success = False
+            else:
+                target_id = tool_args.get("user_id")
+                if not target_id:
+                    result_val = "Error: Missing user_id parameter"
+                    is_success = False
+                    # raise 제거
+                    # raise ValueError("Missing user_id parameter")
+                else:
+                    # 대상 사용자 조회 (UID 획득용)
+                    target_user = get_user(target_id)
+                if not target_user:
+                    result_val = f"User not found: {target_id}"
+                    is_success = False
+                else:
+                    # 토큰 목록 조회
+                    tokens = get_all_user_tokens(target_user['uid'])
+                    result_val = str(tokens)
+                    is_success = True
+
+            # {user_uid}가 있을 경우, usage 정보 저장
+            # => h_mcp_tool_usage 테이블의 {user_uid}컬럼이 not-null이기 때문에, user_uid가 없다면 저장 불가능
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+            
             return [TextContent(type="text", text=result_val)]
             
         # ---------------------------------------------------------
-        # 2. Other Tools
+        # 3. Other Tools
+        # - add, subtract, hellouser
         # ---------------------------------------------------------
         if name == "add":
             a = tool_args.get("a", 0)
             b = tool_args.get("b", 0)
-            result_val = str(a + b) # 정상 복구
+            result_val = str(a + b)
             
             logger.info(f"Tool execution success: {name} -> {result_val}")
+
+            # {user_uid}가 있을 경우, usage 정보 저장
+            # => h_mcp_tool_usage 테이블의 {user_uid}컬럼이 not-null이기 때문에, user_uid가 없다면 저장 불가능
             if user_uid:
                 log_tool_usage(user_uid, name, str(tool_args), True, result_val)
                 
@@ -188,6 +284,9 @@ async def call_tool(name: str, arguments: dict):
             result_val = str(a - b)
             
             logger.info(f"Tool execution success: {name} -> {result_val}")
+
+            # {user_uid}가 있을 경우, usage 정보 저장
+            # => h_mcp_tool_usage 테이블의 {user_uid}컬럼이 not-null이기 때문에, user_uid가 없다면 저장 불가능
             if user_uid:
                 log_tool_usage(user_uid, name, str(tool_args), True, result_val)
             
@@ -213,47 +312,66 @@ async def call_tool(name: str, arguments: dict):
         print(f"[ERROR] {error_msg}")
         
         if user_uid:
-             # Try import again in except block if needed, but usually redundant if 'try' block succeeded
-             try:
+                # Try import again in except block if needed
                 try:
-                    from src.db_manager import log_tool_usage
-                except ImportError:
-                    from db_manager import log_tool_usage
-                log_tool_usage(user_uid, name, str(tool_args), False, str(e))
-             except:
-                pass
-             
-        raise e
+                    try:
+                        from src.db import log_tool_usage
+                    except ImportError:
+                        from db import log_tool_usage
+                    log_tool_usage(user_uid, name, str(tool_args), False, str(e))
+                except:
+                    pass
+                
+        # raise e 대신 에러 메시지 리턴으로 변경 (서버 크래시 방지)
+        return [TextContent(type="text", text=f"Error: {str(e)}")]
 
 
 # ==========================================
-# 3. 로그 뷰어 및 인증 API
+# 3. import db
 # ==========================================
-
 try:
-    from src.db_init_manager import init_db
-    from src.db_manager import (
+    from src.db.init_manager import init_db
+    from src.db import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs, create_user_token, get_user_token
+        get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
+        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats
     )
 except ImportError:
-    from db_init_manager import init_db
-    from db_manager import (
+    # 실행 위치에 따라 경로가 다를 수 있음
+    try:
+        from db.init_manager import init_db
+    except ImportError:
+         from src.db.init_manager import init_db
+         
+    from db import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs, create_user_token, get_user_token
+        get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
+        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
-# 시작 시 데이터베이스 초기화
-init_db()
+
+# ==========================================
+# 4. 시작 시 데이터베이스 초기화
+# ==========================================
+try:
+    init_db()
+    logger.info("Database initialized successfully.")
+except Exception as e:
+    logger.error(f"Failed to initialize database: {e}")
+    print(f"!!! DB INIT FAILED: {e} !!!")
 
 class LoginRequest(BaseModel):
     user_id: str
     password: str
 
+
+# ==========================================
+# 5. 로그인 API
+# ==========================================
 @app.post("/auth/login")
 async def login(req: LoginRequest, request: Request):
     """로그인 처리 및 이력 기록."""
@@ -267,15 +385,29 @@ async def login(req: LoginRequest, request: Request):
         if dict(user).get('is_enable', 'Y') == 'N':
             log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
             raise HTTPException(status_code=403, detail="Account is disabled")
+        # API Token 자동 발급/조회
+        token_data = get_user_token(user['uid'])
+        if token_data:
+            token_value = token_data['token_value']
+        else:
+            token_value = create_user_token(user['uid'])
+
         log_login_attempt(user['uid'], ip_addr, True, "Login Successful")
-        return {"success": True, "user": {"uid": user['uid'], "user_id": user['user_id'], "user_nm": user['user_nm'], "role": user['role']}}
+        return {
+            "success": True, 
+            "user": {"uid": user['uid'], "user_id": user['user_id'], "user_nm": user['user_nm'], "role": user['role']},
+            "token": token_value
+        }
     else:
         user_uid = user['uid'] if user else None
         log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-#  유저 로그인 기록 조회
-# => 페이징 포함 (26.01.23)
+
+# ==========================================
+# 6. 유저 로그인 기록
+# ==========================================
+# 6-1. 유저 로그인 기록 조회 API (페이징 포함)
 @app.get("/auth/history")
 async def login_history(page: int = 1, size: int = 20):
     try:
@@ -283,8 +415,9 @@ async def login_history(page: int = 1, size: int = 20):
     except Exception as e:
         return {"error": str(e)}
 
+
 # ==========================================
-# 4. 사용자 관리 API (관리자 전용)
+# 7. 사용자 관리 API (관리자 전용)
 # ==========================================
 class UserCreateRequest(BaseModel):
     user_id: str
@@ -298,13 +431,14 @@ class UserUpdateRequest(BaseModel):
     role: str | None = None
     is_enable: str | None = None
 
-# 모든 사용자 조회
-# => 페이징 포함 (26.01.23)
+
+# 7-1. 모든 사용자 조회 API (관리자 전용) => 페이징 포함 (26.01.23)
 @app.get("/api/users")
 async def api_get_users(request: Request, page: int = 1, size: int = 20):
     """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 페이징 포함)."""
     return get_all_users(page, size)
 
+# 7-2. 새 사용자 생성 API (관리자 전용)
 @app.post("/api/users")
 async def api_create_user(req: UserCreateRequest):
     """새 사용자 생성."""
@@ -313,17 +447,24 @@ async def api_create_user(req: UserCreateRequest):
     create_user(req.dict())
     return {"success": True}
 
+# 7-3. 사용자 정보 수정 API (관리자 전용)
 @app.put("/api/users/{user_id}")
 async def api_update_user(user_id: str, req: UserUpdateRequest):
     """사용자 정보 수정."""
     update_user(user_id, req.dict(exclude_unset=True))
     return {"success": True}
 
+# 7-4. 사용자 ID 존재 여부 확인 API (관리자 전용)
 @app.get("/api/users/check/{user_id}")
 async def api_check_user_id(user_id: str):
     """사용자 ID 존재 여부 확인."""
     return {"exists": check_user_id(user_id)}
 
+
+# ==========================================
+# 8. 로그 관리 API
+# ==========================================
+# 8-1. 로그 파일 목록 조회 API
 @app.get("/logs")
 async def get_logs_list():
     """수정 시간 내림차순으로 로그 파일 목록 반환."""
@@ -334,6 +475,7 @@ async def get_logs_list():
     except Exception as e:
         return {"error": str(e)}
 
+# 8-2. 로그 파일 조회 API
 @app.get("/logs/{filename}")
 async def get_log_content(filename: str):
     """특정 로그 파일의 내용 반환."""
@@ -343,8 +485,11 @@ async def get_log_content(filename: str):
     with open(file_path, "r", encoding="utf-8") as f:
         return {"filename": filename, "content": f.read()}
 
-# MCP Tool 사용 이력 조회
-# => 페이징 + 필터링 포함 (26.01.23)
+
+# ==========================================
+# 9. MCP Tool 사용 이력 조회 API
+# ==========================================
+# 9-1. MCP Tool 사용 이력 조회 API => 페이징 + 필터링 포함 (26.01.23)
 @app.get("/api/mcp/usage-history")
 async def get_usage_history(
     page: int = 1, 
@@ -361,12 +506,22 @@ async def get_usage_history(
     
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
+# 9-2. 도구별 사용 통계 집계 데이터 반환 API => 대시보드에서 사용
+@app.get("/api/mcp/stats")
+async def get_dashboard_stats():
+    """도구별 사용 통계 집계 데이터 반환."""
+    try:
+        from src.db import get_tool_stats
+    except ImportError:
+        from db import get_tool_stats
+    return get_tool_stats()
 
 
 
 # ==========================================
-# >> 사용자 토큰 관리 (Phase 1)
+# 10. 사용자 토큰 관리
 # ==========================================
+# 10-1. 사용자 토큰 생성/재발급 API
 @app.post("/api/user/token")
 async def api_create_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
     """사용자 토큰 생성/재발급."""
@@ -377,6 +532,7 @@ async def api_create_token(x_user_id: str | None = Header(default=None, alias="X
     token = create_user_token(user['uid'])
     return {"success": True, "token": token}
 
+# 10-2. 사용자 토큰 조회 API
 @app.get("/api/user/token")
 async def api_get_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
     """사용자 현재 토큰 조회."""
@@ -392,40 +548,43 @@ async def api_get_token(x_user_id: str | None = Header(default=None, alias="X-Us
 
 
 # ==========================================
-# 5. DB 스키마 및 데이터 관리 API (관리자 전용) (New)
+# 11. DB 스키마 및 데이터 관리
+# -> {ROLE_ADMIN} 권한 필요
 # ==========================================
 try:
-    from src.db_manager import get_all_tables, get_table_schema, get_table_data
+    from src.db import get_all_tables, get_table_schema, get_table_data
 except ImportError:
-    from db_manager import get_all_tables, get_table_schema, get_table_data
-
+    from db import get_all_tables, get_table_schema, get_table_data
+# 11-1. 전체 테이블 목록 조회 API (관리자 전용)
 @app.get("/api/db/tables")
 async def api_get_tables(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """전체 테이블 목록 조회 (Auth Disabled)."""
-    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    # user = get_user(x_user_id)
-    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    """전체 테이블 목록 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return {"tables": get_all_tables()}
 
+# 11-2. 특정 테이블 스키마 조회 API (관리자 전용)
 @app.get("/api/db/schema/{table_name}")
 async def api_get_table_schema(table_name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """특정 테이블 스키마 조회 (Auth Disabled)."""
-    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    # user = get_user(x_user_id)
-    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    """특정 테이블 스키마 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         return {"columns": get_table_schema(table_name)}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+# 11-3. 특정 테이블 데이터 조회 API (관리자 전용)
 @app.get("/api/db/data/{table_name}")
 async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """특정 테이블 데이터 조회 (Auth Disabled)."""
-    # if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    # user = get_user(x_user_id)
-    # if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    """특정 테이블 데이터 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         return {"rows": get_table_data(table_name, limit)}
@@ -434,29 +593,127 @@ async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str |
 
 
 # ==========================================
-# 4. 연결 설정 및 정적 파일
+# 12. 사용량 제한 및 통계
 # ==========================================
+# 12-1. 각 개인 사용자별 잔여, 사용량 조회 API
+@app.get("/api/mcp/my-usage")
+async def api_get_my_usage(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """내 금일 사용량 및 잔여 횟수 조회."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user: raise HTTPException(status_code=401, detail="User not found")
+    
+    usage = get_user_daily_usage(user['uid'])
+    limit = get_user_limit(user['uid'], user['role'])
+    
+    remaining = -1 if limit == -1 else (limit - usage)
+    if remaining < 0 and limit != -1: remaining = 0
+    
+    return {
+        "user_id": user['user_id'],
+        "usage": usage,
+        "limit": limit,
+        "remaining": remaining
+    }
 
-# SSE & Static
+# 12-2. 관리자> 전체 사용자의 사용량 통계 조회 API
+@app.get("/api/mcp/usage-stats")
+async def api_get_usage_stats(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """(관리자용) 전체 사용자 사용량 통계 조회."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return get_admin_usage_stats()
+
+
+# ==========================================
+# 13. 연결 설정 및 정적 파일
+# ==========================================
+# 13-1. SSE & Static
 # Vite 개발 서버를 위한 CORS 추가
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# 13-2. SSE
+# /sse?token={token} 형태로 접근
+# => {token} 없는 인증되지 않은 유저의 경우 Guest Mode로 처리
+# => {token} 없는 유저여도 도구 목록 조회가능, but 도구 사용은 위에서 막힘
 @app.get("/sse")
-async def handle_sse(request: Request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
-        await mcp.run(streams[0], streams[1], mcp.create_initialization_options())
+async def handle_sse(request: Request, token: str = Query(None)):
+    print(f"*** SSE REQUEST RECEIVED. Token: {token} ***")
+    try:
+        # 13-2-1. Token 확인
+        if token:
+            print(f"*** SSE REQUEST RECEIVED. Token: {token} ***")
+            try:
+                # 토큰으로 사용자 조회 (유효성 체크 포함)
+                user = get_user_by_active_token(token)
+                if user:
+                     print(f"*** Token validation result: {user} ***")
+                else:
+                     print("*** TOKEN INVALID ***")
+            except Exception as e:
+                print(f"*** Token validation error: {e} ***")
+                logger.error(f"Token validation error: {e}")
 
+        # 13-2-2. 사용자 컨텍스트 설정 (User Context Setup)
+        if user:
+            # 비활성 계정 체크
+            if dict(user).get('is_enable', 'Y') == 'N':
+                 print("*** ACCOUNT DISABLED ***")
+                 raise HTTPException(status_code=403, detail="Account is disabled")
+
+            # ContextVar에 사용자 정보 저장 -> 이후 Tool 실행 시 get_current_user()로 접근 가능
+            set_current_user(user)
+            logger.info(f"SSE Connected: {user['user_id']} ({user['role']})")
+        else:
+            # 토큰이 없거나 유효하지 않은 경우 -> Guest 모드로 접속 허용
+            # (단, Tool 실행 시 인증 체크(call_tool)에서 막힘)
+            print("*** Guest User Connected (No Token or Invalid) ***")
+            logger.warning("SSE Connected: Unauthenticated (Guest)")
+            # 컨텍스트 초기화 (이전 요청의 정보가 남지 않도록)
+            clear_current_user()
+
+        # 13-2-3. SSE 연결 및 MCP 프로토콜 실행
+        # sse.connect_sse: ASGI 요청을 SSE 연결로 업그레이드하고, 입력/출력 스트림을 생성함
+        try:
+            print("*** Entering sse.connect_sse block ***")
+            async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+                print("*** Entering mcp.run block ***")
+                
+                # mcp.run: MCP 프로토콜 루프 실행
+                # - streams[0]: Read Stream (클라이언트 -> 서버 요청)
+                # - streams[1]: Write Stream (서버 -> 클라이언트 응답)
+                # - 연결이 끊어질 때까지 계속 실행됨
+                await mcp.run(streams[0], streams[1], mcp.create_initialization_options())
+                
+                print("*** Exited mcp.run block (Connection Closed) ***")
+        except Exception as e:
+            print(f"*** SSE Error: {e} ***")
+            logger.error(f"SSE Error: {str(e)}")
+        finally:
+            print("*** SSE Connection Finalized ***")
+            
+    except Exception as e:
+        error_detail = f"SSE HANDLER EXCEPTION: {str(e)}"
+        logger.error(error_detail, exc_info=True)  # 파일 로그에 스택트레이스 포함
+        print(f"!!! {error_detail} !!!")
+        import traceback
+        traceback.print_exc()
+        raise e
+
+# 13-3. POST /messages
 @app.post("/messages")
 async def handle_messages(request: Request):
     await sse.handle_post_message(request.scope, request.receive, request._send)
 
-# React 빌드 파일 서빙 (우선순위: dist 먼저 확인)
+# 13-4. React 빌드 파일 서빙 (우선순위: dist 먼저 확인)
 static_dir = "src/frontend/dist"
 if os.path.exists(static_dir):
     app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")

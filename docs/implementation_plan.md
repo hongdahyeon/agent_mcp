@@ -390,3 +390,19 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 2.  **인증 성공 테스트**: 유효한 토큰으로 `/sse` 접근 시 연결 성공 확인
 3.  **User Binding 테스트**: 도구 실행 시 `h_mcp_tool_usage` 테이블에 올바른 `user_uid`가 기록되는지 확인 (클라이언트가 `_user_uid`를 보내지 않아도)
 4.  **권한 체크 테스트**: 일반 사용자 토큰으로 `get_user_info` 실행 시 거부 확인
+
+---
+
+# Phase 13: Bugfix - DB Connection & Initialization
+
+## 1. Issue Description
+사용자가 `get_user_info` 도구 실행 시 `no such table: h_user` 에러 발생.
+- **Cause 1**: `db_manager.py`에서 상대 경로(`"agent_mcp.db"`) 사용으로 인해 실행 컨텍스트에 따라 DB 파일 위치가 달라짐.
+- **Cause 2**: `server.py` 실행 시 `init_db()`가 호출되지 않아 테이블이 생성되지 않음.
+
+## 2. Fix Details
+- **[MODIFY] src/db_manager.py**: `DB_PATH`를 `os.path.abspath(__file__)` 기반의 절대 경로로 변경.
+- **[MODIFY] src/server.py**: 서버 시작 시 `init_db()` 호출 추가.
+
+## 3. Verification
+- 서버 재시작 후 `get_user_info` 실행 시 정상적으로 DB 조회 및 결과 반환 확인 필요.

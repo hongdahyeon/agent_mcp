@@ -54,18 +54,22 @@ export function MyPage() {
      */
     const generateToken = async () => {
         if (!confirm("새로운 토큰을 발급하시겠습니까? 기존 토큰은 즉시 만료됩니다.")) return;
-        
+
         setLoading(true);
         try {
-            const res = await fetch('/api/user/token', { 
+            const res = await fetch('/api/user/token', {
                 method: 'POST',
-                headers: getAuthHeaders() 
+                headers: getAuthHeaders()
             });
             if (res.ok) {
                 const data = await res.json();
                 if (data.success) {
+                    // [UX 개선] 발급된 토큰을 로컬 스토리지에 자동 저장하여 바로 테스트 가능하도록 함
+                    if (data.token) {
+                        localStorage.setItem('mcp_api_token', data.token);
+                    }
                     await fetchToken();
-                    alert("새 토큰이 발급되었습니다.");
+                    alert("새 토큰이 발급되었습니다.\n(클라이언트에 자동 적용되었습니다)");
                 }
             }
         } catch (e) {
@@ -130,11 +134,11 @@ export function MyPage() {
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                         <Key className="w-5 h-5 mr-2 text-amber-500" /> MCP 연결 토큰
                     </h3>
-                    
+
                     <div className="flex-1">
                         <p className="text-sm text-gray-600 mb-4">
                             Claude Desktop 등 외부 Client에서 MCP 서버에 접속할 때 사용하는 인증 키입니다.
-                            <br/>
+                            <br />
                             <span className="text-xs text-amber-600 flex items-center mt-1">
                                 <AlertTriangle className="w-3 h-3 mr-1" /> 이 키는 타인과 공유하지 마세요.
                             </span>
@@ -144,7 +148,7 @@ export function MyPage() {
                             /* 토큰 미발급 상태: 발급 버튼 표시 */
                             <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
                                 <p className="text-gray-500 mb-3 text-sm">발급된 토큰이 없습니다.</p>
-                                <button 
+                                <button
                                     onClick={generateToken}
                                     disabled={loading}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
@@ -159,10 +163,10 @@ export function MyPage() {
                                     <span className="text-xs font-semibold text-gray-500 uppercase">API Key</span>
                                     <div className="flex items-center space-x-2">
                                         <button onClick={() => setShowToken(!showToken)} className="text-gray-400 hover:text-gray-600" title={showToken ? "숨기기" : "보기"}>
-                                            {showToken ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
+                                            {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                         <button onClick={handleCopy} className="text-gray-400 hover:text-blue-600" title="복사">
-                                            {copySuccess ? <Check className="w-4 h-4 text-green-500"/> : <Copy className="w-4 h-4"/>}
+                                            {copySuccess ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>
@@ -171,11 +175,11 @@ export function MyPage() {
                                 </div>
                                 <div className="mt-3 flex justify-between items-center text-xs">
                                     <span className="text-gray-500">만료일: {tokenData?.expired_at?.substring(0, 10)}</span>
-                                    <button 
+                                    <button
                                         onClick={generateToken}
                                         className="text-blue-600 hover:text-blue-800 flex items-center"
                                     >
-                                        <RefreshCw className="w-3 h-3 mr-1"/> 재발급
+                                        <RefreshCw className="w-3 h-3 mr-1" /> 재발급
                                     </button>
                                 </div>
                             </div>
@@ -187,10 +191,10 @@ export function MyPage() {
     );
 }
 
-function UserIcon({className}: {className?: string}) {
+function UserIcon({ className }: { className?: string }) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
         </svg>
     )
 }
