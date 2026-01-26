@@ -124,7 +124,14 @@ def init_db():
         ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)", file=sys.stderr)
         
-    # - 5-2. 외부 연동용 유저 시딩 (external)
+    # - 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
+    cursor.execute("PRAGMA table_info(h_user_token)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'reg_dt' not in columns:
+        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가", file=sys.stderr)
+        cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+
+    # - 7. 외부 연동용 유저 시딩 (external)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('external',))
     if not cursor.fetchone():
         password_hash = hashlib.sha256("external_pass_1234".encode()).hexdigest()
@@ -147,16 +154,11 @@ def init_db():
         ''', (uid, token_value, expired_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         print(f"[DB] External User Token Generated: {token_value}", file=sys.stderr)
     
-    # - 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
-    cursor.execute("PRAGMA table_info(h_user_token)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if 'reg_dt' not in columns:
-        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가", file=sys.stderr)
-        cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+
         
     conn.commit()
 
-    # - 7. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션)
+    # - 8. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션)
     cursor.execute("UPDATE h_mcp_tool_limit SET max_count = -1 WHERE target_type='ROLE' AND target_id='ROLE_ADMIN' AND max_count = 50")
     if cursor.rowcount > 0:
         print("[DB] 마이그레이션: ROLE_ADMIN 일일 제한을 무제한(-1)으로 변경", file=sys.stderr)
