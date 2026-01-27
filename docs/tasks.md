@@ -195,3 +195,31 @@
     - [x] `claude_desktop_config.json`을 `src/server.py` (Stdio 모드)로 실행하도록 수정
     - [x] `server.py`의 `db_manager` 참조 오류 수정
     - [x] `src/utils/server_audit.py` 문법 오류(IndentationError) 수정
+
+## 25. 편의 기능 구현 (Completed)
+- [x] "아이디 기억하기" 기능 구현 <!-- id: 0 -->
+    - [x] `docs/rules.md` 읽기 (완료) <!-- id: 1 -->
+    - [x] 로그인 페이지(`Login.tsx`) 분석 (완료) <!-- id: 2 -->
+    - [x] 구현 계획 수립 (`implementation_plan.md`) <!-- id: 3 -->
+    - [x] UI 수정: "아이디 기억하기" 체크박스 추가 <!-- id: 4 -->
+    - [x] 로직 구현: `localStorage`를 사용하여 아이디 저장 및 불러오기 <!-- id: 5 -->
+    - [x] 테스트: 기능 동작 확인 <!-- id: 6 -->
+
+- [x] Admin 기능 강화: 도구 사용 제한 관리 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: Limit 관리 함수 추가 (mcp_tool_limit.py)
+    - [x] `get_limit_list`: 제한 목록 조회
+    - [x] `upsert_limit`: 제한 규칙 생성/수정 (User/Role)
+    - [x] `delete_limit`: 제한 규칙 삭제
+- [x] 2. API Endpoint 구현 (sse_server.py)
+    - [x] `GET /api/mcp/limits`
+    - [x] `POST /api/mcp/limits`
+    - [x] `DELETE /api/mcp/limits/{id}`
+- [x] 3. Frontend UI 구현
+    - [x] `LimitManagement.tsx`: 목록 조회, 추가(Modal), 삭제
+    - [x] Menu 추가: '사용 제한 관리' (Admin Only)
+
+    > **참고: 사용 제한 로직 (Tool Limit Logic)**
+    > - **설정 대상**: USER (사용자 ID) 또는 ROLE (역할 이름) 별로 일일 제한 횟수 설정 가능.
+    > - **덮어쓰기 로직**: 동일한 `{target_type}`과 `{target_id}`에 대해 설정 시, 중복 생성되지 않고 기존 설정이 업데이트됨. (따라서 동일 권한/유저에 대해 중복 정책 생성 불가)
+    > - **우선순위 (Priority)**: **USER > ROLE**. 특정 사용자에 대한 개별 설정이 역할(Role) 공통 설정보다 우선 적용됩니다.

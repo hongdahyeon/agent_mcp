@@ -335,7 +335,8 @@ try:
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
-        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats
+        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_limit_list, upsert_limit, delete_limit
     )
 except ImportError:
     # 실행 위치에 따라 경로가 다를 수 있음
@@ -348,7 +349,8 @@ except ImportError:
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
-        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats
+        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_limit_list, upsert_limit, delete_limit
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -625,6 +627,47 @@ async def api_get_usage_stats(x_user_id: str | None = Header(default=None, alias
     if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return get_admin_usage_stats()
+
+
+# 12-3. 관리자> 제한 정책 관리 요청을 위한 DTO
+class LimitUpsertRequest(BaseModel):
+    target_type: str # 'USER' or 'ROLE'
+    target_id: str
+    max_count: int
+    description: str | None = ""
+
+# 12-4. 관리자> 제한 정책 목록 조회 API
+@app.get("/api/mcp/limits")
+async def api_get_limits(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """제한 정책 목록 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return {"limits": get_limit_list()}
+
+# 12-5. 관리자> 제한 정책 추가/수정 API
+@app.post("/api/mcp/limits")
+async def api_upsert_limit(req: LimitUpsertRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """제한 정책 추가/수정 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    upsert_limit(req.target_type, req.target_id, req.max_count, req.description)
+    return {"success": True}
+
+# 12-6. 관리자> 제한 정책 삭제 API
+@app.delete("/api/mcp/limits/{limit_id}")
+async def api_delete_limit(limit_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """제한 정책 삭제 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    delete_limit(limit_id)
+    return {"success": True}
+
 
 
 # ==========================================
