@@ -406,3 +406,59 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ## 3. Verification
 - 서버 재시작 후 `get_user_info` 실행 시 정상적으로 DB 조회 및 결과 반환 확인 필요.
+
+# Phase 14: Admin 기능 강화: 도구 사용 제한 관리
+
+## 목표
+관리자(Admin)가 사용자의 도구 사용 제한 정책(h_mcp_tool_limit)을 직접 조회하고 수정할 수 있는 기능을 제공합니다. 이를 통해 특정 사용자에게 추가 사용량을 할당하거나, 등급별 정책을 조정할 수 있습니다.
+
+## 핵심 요구사항
+1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
+2. **Limit List**: 현재 적용된 모든 제한 정책(User별/Role별)을 조회.
+3. **Limit Upsert**: 
+    - 대상 타입(USER/ROLE)과 대상 ID(user_id/role_name) 선택.
+    - 제한 횟수 설정 (-1: 무제한).
+    - 기존 정책이 있으면 업데이트, 없으면 생성.
+4. **Limit Delete**: 적용된 제한 정책 삭제.
+
+## 변경 사항
+
+### Backend (`src/db/mcp_tool_limit.py`, `src/sse_server.py`)
+
+#### 1. DB Logic (`src/db/mcp_tool_limit.py`)
+- **[NEW] `get_limit_list(page, size)`**: 
+    - `h_mcp_tool_limit` 테이블 전체 조회.
+    - 페이징 처리.
+- **[NEW] `upsert_limit(limit_data)`**:
+    - `target_type`, `target_id` 조합으로 기존 레코드 확인.
+    - 존재하면 `UPDATE`, 없으면 `INSERT`.
+- **[NEW] `delete_limit(limit_id)`**:
+    - 해당 ID의 정책 삭제.
+
+#### 2. API Endpoints (`src/sse_server.py`)
+- **Prefix**: `/api/mcp/limits`
+- **`GET /`**: 제한 정책 목록 조회.
+- **`POST /`**: 제한 정책 추가/수정 (Body: `{target_type, target_id, max_count, description}`).
+- **`DELETE /{id}`**: 정책 삭제.
+
+### Frontend (`src/frontend`)
+
+#### 1. Components
+- **[NEW] `LimitManagement.tsx`**
+    - **Header**: "제한 정책 관리" 타이틀 및 "정책 추가" 버튼.
+    - **Table**: 정책 목록 (Type, Target, Limit, Description).
+    - **Modal**: 정책 추가/수정 폼.
+        - Target Type: Select (USER / ROLE).
+        - Target ID: Input (User ID or Role Name).
+        - Limit Count: Input (Number).
+        - Description: Input (Text).
+
+#### 2. Navigation
+- **`App.tsx`**: 라우트 추가 (`/limits`).
+- **Sidebar**: "사용 제한 관리" 메뉴 추가 (Admin Only).
+
+## 검증 계획
+1. **기본 정책 확인**: 페이지 접속 시 초기 시딩된 `ROLE_USER` (50), `ROLE_ADMIN` (-1) 정책이 보이는지 확인.
+2. **Role 정책 수정**: `ROLE_USER`의 제한을 100으로 수정 후 저장 -> 목록 갱신 확인 -> 실제 유저(`user`) 계정으로 `/api/mcp/my-usage` 조회 시 Limit이 100으로 변경되었는지 확인.
+3. **User 정책 추가**: `user` 계정에 대해 별도 제한(200) 추가 -> 저장 -> 실제 유저 계정에서 Limit 200 적용 확인 (Role보다 우선순위 확인).
+4. **정책 삭제**: User 정책 삭제 -> 다시 Role 정책(100)으로 복귀 확인.
