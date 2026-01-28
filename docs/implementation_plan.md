@@ -462,3 +462,37 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 2. **Role 정책 수정**: `ROLE_USER`의 제한을 100으로 수정 후 저장 -> 목록 갱신 확인 -> 실제 유저(`user`) 계정으로 `/api/mcp/my-usage` 조회 시 Limit이 100으로 변경되었는지 확인.
 3. **User 정책 추가**: `user` 계정에 대해 별도 제한(200) 추가 -> 저장 -> 실제 유저 계정에서 Limit 200 적용 확인 (Role보다 우선순위 확인).
 4. **정책 삭제**: User 정책 삭제 -> 다시 Role 정책(100)으로 복귀 확인.
+
+# Phase 16: 동적 Tool 생성 기능 (Dynamic Tool Creation) (important)
+
+## Goal
+관리자가 웹 UI를 통해 SQL 쿼리나 간단한 Python 로직을 수행하는 Tool을 동적으로 생성하고, 서버 재배포 없이 Agent가 즉시 사용할 수 있도록 합니다.
+
+## Implementation Steps
+
+### Phase 1: Database Schema & Init [Current]
+- **[MODIFY] `src/db/init_manager.py`**:
+    - `h_custom_tool` 테이블 생성 (name, type, definition 등)
+    - `h_custom_tool_param` 테이블 생성 (param_name, type, required 등)
+
+### Phase 2: Dynamic Tool Loader & Handler
+- **[NEW] `src/dynamic_loader.py`**:
+    - DB에서 활성 Tool 목록 로드.
+    - `pydantic.create_model`을 사용하여 인자 모델 동적 생성.
+    - `fastmcp.tool` 데코레이터에 함수 바인딩.
+- **[NEW] `src/tool_executor.py`**:
+    - **SQL Executor**: `connection.py` 활용하여 파라미터 바인딩 및 쿼리 실행.
+    - **Python Executor**: `simpleeval` 등을 활용한 샌드박스 실행.
+
+### Phase 3: Frontend Tool Builder
+- **[NEW] `src/frontend/src/components/CustomTools.tsx`**:
+    - Tool 목록 조회 및 활성/비활성 토글.
+    - Tool 생성/수정 모달 (Step-by-step UI 권장).
+    - 파라미터 추가/삭제 UI.
+    - 로직 작성 에디터 (CodeMirror 등 활용 가능성 검토).
+
+### Phase 4: Integration & Testing
+- Server 시작 시 로드 및 주기적 리로드(Optional) 또는 API 호출 시 리로드 구현.
+- 생성된 Tool이 Client(Agent)에서 정상 호출되는지 테스트.
+- SQL Injection 및 Code Injection 보안 테스트.
+

@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { Limit, LimitFormData } from '../types/LimitUsageMng';
 
+import { getAuthHeaders } from '../utils/auth';
+
 export function LimitManagement() {
     const [limits, setLimits] = useState<Limit[]>([]);
     const [loading, setLoading] = useState(true);
@@ -52,7 +54,7 @@ export function LimitManagement() {
         try {
             // const token = localStorage.getItem('mcp_api_token');
             const res = await fetch('/api/mcp/limits', {
-                headers: { 'X-User-Id': 'admin' } // 실제 구현 시에는 user context 사용
+                headers: getAuthHeaders()
             });
             
             if (!res.ok) throw new Error('Failed to fetch limit policies');
@@ -97,7 +99,7 @@ export function LimitManagement() {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'X-User-Id': 'admin'
+                    ...getAuthHeaders()
                 },
                 body: JSON.stringify(formData)
             });
@@ -119,7 +121,7 @@ export function LimitManagement() {
         try {
             const res = await fetch(`/api/mcp/limits/${id}`, {
                 method: 'DELETE',
-                headers: { 'X-User-Id': 'admin' }
+                headers: getAuthHeaders()
             });
 
             if (!res.ok) throw new Error('Failed to delete policy');

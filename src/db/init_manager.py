@@ -77,6 +77,34 @@ def init_db():
     )
     ''')
     
+    # 동적 Tool 정의 테이블 (Dynamic Tool Definition Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_custom_tool (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        description_agent TEXT,
+        description_user TEXT,
+        tool_type TEXT NOT NULL, -- 'SQL' or 'PYTHON'
+        definition TEXT NOT NULL, -- SQL Query or Python Script
+        is_active TEXT DEFAULT 'Y',
+        reg_dt TEXT NOT NULL,
+        created_by TEXT
+    )
+    ''')
+    
+    # 동적 Tool 파라미터 테이블 (Dynamic Tool Parameters Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_custom_tool_param (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tool_id INTEGER NOT NULL,
+        param_name TEXT NOT NULL,
+        param_type TEXT NOT NULL, -- 'STRING', 'NUMBER', 'BOOLEAN'
+        is_required TEXT DEFAULT 'Y', -- 'Y' or 'N'
+        description TEXT,
+        FOREIGN KEY (tool_id) REFERENCES h_custom_tool (id) ON DELETE CASCADE
+    )
+    ''')
+    
     
     # 기본 제한 정책 시딩
     cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")

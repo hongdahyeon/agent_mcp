@@ -42,6 +42,21 @@ from .mcp_tool_limit import (
     delete_limit
 )
 
+from .custom_tool import (
+    get_active_tools,
+    get_all_tools,
+    get_tool_by_id,
+    create_tool,
+    update_tool,
+    delete_tool
+)
+
+from .custom_tool_param import (
+    get_tool_params,
+    add_tool_param,
+    clear_tool_params
+)
+
 from .user_token import (
     create_user_token,
     get_user_token,
@@ -78,6 +93,15 @@ __all__ = [
     'get_limit_list',
     'upsert_limit',
     'delete_limit',
+    'get_active_tools',
+    'get_all_tools',
+    'get_tool_by_id',
+    'create_tool',
+    'update_tool',
+    'delete_tool',
+    'get_tool_params',
+    'add_tool_param',
+    'clear_tool_params',
     'create_user_token',
     'get_user_token',
     'get_user_by_active_token',

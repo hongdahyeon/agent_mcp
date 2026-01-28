@@ -9,7 +9,13 @@ except ImportError:
     try:
         from db.init_manager import init_db
     except ImportError:
-         from src.db.init_manager import init_db
+     from src.db.init_manager import init_db
+
+try:
+    from src.dynamic_loader import register_dynamic_tools
+except ImportError:
+    from dynamic_loader import register_dynamic_tools
+
 
 # FastMCP server 초기화
 mcp = FastMCP("agent-mcp-server")
@@ -118,4 +124,6 @@ if __name__ == "__main__":
     # Initialize and run the server
     # Initialize DB before running server
     init_db()
+    # Dynamic Tool Loading
+    register_dynamic_tools(mcp)
     mcp.run()
