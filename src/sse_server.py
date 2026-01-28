@@ -350,7 +350,8 @@ except ImportError:
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
         get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
-        get_limit_list, upsert_limit, delete_limit
+        get_limit_list, upsert_limit, delete_limit,
+        get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -667,6 +668,174 @@ async def api_delete_limit(limit_id: int, x_user_id: str | None = Header(default
     
     delete_limit(limit_id)
     return {"success": True}
+
+
+# ==========================================
+# 13. 동적 Tool 관리 API
+# ==========================================
+
+class ToolParamCreateRequest(BaseModel):
+    param_name: str
+    param_type: str # STRING, NUMBER, BOOLEAN
+    is_required: str = "Y"
+    description: str | None = None
+
+class CustomToolCreateRequest(BaseModel):
+    name: str
+    tool_type: str # SQL, PYTHON
+    definition: str
+    description_user: str | None = None
+    description_agent: str | None = None
+    params: list[ToolParamCreateRequest] = []
+
+class CustomToolUpdateRequest(BaseModel):
+    name: str
+    tool_type: str
+    definition: str
+    description_user: str | None = None
+    description_agent: str | None = None
+    is_active: str = "Y"
+    params: list[ToolParamCreateRequest] = []
+
+# 13-1. 동적 Tool 목록 조회 > {ROLE_ADMIN} 권한만 가능
+@app.get("/api/mcp/custom-tools")
+async def api_get_custom_tools(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 목록 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return get_all_tools()
+
+# 13-2. 동적 Tool 상세 조회 > {ROLE_ADMIN} 권한만 가능
+@app.get("/api/mcp/custom-tools/{tool_id}")
+async def api_get_custom_tool_detail(tool_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 상세 조회 (파라미터 포함)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    tool = get_tool_by_id(tool_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Tool not found")
+        
+    params = get_tool_params(tool_id)
+    return {"tool": tool, "params": params}
+
+# 13-3. 동적 Tool 생성 > {ROLE_ADMIN} 권한만 가능
+@app.post("/api/mcp/custom-tools")
+async def api_create_custom_tool(req: CustomToolCreateRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 생성."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # 1. Tool 생성
+        tool_id = create_tool(
+            name=req.name,
+            tool_type=req.tool_type,
+            definition=req.definition,
+            description_user=req.description_user or "",
+            description_agent=req.description_agent or "",
+            created_by=x_user_id
+        )
+        
+        # 2. Params 생성
+        for p in req.params:
+            add_tool_param(
+                tool_id=tool_id,
+                param_name=p.param_name,
+                param_type=p.param_type,
+                is_required=p.is_required,
+                description=p.description or ""
+            )
+            
+        return {"success": True, "tool_id": tool_id}
+    except Exception as e:
+        logger.error(f"Failed to create custom tool: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 13-4. 동적 Tool 수정 > {ROLE_ADMIN} 권한만 가능
+@app.put("/api/mcp/custom-tools/{tool_id}")
+async def api_update_custom_tool(tool_id: int, req: CustomToolUpdateRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 수정."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # 1. Tool 정보 수정
+        update_tool(
+            tool_id=tool_id,
+            name=req.name,
+            tool_type=req.tool_type,
+            definition=req.definition,
+            description_user=req.description_user or "",
+            description_agent=req.description_agent or "",
+            is_active=req.is_active
+        )
+        
+        # 2. Params 재생성 (Clear & Add)
+        clear_tool_params(tool_id)
+        for p in req.params:
+            add_tool_param(
+                tool_id=tool_id,
+                param_name=p.param_name,
+                param_type=p.param_type,
+                is_required=p.is_required,
+                description=p.description or ""
+            )
+            
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Failed to update custom tool: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 13-5. 동적 Tool 삭제 > {ROLE_ADMIN} 권한만 가능
+@app.delete("/api/mcp/custom-tools/{tool_id}")
+async def api_delete_custom_tool(tool_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 삭제."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    delete_tool(tool_id)
+    return {"success": True}
+
+# 13-6. 동적 Tool 테스트 실행 > {ROLE_ADMIN} 권한만 가능
+class ToolTestRequest(BaseModel):
+    tool_type: str # SQL, PYTHON
+    definition: str
+    params: dict # 실행 파라미터 ({ "a": 1, "b": 2 })
+
+@app.post("/api/mcp/custom-tools/test")
+async def api_test_custom_tool(req: ToolTestRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """동적 Tool 로직 테스트 실행 (저장 전 확인용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        try:
+            from src.tool_executor import execute_sql_tool, execute_python_tool
+        except ImportError:
+            from tool_executor import execute_sql_tool, execute_python_tool
+        
+        if req.tool_type == 'SQL':
+            # SQL Injection 방지 등은 Executor 내부에서 처리 (여기서는 테스트이므로 Raw Error 반환 허용)
+            result = await execute_sql_tool(req.definition, req.params)
+            return {"success": True, "result": result}
+            
+        elif req.tool_type == 'PYTHON':
+            result = await execute_python_tool(req.definition, req.params)
+            return {"success": True, "result": result}
+            
+        else:
+            raise HTTPException(status_code=400, detail="Unknown tool type")
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 

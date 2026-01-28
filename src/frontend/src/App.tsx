@@ -10,12 +10,13 @@ import { Users } from './components/Users';
 import { UsageHistory } from './components/UsageHistory';
 import { SchemaManager } from './components/SchemaManager';
 import { LimitManagement } from './components/LimitManagement';
+import { CustomTools } from './components/CustomTools';
 import { MyPage } from './components/MyPage';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench
 } from 'lucide-react';
 import type { UsageData } from './types/Usage';
 
@@ -71,7 +72,7 @@ function App() {
   });
 
   // 화면 상태 (View State)
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -197,6 +198,7 @@ function App() {
     menuItems.push({ id: 'users', label: '사용자 관리', icon: UsersIcon });
     menuItems.push({ id: 'usage-history', label: '사용 이력', icon: BarChart4 });
     menuItems.push({ id: 'limits', label: '사용 제한 관리', icon: Shield });
+    menuItems.push({ id: 'custom-tools', label: '도구 생성(Dynamic)', icon: Wrench });
     menuItems.push({ id: 'schema', label: 'DB 관리', icon: Database });
   }
 
@@ -286,6 +288,7 @@ function App() {
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}
           {activeView === 'usage-history' && user.role === 'ROLE_ADMIN' && <UsageHistory />}
           {activeView === 'limits' && user.role === 'ROLE_ADMIN' && <LimitManagement />}
+          {activeView === 'custom-tools' && user.role === 'ROLE_ADMIN' && <CustomTools />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
         </div>
       </main>

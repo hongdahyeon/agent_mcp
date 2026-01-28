@@ -219,7 +219,28 @@
     - [x] `LimitManagement.tsx`: 목록 조회, 추가(Modal), 삭제
     - [x] Menu 추가: '사용 제한 관리' (Admin Only)
 
-    > **참고: 사용 제한 로직 (Tool Limit Logic)**
-    > - **설정 대상**: USER (사용자 ID) 또는 ROLE (역할 이름) 별로 일일 제한 횟수 설정 가능.
-    > - **덮어쓰기 로직**: 동일한 `{target_type}`과 `{target_id}`에 대해 설정 시, 중복 생성되지 않고 기존 설정이 업데이트됨. (따라서 동일 권한/유저에 대해 중복 정책 생성 불가)
-    > - **우선순위 (Priority)**: **USER > ROLE**. 특정 사용자에 대한 개별 설정이 역할(Role) 공통 설정보다 우선 적용됩니다.
+## 27. 동적 Tool 생성 기능 (New)
+- [x] 상세 설계 및 구현 계획 수립 (design_dynamic_tools.md)
+- [x] 1. DB 스키마 생성 (Phase 1)
+    - [x] `h_custom_tool`: 툴 메타데이터 및 로직
+    - [x] `h_custom_tool_param`: 툴 파라미터 정의
+- [x] 2. 동적 등록 로직 구현 (Backend)
+    - [x] `src/dynamic_loader.py`: DB 로드 및 Pydantic 모델 생성
+    - [x] `src/server.py`: 서버 시작 시 동적 툴 바인딩 (통합 테스트 완료)
+- [x] 3. 실행 핸들러 구현 (Backend)
+    - [x] SQL Type 실행기 (안전한 파라미터 바인딩)
+    - [x] Python Script Type 실행기 (Safe Eval)
+- [x] 4. Frontend UI (Admin Only)
+    - [x] Custom Tool Builder (목록/생성/수정)
+    - [x] SQL/Script 에디터 및 테스트 런너
+
+## 28. 버그 수정 및 UI 개선 (Completed)
+- [x] Error Handling: `No module named 'src'` 수정 (Recursion Import 문제 해결) <!-- id: 7 -->
+- [x] Custom Tool UI 개선 <!-- id: 8 -->
+    - [x] 한글 상세 주석 추가 (CustomTools.tsx) <!-- id: 9 -->
+    - [x] Frontend Validation Check 추가 (필수값 검증) <!-- id: 10 -->
+    - [x] Inline Validation Error 표시 적용 (사용자 경험 개선) <!-- id: 11 -->
+    - [x] 파라미터 렌더링 버그 수정 (index key 사용) <!-- id: 12 -->
+- [x] Code Refactoring <!-- id: 13 -->
+    - [x] Auth Header 중앙화 (`utils/auth.ts`: `getAuthHeaders`) <!-- id: 14 -->
+    - [x] `CustomTools.tsx`, `LimitManagement.tsx`, `UsageHistory.tsx` 리팩토링 적용 <!-- id: 15 -->

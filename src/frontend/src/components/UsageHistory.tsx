@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { User } from '../types/auth';
-import { AlertCircle, CheckCircle2, XCircle, RefreshCw, Search } from 'lucide-react';
 import clsx from 'clsx';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/Usage';
+import { getAuthHeaders } from '../utils/auth';
 
 
 export function UsageHistory() {
@@ -30,10 +30,10 @@ export function UsageHistory() {
     try {
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) return;
-      const user = JSON.parse(sessionStr) as User;
+      // const user = JSON.parse(sessionStr) as User;
 
       const res = await fetch('/api/mcp/usage-stats', {
-        headers: { 'X-User-Id': user.user_id }
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         setStats(await res.json());
@@ -49,10 +49,10 @@ export function UsageHistory() {
     setLoading(true);
     setError(null);
     try {
-      // 세션에서 사용자 정보 가져오기 (헤더에 X-User-Id 추가용)
+      // 세션에서 사용자 정보 가져오기 (헤더에 X-User-Id 추가용 - getAuthHeaders 내부에서 처리됨)
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) throw new Error("No session found");
-      const user = JSON.parse(sessionStr) as User;
+      // const user = JSON.parse(sessionStr) as User;
 
       // Query String 구성
       const params = new URLSearchParams({
@@ -64,9 +64,7 @@ export function UsageHistory() {
       if (searchSuccess !== 'ALL') params.append('success', searchSuccess);
 
       const res = await fetch(`/api/mcp/usage-history?${params.toString()}`, {
-        headers: {
-          'X-User-Id': user.user_id
-        }
+        headers: getAuthHeaders()
       });
 
       if (!res.ok) {
