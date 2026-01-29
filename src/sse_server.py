@@ -10,6 +10,7 @@ import logging
 import os
 from datetime import datetime
 import sys
+import json
 try:
     from src.utils.context import set_current_user, get_current_user, clear_current_user
     from src.tool_executor import execute_sql_tool, execute_python_tool
@@ -137,6 +138,11 @@ async def list_tools():
             }
         )
     ]
+    
+    # Mark static tools as [System]
+    for t in static_tools:
+        # Prepend identifying tag to description for frontend to recognize
+        t.description = f"[System] {t.description.strip()}"
 
     # 2. 동적 도구 목록 로드 (DB)
     dynamic_tools = []
@@ -182,7 +188,7 @@ async def list_tools():
             dynamic_tools.append(
                 Tool(
                     name=tool_name,
-                    description=desc_agent,
+                    description=f"[Dynamic] {desc_agent}",
                     inputSchema={
                         "type": "object",
                         "properties": properties,
@@ -275,7 +281,7 @@ async def call_tool(name: str, arguments: dict):
                     user_dict = dict(target_user)
                     if 'password' in user_dict:
                         del user_dict['password']
-                    result_val = str(user_dict)
+                    result_val = json.dumps(user_dict, default=str, ensure_ascii=False) # json value 형태로 반환
                     is_success = True
             
             logger.info(f"Tool execution: {name} -> success={is_success}")
@@ -313,7 +319,7 @@ async def call_tool(name: str, arguments: dict):
                 else:
                     # 토큰 목록 조회
                     tokens = get_all_user_tokens(target_user['uid'])
-                    result_val = str(tokens)
+                    result_val = json.dumps(tokens, default=str, ensure_ascii=False) # json value 형태로 반환
                     is_success = True
 
             # {user_uid}가 있을 경우, usage 정보 저장
@@ -458,7 +464,8 @@ except ImportError:
         get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
         get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
-        get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id
+        get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
+        get_all_configs, get_config_value, set_config, delete_config
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -792,6 +799,60 @@ class CustomToolCreateRequest(BaseModel):
     tool_type: str # SQL, PYTHON
     definition: str
     description_user: str | None = None
+
+
+# ==========================================
+# 14. 시스템 설정 관리 API
+# ==========================================
+class SystemConfigUpsertRequest(BaseModel):
+    name: str # Renamed from conf_key
+    configuration: str # Renamed from conf_value (JSON string)
+    description: str | None = None
+    
+# 14-1. 설정 목록 조회 API (관리자 전용)
+@app.get("/api/system/config")
+async def api_get_configs(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """시스템 설정 목록 조회 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    return {"configs": get_all_configs()}
+
+# 14-2. 설정 추가/수정 API (관리자 전용)
+@app.post("/api/system/config")
+async def api_upsert_config(req: SystemConfigUpsertRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """시스템 설정 추가/수정 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not req.name or not req.configuration or not req.description:
+         raise HTTPException(status_code=400, detail="All fields (name, configuration, description) are required.")
+
+    # JSON Validation
+    try:
+        json.loads(req.configuration)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Configuration must be a valid JSON string.")
+
+    try:
+        set_config(req.name, req.configuration, req.description)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+    return {"success": True}
+
+# 14-3. 설정 삭제 API (관리자 전용)
+@app.delete("/api/system/config/{name}")
+async def api_delete_config(name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """시스템 설정 삭제 (관리자 전용)."""
+    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
+    user = get_user(x_user_id)
+    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    delete_config(name)
+    return {"success": True}
     description_agent: str | None = None
     params: list[ToolParamCreateRequest] = []
 

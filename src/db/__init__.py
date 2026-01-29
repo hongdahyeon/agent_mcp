@@ -70,6 +70,13 @@ from .schema import (
     get_table_data
 )
 
+from .system_config import (
+    get_all_configs,
+    get_config_value,
+    set_config,
+    delete_config
+)
+
 from .init_manager import init_db
 
 __all__ = [
@@ -109,5 +116,9 @@ __all__ = [
     'get_all_tables',
     'get_table_schema',
     'get_table_data',
+    'get_all_configs',
+    'get_config_value',
+    'set_config',
+    'delete_config',
     'init_db'
 ]

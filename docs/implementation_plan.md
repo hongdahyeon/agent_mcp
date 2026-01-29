@@ -470,7 +470,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ## Implementation Steps
 
-### Phase 1: Database Schema & Init [Current]
+### Phase 1: Database Schema & Init
 - **[MODIFY] `src/db/init_manager.py`**:
     - `h_custom_tool` 테이블 생성 (name, type, definition 등)
     - `h_custom_tool_param` 테이블 생성 (param_name, type, required 등)
@@ -497,7 +497,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 - SQL Injection 및 Code Injection 보안 테스트.
 
 
-# Phase 17: Dynamic Tool Tester Integration [In Progress]
+# Phase 17: Dynamic Tool Tester Integration
 
 ## Goal
 동적으로 생성된 도구를 실제 Agent(Tester)가 바로 조회하고 실행할 수 있도록 통합합니다. 서버 재시작 없이 목록을 갱신하고, 실행 결과를 직관적으로 확인할 수 있어야 합니다.
@@ -529,3 +529,94 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 3. **Execution**: 생성한 동적 도구 실행 및 결과(JSON Parsing) 확인.
 4. **Usage Log**: 실행 후 Admin > Usage History에 기록 남는지 확인.
 
+# Phase 18: Tool Output JSONization
+
+## Goal
+사용자가 도구의 출력을 더 쉽게 파악하고(JSON 구조화), 도구의 출처(시스템 vs 동적)를 명확히 구별할 수 있도록 개선합니다.
+
+## Requirements
+1. **JSON Output**: `get_user_info`, `get_user_tokens` 등 객체를 반환하는 도구는 Python `dict` 문자열(`{'k': 'v'}`) 대신 표준 `JSON` 문자열(`{"k": "v"}`)을 반환해야 합니다. Frontend의 Smart JSON View가 이를 인식하여 구조화해서 보여줄 수 있습니다.
+2. **Source Distinction**: 도구 목록에서 이 도구가 `server.py`에 정의된 정적 도구인지, Admin이 생성한 동적 도구인지 구분되어야 합니다.
+
+## Proposed Changes
+
+### 1. Backend (`src/sse_server.py`)
+- **JSON Serialization**: `get_user_info`, `get_user_tokens` 결과 반환 시 `str(dict)` 대신 `json.dumps(dict, ensure_ascii=False)` 사용.
+- **Description Tagging**: `list_tools` 반환 시,
+    - Static Tools: Description 앞에 `[System]` 태그 추가.
+    - Dynamic Tools: Description 앞에 `[Dynamic]` 태그 추가.
+
+### 2. Frontend (`src/frontend/src/components/Tester.tsx`)
+- **Dropdown UI**: 도구 선택 옵션 렌더링 시 Description의 태그를 확인.
+    - `[System]` -> 도구명 뒤에 `(System)` 표시.
+    - `[Dynamic]` -> 도구명 뒤에 `(Dynamic)` 표시.
+    - 태그 자체는 툴팁이 아닌 이상 UI에 노출되지 않도록 처리하거나, 이름 옆에만 표기.
+- **Copy Button**: 실행 결과(JSON) 영역 우측 상단에 복사 아이콘(또는 버튼) 추가. 클릭 시 클립보드에 전체 결과 텍스트 복사.
+
+## Verification Plan
+1. **Tool List**: Tester 화면 진입 시 도구 목록에 `(System)` / `(Dynamic)` 라벨이 붙어있는지 확인.
+2. **Execution**: 
+    - `get_user_info` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+    - `get_user_tokens` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+
+# Phase 19: System Config Management UI [Refactor]
+
+## Goal
+기존 단순 Key-Value 구조의 설정을 **그룹화된 JSON 설정 관리** 방식으로 변경합니다.
+예: "Gmail Settings"라는 이름 하에 `host`, `port`, `auth` 정보를 JSON 형태로 한 번에 관리.
+
+## Requirements
+1.  **Database Refactor**:
+    -   Existing `h_system_config` table MUST be dropped and recreated.
+    -   **Columns**:
+        -   `name` (PK, Text): 설정 그룹명 (예: `gmail_config`)
+        -   `configuration` (Text/JSON): 설정 값들의 JSON 문자열
+        -   `description` (Text): 설명
+        -   `reg_dt` (Text): 등록일시
+2.  **Backend API**:
+    -   Update APIs to handle JSON content.
+    -   Validation checks for valid JSON format.
+3.  **Frontend UI**:
+    -   **List**: Show `name`, `description`. `configuration` might be too long, show preview or hidden.
+    -   **Add/Edit**:
+        -   `name` (Input)
+        -   `configuration` (Textarea - JSON format validation required)
+        -   `description` (Input)
+
+## Proposed Changes
+
+### 1. Database Schema (`src/db/init_manager.py`)
+-   Logic to DROP `h_system_config` if schema doesn't match or force drop for this transition.
+-   Create new table with `name`, `configuration`, `description`.
+-   Seed default:
+    ```json
+    {
+        "name": "gmail_config",
+        "configuration": {
+            "mail.host": "smtp.gmail.com",
+            "mail.port": 587,
+            "mail.username": "",
+            "mail.password": ""
+        },
+        "description": "Gmail SMTP Settings"
+    }
+    ```
+
+### 2. Backend Logic (`src/db/system_config.py`)
+-   Update `get_config(name)` logic.
+-   Update `set_config` logic to store JSON string.
+
+### 3. Frontend (`SystemConfig.tsx`)
+-   Update table columns.
+-   Update Form:
+    -   Use a textarea for `configuration`.
+    -   Add "Beautify JSON" or simple validation before submit.
+
+# Phase 20: Gmail Service Integration [Planned]
+
+## Goal
+`h_system_config`의 `gmail_config` (JSON)를 파싱하여 메일 발송.
+
+### 1. Mailer Utility
+-   Get config by name `gmail_config`.
+-   Parse JSON -> extract host, port, user, password.
