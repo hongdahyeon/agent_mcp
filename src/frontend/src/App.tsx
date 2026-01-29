@@ -13,13 +13,14 @@ import { LimitManagement } from './components/LimitManagement';
 import { CustomTools } from './components/CustomTools';
 import { MyPage } from './components/MyPage';
 import { SystemConfig } from './components/SystemConfig';
+import { EmailSender } from './components/EmailSender';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
 } from 'lucide-react';
-import type { UsageData } from './types/Usage';
+import type { UsageData } from './types/usage';
 
 // 세션은 최대 3시간까지 유지할 수 있다.
 const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
@@ -73,7 +74,7 @@ function App() {
   });
 
   // 화면 상태 (View State)
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'config'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'config' | 'email'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -211,7 +212,8 @@ function App() {
       label: '기능',
       items: [
         { id: 'tester', label: '도구 테스터', icon: Terminal },
-        { id: 'logs', label: '로그 뷰어', icon: FileText }
+        { id: 'logs', label: '로그 뷰어', icon: FileText },
+        { id: 'email', label: '메일 발송', icon: Send }
       ]
     },
     {
@@ -333,6 +335,7 @@ function App() {
           {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
+          {activeView === 'email' && user && <EmailSender user={user} />}
           {activeView === 'history' && <LoginHistViewer />}
           {activeView === 'mypage' && <MyPage />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}

@@ -77,6 +77,13 @@ from .system_config import (
     delete_config
 )
 
+from .email_manager import (
+    log_email,
+    update_email_status,
+    get_email_logs,
+    cancel_email_log
+)
+
 from .init_manager import init_db
 
 __all__ = [
@@ -120,5 +127,9 @@ __all__ = [
     'get_config_value',
     'set_config',
     'delete_config',
+    'log_email',
+    'update_email_status',
+    'get_email_logs',
+    'cancel_email_log',
     'init_db'
 ]

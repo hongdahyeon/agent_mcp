@@ -126,6 +126,24 @@ def init_db():
     )
     ''')
     
+    # 메일 발송 이력 테이블 (Email History Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_email_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_uid INTEGER NOT NULL, -- Sender User UID
+        recipient TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        content TEXT NOT NULL,
+        is_scheduled INTEGER DEFAULT 0, -- 0: Immediate, 1: Scheduled
+        scheduled_dt TEXT, -- YYYY-MM-DD HH:MM
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime')),
+        sent_dt TEXT,
+        status TEXT DEFAULT 'PENDING', -- PENDING, SENT, FAILED, CANCELLED
+        error_msg TEXT,
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+    )
+    ''')
+    
     # 기본 시스템 설정 시딩
     gmail_config = {
         "mail.host": "smtp.gmail.com",
