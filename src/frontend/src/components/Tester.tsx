@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Tool } from '../types';
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, RefreshCw } from 'lucide-react';
 
 /* 
 * 도구 사용하기 화면에 대한 컴포넌트
@@ -14,11 +14,15 @@ interface Props {
     tools: Tool[];
     sendRpc: (method: string, params?: any, id?: number | string) => Promise<void>;
     lastResult: any;
+    refreshTools?: () => void;
 }
 
-export function Tester({ tools, sendRpc, lastResult }: Props) {
+export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const [selectedTool, setSelectedTool] = useState<string>('');
     const [formValues, setFormValues] = useState<Record<string, any>>({});
+    
+    // Result handling (Local state for display control)
+    const [displayResult, setDisplayResult] = useState<any>(lastResult || null);
 
     const currentTool = tools.find(t => t.name === selectedTool);
 
@@ -27,7 +31,15 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
     const handleToolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedTool(e.target.value);
         setFormValues({});
+        setDisplayResult(null); // Reset result display
     };
+
+    // Update display result when new result arrives from prop
+    useEffect(() => {
+        if (lastResult) {
+            setDisplayResult(lastResult);
+        }
+    }, [lastResult]);
 
     const handleExecute = () => {
         if (!currentTool) return;
@@ -55,15 +67,26 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">테스트할 도구 선택</label>
-                    <select
-                        value={selectedTool}
-                        onChange={handleToolChange}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
-                    >
-                        <option value="">선택하세요 (Select Tool)</option>
-                        {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
-                        {tools.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                    </select>
+                    <div className="flex items-center space-x-2">
+                        <select
+                            value={selectedTool}
+                            onChange={handleToolChange}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
+                        >
+                            <option value="">선택하세요 (Select Tool)</option>
+                            {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
+                            {tools.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                        </select>
+                        {refreshTools && (
+                            <button 
+                                onClick={refreshTools}
+                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                title="도구 목록 새로고침"
+                            >
+                                <RefreshCw className="w-5 h-5" />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex-1 space-y-4 mb-6 overflow-y-auto">
@@ -104,10 +127,28 @@ export function Tester({ tools, sendRpc, lastResult }: Props) {
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[400px]">
                 <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
                     실행 결과 (JSON)
-                    {lastResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
+                    {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
                 </h3>
                 <pre className="flex-1 bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 shadow-inner">
-                    {lastResult ? JSON.stringify(lastResult, null, 2) : <span className="text-gray-600">// 실행 결과가 여기에 표시됩니다.</span>}
+                    {displayResult ? (() => {
+                        // Deep clone to avoid mutating state directly if we were modifying it (though here we just render)
+                        // But we want to parse the 'text' fields if they are JSON strings
+                        const renderedResult = JSON.parse(JSON.stringify(displayResult));
+                        if (renderedResult.content && Array.isArray(renderedResult.content)) {
+                            renderedResult.content.forEach((item: any) => {
+                                if (item.type === 'text' && typeof item.text === 'string') {
+                                    try {
+                                        // Try to parse inner JSON
+                                        const parsed = JSON.parse(item.text);
+                                        item.text = parsed;
+                                    } catch (e) {
+                                        // Ignore if not valid JSON, keep as string
+                                    }
+                                }
+                            });
+                        }
+                        return JSON.stringify(renderedResult, null, 2);
+                    })() : <span className="text-gray-600"> ... 실행 결과가 여기에 표시됩니다.</span>}
                 </pre>
             </div>
         </div>

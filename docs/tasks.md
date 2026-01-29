@@ -244,3 +244,13 @@
 - [x] Code Refactoring <!-- id: 13 -->
     - [x] Auth Header 중앙화 (`utils/auth.ts`: `getAuthHeaders`) <!-- id: 14 -->
     - [x] `CustomTools.tsx`, `LimitManagement.tsx`, `UsageHistory.tsx` 리팩토링 적용 <!-- id: 15 -->
+
+## 29. Dynamic Tool Tester 연동 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: `list_tools`에서 DB의 동적 도구 로드 및 반환
+- [x] 2. Backend: `call_tool`에서 동적 도구(`ToolExecutor`) 실행 로직 연동
+- [x] 3. Frontend: `Tester.tsx` UI 개선
+    - [x] 도구 변경 시 폼/결과 리셋 로직
+    - [x] 도구 목록 새로고침 버튼 추가 (`useMcp.ts` 연동)
+    - [x] 실행 결과 JSON View 개선 (Result 텍스트 내 JSON 파싱 표시)
+    - [ ] 기능 검증 (Build & Test)

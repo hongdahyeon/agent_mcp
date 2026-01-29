@@ -19,6 +19,7 @@ interface UseMcpResult {
     logs: string[];
     connected: boolean;
     statusText: string;
+    refreshTools: () => void;
 }
 
 /*
@@ -174,7 +175,7 @@ export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = 
                     if (data.result) {
                         const toolCount = data.result.tools ? data.result.tools.length : 0;
                         addLog('SYSTEM', `Tools fetched: ${toolCount} found`);
-
+                        console.log('Full Result:', data.result);
                         if (data.result.tools) {
                             setAvailableTools(data.result.tools);
                         } else {
@@ -252,5 +253,11 @@ export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = 
         }
     }, [connected, postEndpoint, initialized, sendRpc, addLog]);
 
-    return { stats, availableTools, sendRpc, initialized, lastResult, logs, connected, statusText };
+    // 도구 목록 새로고침 함수
+    const refreshTools = useCallback(() => {
+        addLog('MCP', 'Refetching tools...');
+        sendRpc('tools/list', {}, 'list_tools');
+    }, [sendRpc, addLog]);
+
+    return { stats, availableTools, sendRpc, initialized, lastResult, logs, connected, statusText, refreshTools };
 }
