@@ -119,6 +119,9 @@ Phase 1: 사용자 토큰 관리 (완료)
 - [x] sse_server.py 예외 발생 시 서버 크래시 방지 (RuntimeError/Proxy Error 해결)
 
 
-## 추후 진행 부분
+## 추후 진행 부분 (v)
 - admin관리자는 사용자들의 사용 limit 수정 가능
 - 제한 우선순위: User 설정 > Role 설정 > 기본값
+
+## 26-01-29 todo
+- 

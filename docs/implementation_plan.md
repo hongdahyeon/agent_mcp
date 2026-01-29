@@ -496,3 +496,36 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 - 생성된 Tool이 Client(Agent)에서 정상 호출되는지 테스트.
 - SQL Injection 및 Code Injection 보안 테스트.
 
+
+# Phase 17: Dynamic Tool Tester Integration [In Progress]
+
+## Goal
+동적으로 생성된 도구를 실제 Agent(Tester)가 바로 조회하고 실행할 수 있도록 통합합니다. 서버 재시작 없이 목록을 갱신하고, 실행 결과를 직관적으로 확인할 수 있어야 합니다.
+
+## Implemented Changes
+
+### 1. Backend Integration (`src/sse_server.py`)
+- **`list_tools` Handler Update**: 
+    - 정적 도구 목록 외에 DB(`h_custom_tool`)에서 활성 상태인 동적 도구를 조회하여 합침.
+    - JSON Schema 동적 생성 (Params 정보 기반).
+- **`call_tool` Handler Update**:
+    - 요청된 도구 이름이 정적 도구에 없으면 동적 도구 목록에서 검색.
+    - `ToolExecutor` (SQL/Python)를 호출하여 결과 반환.
+    - 실행 이력(`h_mcp_tool_usage`) 저장 로직 공유.
+
+### 2. Frontend Tester Refinement (`src/frontend`)
+- **[MODIFY] `useMcp.ts`**:
+    - `refreshTools()` 함수 추가: `tools/list` RPC를 명시적으로 재호출하여 도구 목록 갱신.
+- **[MODIFY] `App.tsx`**:
+    - `refreshTools` 함수를 `Tester` 컴포넌트로 전달.
+- **[MODIFY] `Tester.tsx`**:
+    - **Refresh Button**: 도구 선택 셀렉트 박스 옆에 새로고침 버튼 배치.
+    - **Auto Reset**: 도구 변경 시 기존 입력 폼 및 실행 결과 초기화.
+    - **Smart JSON View**: 실행 결과(`content[0].text`)가 JSON 문자열인 경우, 파싱하여 구조화된 형태로 표시.
+
+## Verification Plan
+1. **Frontend Build**: `npm run build` 수행 (React App 배포).
+2. **Dynamic Load**: Admin 메뉴에서 새 도구 생성 후, Tester 화면에서 '새로고침' 클릭 시 목록에 뜨는지 확인.
+3. **Execution**: 생성한 동적 도구 실행 및 결과(JSON Parsing) 확인.
+4. **Usage Log**: 실행 후 Admin > Usage History에 기록 남는지 확인.
+

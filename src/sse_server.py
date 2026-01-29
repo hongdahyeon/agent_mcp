@@ -12,8 +12,10 @@ from datetime import datetime
 import sys
 try:
     from src.utils.context import set_current_user, get_current_user, clear_current_user
+    from src.tool_executor import execute_sql_tool, execute_python_tool
 except ImportError:
     from utils.context import set_current_user, get_current_user, clear_current_user
+    from tool_executor import execute_sql_tool, execute_python_tool
 
 # CRITICAL DEBUG: Verify exact file execution
 print(f"!!! SERVER STARTING FROM: {os.path.abspath(__file__)} !!!")
@@ -62,7 +64,8 @@ sse = SseServerTransport("/messages")
 # 2-1. Tool 목록 조회
 @mcp.list_tools()
 async def list_tools():
-    return [
+    # 1. 정적 도구 목록 정의
+    static_tools = [
         Tool(
             name="add",
             description="Add two numbers",
@@ -134,6 +137,66 @@ async def list_tools():
             }
         )
     ]
+
+    # 2. 동적 도구 목록 로드 (DB)
+    dynamic_tools = []
+    try:
+        try:
+            from src.db import get_active_tools, get_tool_params
+        except ImportError:
+            from db import get_active_tools, get_tool_params
+            
+        active_tools = get_active_tools()
+        for tool_data in active_tools:
+            tool_id = tool_data['id']
+            tool_name = tool_data['name']
+            desc_agent = tool_data['description_agent'] or ""
+            
+            # 파라미터 정보 로드
+            params = get_tool_params(tool_id)
+            
+            # JSON Schema 변환
+            properties = {}
+            required = []
+            
+            for p in params:
+                p_name = p['param_name']
+                p_type_str = p['param_type'].upper()
+                is_required = (p['is_required'] == 'Y')
+                
+                # 타입 매핑
+                json_type = "string"
+                if p_type_str == 'NUMBER':
+                    json_type = "number" # or integer
+                elif p_type_str == 'BOOLEAN':
+                    json_type = "boolean"
+                
+                properties[p_name] = {
+                    "type": json_type,
+                    "description": p['description'] or ""
+                }
+                
+                if is_required:
+                    required.append(p_name)
+            
+            dynamic_tools.append(
+                Tool(
+                    name=tool_name,
+                    description=desc_agent,
+                    inputSchema={
+                        "type": "object",
+                        "properties": properties,
+                        "required": required
+                    }
+                )
+            )
+    except Exception as e:
+        logger.error(f"Failed to load dynamic tools: {e}")
+        # 동적 로딩 실패하더라도 정적 툴은 반환
+        pass
+
+    # list_tools: server.py에 등록된 tool + 동적등록된 tool 조회
+    return static_tools + dynamic_tools
 
 # 2-2. 도구 실행시, 호출되는 함수
 # (1) context에서 사용자 정보 가져오기: get_current_user()
@@ -302,6 +365,50 @@ async def call_tool(name: str, arguments: dict):
             
             return [TextContent(type="text", text=result_val)]
 
+        # ---------------------------------------------------------
+        # 4. Dynamic Tools
+        # ---------------------------------------------------------
+        # 동적 도구인지 확인
+        try:
+            try:
+                from src.db import get_active_tools
+            except ImportError:
+                from db import get_active_tools
+                
+            active_tools = get_active_tools()
+            target_tool = next((t for t in active_tools if t['name'] == name), None)
+            
+            if target_tool:
+                logger.info(f"DEBUG: Executing dynamic tool '{name}' ({target_tool['tool_type']})")
+                
+                tool_type = target_tool['tool_type']
+                definition = target_tool['definition']
+                
+                if tool_type == 'SQL':
+                    result_raw = await execute_sql_tool(definition, tool_args)
+                    result_val = str(result_raw)
+                elif tool_type == 'PYTHON':
+                    result_raw = await execute_python_tool(definition, tool_args)
+                    result_val = str(result_raw)
+                else:
+                    return [TextContent(type="text", text=f"Error: Unknown tool type '{tool_type}'")]
+                
+                is_success = True
+                if result_val.startswith("Error"):
+                    is_success = False
+                
+                logger.info(f"Tool execution: {name} -> success={is_success}")
+                
+                if user_uid:
+                    log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+                    
+                return [TextContent(type="text", text=result_val)]
+                
+        except Exception as e:
+            logger.error(f"Dynamic tool execution error: {e}")
+            # fall through to default error handler
+            # raise e
+            
         logger.error(f"DEBUG: No tool matched. Name='{name}'")
         # raise ValueError(f"Unknown tool: {name}")
         return [TextContent(type="text", text=f"DEBUG FAIL: Received name='{name}' len={len(name)} hex={name.encode('utf-8').hex()}")]
@@ -867,7 +974,7 @@ async def handle_sse(request: Request, token: str = Query(None)):
                 # 토큰으로 사용자 조회 (유효성 체크 포함)
                 user = get_user_by_active_token(token)
                 if user:
-                     print(f"*** Token validation result: {user} ***")
+                     print(f"*** Token validation result: {user.user_id} ({user.role}) ***")
                 else:
                      print("*** TOKEN INVALID ***")
             except Exception as e:
