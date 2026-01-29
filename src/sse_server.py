@@ -14,9 +14,13 @@ import json
 try:
     from src.utils.context import set_current_user, get_current_user, clear_current_user
     from src.tool_executor import execute_sql_tool, execute_python_tool
+    from src.utils.mailer import EmailSender
+    from src.db.email_manager import log_email, update_email_status, get_email_logs, cancel_email_log
 except ImportError:
     from utils.context import set_current_user, get_current_user, clear_current_user
     from tool_executor import execute_sql_tool, execute_python_tool
+    from utils.mailer import EmailSender
+    from db.email_manager import log_email, update_email_status, get_email_logs
 
 # CRITICAL DEBUG: Verify exact file execution
 print(f"!!! SERVER STARTING FROM: {os.path.abspath(__file__)} !!!")
@@ -449,7 +453,8 @@ try:
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
         get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
         get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
-        get_limit_list, upsert_limit, delete_limit
+        get_limit_list, upsert_limit, delete_limit,
+        log_email, update_email_status, get_email_logs, cancel_email_log
     )
 except ImportError:
     # 실행 위치에 따라 경로가 다를 수 있음
@@ -465,7 +470,8 @@ except ImportError:
         get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
-        get_all_configs, get_config_value, set_config, delete_config
+        get_all_configs, get_config_value, set_config, delete_config,
+        log_email, update_email_status, get_email_logs, cancel_email_log
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -977,6 +983,7 @@ class ToolTestRequest(BaseModel):
     definition: str
     params: dict # 실행 파라미터 ({ "a": 1, "b": 2 })
 
+# 13-7. 동적 Tool 테스트 실행 > {ROLE_ADMIN} 권한만 가능
 @app.post("/api/mcp/custom-tools/test")
 async def api_test_custom_tool(req: ToolTestRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
     """동적 Tool 로직 테스트 실행 (저장 전 확인용)."""
@@ -1008,6 +1015,102 @@ async def api_test_custom_tool(req: ToolTestRequest, x_user_id: str | None = Hea
 
 
 # ==========================================
+# 15. 메일 발송 API
+# ==========================================
+class EmailSendRequest(BaseModel):
+    recipient: str
+    subject: str
+    content: str
+    is_scheduled: bool = False
+    scheduled_dt: str | None = None # YYYY-MM-DD HH:MM
+
+# 15-1. 메일 발송 API
+@app.post("/api/email/send")
+async def api_send_email(req: EmailSendRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """메일 발송 요청 ( 즉시/예약 )"""
+    # 1. 인증 체크
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user = get_user(x_user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    # 2. DB 이력 저장 (PENDING)
+    try:
+        log_id = log_email(
+            user_uid=user['uid'],
+            recipient=req.recipient,
+            subject=req.subject,
+            content=req.content,
+            is_scheduled=req.is_scheduled,
+            scheduled_dt=req.scheduled_dt
+        )
+    except Exception as e:
+        logger.error(f"Failed to log email: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    # 3. 즉시 발송인 경우, 바로 발송 시도
+    if not req.is_scheduled:
+        sender = EmailSender()
+        success, error_msg = sender.send_immediate(req.recipient, req.subject, req.content)
+        
+        # 결과 업데이트
+        new_status = 'SENT' if success else 'FAILED'
+        update_email_status(log_id, new_status, error_msg)
+        
+        if not success:
+            return {"success": False, "log_id": log_id, "error": error_msg}
+            
+        return {"success": True, "log_id": log_id, "status": "SENT"}
+    
+    # 예약 발송인 경우, 일단 PENDING 상태로 유지 (추후 스케줄러가 처리)
+    return {"success": True, "log_id": log_id, "status": "PENDING (Scheduled)"}
+
+# 15-2. 메일 발송 이력 조회 API
+@app.get("/api/email/logs")
+async def api_get_email_logs(x_user_id: str | None = Header(default=None, alias="X-User-Id"), limit: int = 100):
+    """메일 발송 이력 조회"""
+    # 1. 인증 체크
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user = get_user(x_user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    # 관리자는 전체 조회, 일반 유저는 본인 것만 조회? 
+    # 요구사항에는 명시 없으나 일단 본인 것만 조회하도록 하거나, 
+    # 관리자 기능으로 전체 조회를 허용할 수도 있음. 여기서는 관리자는 전체, 유저는 본인 것만 조회로 구현.
+    target_uid = None
+    if user['role'] != 'ROLE_ADMIN':
+        target_uid = user['uid']
+        
+    logs = get_email_logs(limit, target_uid)
+    return {"logs": logs}
+
+# 15-3. 메일 발송 취소 API
+@app.post("/api/email/cancel/{log_id}")
+async def api_cancel_email(log_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+    """예약 메일 발송 취소"""
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    user = get_user(x_user_id)
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    is_admin = user['role'] == 'ROLE_ADMIN'
+    
+    success, msg = cancel_email_log(log_id, user['uid'], is_admin)
+    
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+        
+    return {"success": True, "message": msg}
+
+
+# ==========================================
 # 13. 연결 설정 및 정적 파일
 # ==========================================
 # 13-1. SSE & Static
@@ -1035,7 +1138,7 @@ async def handle_sse(request: Request, token: str = Query(None)):
                 # 토큰으로 사용자 조회 (유효성 체크 포함)
                 user = get_user_by_active_token(token)
                 if user:
-                     print(f"*** Token validation result: {user.user_id} ({user.role}) ***")
+                     print(f"*** Token validation result: {user['user_id']} ({user['role']}) ***")
                 else:
                      print("*** TOKEN INVALID ***")
             except Exception as e:

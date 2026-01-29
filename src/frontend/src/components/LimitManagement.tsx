@@ -10,7 +10,7 @@ import {
     Settings,
     Clock
 } from 'lucide-react';
-import type { Limit, LimitFormData } from '../types/LimitUsageMng';
+import type { Limit, LimitFormData } from '../types/limitUsageMng';
 
 import { getAuthHeaders } from '../utils/auth';
 

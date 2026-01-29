@@ -280,3 +280,24 @@
 ## 33. 프론트엔드 메뉴 구조 개편 (New)
 - [x] 메뉴 그룹화 및 라벨 변경 (대시보드, 기능, 이력, 설정 및 관리)
 - [x] App.tsx 사이드바 렌더링 로직 수정 (그룹 헤더 지원)
+
+## 34. 메일 발송 이력 관리 (DB)
+- [x] 1. DB: `h_email_log` 테이블 생성 (init_manager.py)
+    - `user_uid`, `recipient`, `subject`, `content`, `is_scheduled`, `scheduled_dt`, `reg_dt`, `sent_dt`, `status`
+
+## 35. 메일 발송 기능 구현 (Backend)
+- [x] 1. DB: `src/db/email_manager.py` 구현 (Insert/Update/Select)
+- [x] 2. Utils: `src/utils/mailer.py` 구현 (`smtplib` + `h_system_config` 연동)
+- [x] 3. API: `POST /api/email/send` (즉시/예약 분기 처리)
+- [x] 4. API: `GET /api/email/logs` (이력 조회 - 검증용)
+
+## 36. 메일 발송 기능 구현 (Frontend)
+- [x] 1. Component: `src/frontend/src/components/EmailSender.tsx` 구현
+    - 메일 작성 폼 (수신자, 제목, 내용, 예약 설정)
+    - 발송 이력 목록 (Logs)
+- [x] 2. Integration: `App.tsx` 메뉴 추가 ('기능' > '메일 발송')
+
+## 37. 메일 발송 취소 기능 구현
+- [x] 1. Backend: `cancel_email_log` DB 함수 및 `POST /api/email/cancel/{log_id}` API 구현
+- [x] 2. Frontend: 발송 이력 목록에 '취소' 버튼 추가 (PENDING 상태일 때만 표시)
+
