@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime, timedelta
 import sys
+import json
 try:
     from .connection import get_db_connection
 except ImportError:
@@ -106,6 +107,46 @@ def init_db():
     ''')
     
     
+    # 시스템 설정 테이블 (System Config Table) - Refactored to JSON based
+    # 기존 테이블이 Key-Value 구조라면 Drop하고 재생성 (Migration logic simplified for dev)
+    cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='h_system_config'")
+    row = cursor.fetchone()
+    if row:
+        # Check if 'conf_key' exists in definition, if so, it's old schema
+        if 'conf_key' in row[0]:
+            print("[DB] 기존 h_system_config 테이블 삭제 후 재생성 (Schema Change)", file=sys.stderr)
+            cursor.execute("DROP TABLE h_system_config")
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_system_config (
+        name TEXT PRIMARY KEY,
+        configuration TEXT,
+        description TEXT,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+    
+    # 기본 시스템 설정 시딩
+    gmail_config = {
+        "mail.host": "smtp.gmail.com",
+        "mail.port": 587,
+        "mail.username": "",
+        "mail.password": ""
+    }
+    
+    default_configs = [
+        ('gmail_config', json.dumps(gmail_config, ensure_ascii=False), 'Gmail SMTP Settings'),
+    ]
+    
+    for name, config_json, desc in default_configs:
+        cursor.execute("SELECT name FROM h_system_config WHERE name = ?", (name,))
+        if not cursor.fetchone():
+            cursor.execute('''
+            INSERT INTO h_system_config (name, configuration, description, reg_dt)
+            VALUES (?, ?, ?, ?)
+            ''', (name, config_json, desc, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            print(f"[DB] 시스템 설정 생성됨: {name}", file=sys.stderr)
+
     # 기본 제한 정책 시딩
     cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")
     if not cursor.fetchone():

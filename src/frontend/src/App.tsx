@@ -12,11 +12,12 @@ import { SchemaManager } from './components/SchemaManager';
 import { LimitManagement } from './components/LimitManagement';
 import { CustomTools } from './components/CustomTools';
 import { MyPage } from './components/MyPage';
+import { SystemConfig } from './components/SystemConfig';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings
 } from 'lucide-react';
 import type { UsageData } from './types/Usage';
 
@@ -72,7 +73,7 @@ function App() {
   });
 
   // 화면 상태 (View State)
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'config'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -187,20 +188,53 @@ function App() {
     return <Login onLogin={handleLogin} />;
   }
 
-  // 기본 구성되는 메뉴 목록
-  const menuItems = [
-    { id: 'dashboard', label: '대시보드', icon: Activity },
-    { id: 'tester', label: '도구 테스터', icon: Terminal },
-    { id: 'logs', label: '로그 뷰어', icon: FileText },
-    { id: 'history', label: '접속 이력', icon: History },
-  ];
-  if (user.role === 'ROLE_ADMIN') {
-    menuItems.push({ id: 'users', label: '사용자 관리', icon: UsersIcon });
-    menuItems.push({ id: 'usage-history', label: '사용 이력', icon: BarChart4 });
-    menuItems.push({ id: 'limits', label: '사용 제한 관리', icon: Shield });
-    menuItems.push({ id: 'custom-tools', label: '도구 생성(Dynamic)', icon: Wrench });
-    menuItems.push({ id: 'schema', label: 'DB 관리', icon: Database });
+  interface MenuItem {
+    id: string;
+    label: string;
+    icon: React.ElementType;
+    adminOnly?: boolean;
   }
+
+  interface MenuGroup {
+    label?: string; // Group Header (Optional)
+    items: MenuItem[];
+  }
+
+  // 메뉴 구성 정의
+  const menuStructure: MenuGroup[] = [
+    {
+      items: [
+        { id: 'dashboard', label: '대시보드', icon: Activity }
+      ]
+    },
+    {
+      label: '기능',
+      items: [
+        { id: 'tester', label: '도구 테스터', icon: Terminal },
+        { id: 'logs', label: '로그 뷰어', icon: FileText }
+      ]
+    },
+    {
+      label: '이력',
+      items: [
+        { id: 'history', label: '접속 이력', icon: History },
+        { id: 'usage-history', label: '사용자 이력', icon: BarChart4, adminOnly: true }
+      ]
+    },
+    {
+      label: '설정 및 관리',
+      items: [
+        { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
+        { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
+        { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
+        { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
+        { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
+      ]
+    }
+  ];
+
+  // Flattened items for finding labels in header (Simple utility)
+  const allMenuItems = menuStructure.flatMap(g => g.items);
 
   return (
     <div className="flex h-full bg-gray-50">
@@ -235,21 +269,37 @@ function App() {
           </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id as any)}
-              className={clsx(
-                "w-full flex items-center px-4 py-3 rounded-lg transition-all duration-200 ease-in-out",
-                activeView === item.id
-                  ? "bg-blue-50 text-blue-600 font-semibold shadow-sm translate-x-1"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+          {menuStructure.map((group, gIdx) => (
+            <div key={gIdx} className="space-y-2">
+              {group.label && (
+                <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  {group.label}
+                </h3>
               )}
-            >
-              <item.icon className={clsx("w-5 h-5 mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
-              {item.label}
-            </button>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  // Admin check
+                  if (item.adminOnly && user.role !== 'ROLE_ADMIN') return null;
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveView(item.id as any)}
+                      className={clsx(
+                        "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 ease-in-out text-sm",
+                        activeView === item.id
+                          ? "bg-blue-50 text-blue-600 font-semibold shadow-sm translate-x-1"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      )}
+                    >
+                      <item.icon className={clsx("w-4 h-4 mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -268,7 +318,7 @@ function App() {
       <main className="flex-1 overflow-hidden flex flex-col">
         <header className="bg-white border-b border-gray-200 px-8 py-4 shadow-sm flex justify-between items-center z-10">
           <h2 className="text-xl font-semibold text-gray-800">
-            {menuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
+            {allMenuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
           </h2>
           <div className="flex items-center space-x-4">
             {/* Phase 3 Badge */}
@@ -290,6 +340,7 @@ function App() {
           {activeView === 'limits' && user.role === 'ROLE_ADMIN' && <LimitManagement />}
           {activeView === 'custom-tools' && user.role === 'ROLE_ADMIN' && <CustomTools />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
+          {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig token={authToken} />}
         </div>
       </main>
     </div>

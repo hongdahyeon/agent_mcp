@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Tool } from '../types';
-import { Play, RotateCcw, RefreshCw } from 'lucide-react';
+import { Play, RotateCcw, RefreshCw, Copy, Check } from 'lucide-react';
 
 /* 
 * 도구 사용하기 화면에 대한 컴포넌트
@@ -23,6 +23,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     
     // Result handling (Local state for display control)
     const [displayResult, setDisplayResult] = useState<any>(lastResult || null);
+    const [copied, setCopied] = useState(false);
 
     const currentTool = tools.find(t => t.name === selectedTool);
 
@@ -32,12 +33,14 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
         setSelectedTool(e.target.value);
         setFormValues({});
         setDisplayResult(null); // Reset result display
+        setCopied(false);
     };
 
     // Update display result when new result arrives from prop
     useEffect(() => {
         if (lastResult) {
             setDisplayResult(lastResult);
+            setCopied(false);
         }
     }, [lastResult]);
 
@@ -61,6 +64,36 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
         sendRpc('tools/call', { name: selectedTool, arguments: args }, selectedTool);
     };
 
+    const getFormattedResult = () => {
+        if (!displayResult) return '';
+        // Deep clone to avoid mutating state directly
+        const renderedResult = JSON.parse(JSON.stringify(displayResult));
+        if (renderedResult.content && Array.isArray(renderedResult.content)) {
+            renderedResult.content.forEach((item: any) => {
+                if (item.type === 'text' && typeof item.text === 'string') {
+                    try {
+                        // Try to parse inner JSON
+                        const parsed = JSON.parse(item.text);
+                        item.text = parsed;
+                    } catch (e) {
+                        // Ignore if not valid JSON, keep as string
+                    }
+                }
+            });
+        }
+        return JSON.stringify(renderedResult, null, 2);
+    };
+
+    const handleCopy = () => {
+        const text = getFormattedResult();
+        if (text) {
+            navigator.clipboard.writeText(text).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            });
+        }
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
             {/* Input Area */}
@@ -75,7 +108,12 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                         >
                             <option value="">선택하세요 (Select Tool)</option>
                             {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
-                            {tools.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                                {tools.map(t => {
+                                const isDynamic = t.description?.startsWith('[Dynamic]');
+                                const isSystem = t.description?.startsWith('[System]');
+                                const typeLabel = isDynamic ? '(Dynamic)' : isSystem ? '(System)' : '';
+                                return <option key={t.name} value={t.name}>{t.name} {typeLabel}</option>
+                            })}
                         </select>
                         {refreshTools && (
                             <button 
@@ -125,10 +163,23 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
 
             {/* Result Area */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[400px]">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-                    실행 결과 (JSON)
-                    {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                        실행 결과 (JSON)
+                        {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
+                    </h3>
+                    
+                    {displayResult && (
+                        <button 
+                            onClick={handleCopy}
+                            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                            title="결과 복사"
+                        >
+                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            <span>{copied ? 'Copied!' : 'Copy'}</span>
+                        </button>
+                    )}
+                </div>
                 <pre className="flex-1 bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 shadow-inner">
                     {displayResult ? (() => {
                         // Deep clone to avoid mutating state directly if we were modifying it (though here we just render)

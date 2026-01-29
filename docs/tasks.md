@@ -254,3 +254,29 @@
     - [x] 도구 목록 새로고침 버튼 추가 (`useMcp.ts` 연동)
     - [x] 실행 결과 JSON View 개선 (Result 텍스트 내 JSON 파싱 표시)
     - [ ] 기능 검증 (Build & Test)
+
+## 30. 도구 실행 결과 및 목록 개선 (UI/UX)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: `get_user_info`, `get_user_tokens` 결과 JSON 포맷으로 반환 (`json.dumps`)
+- [x] 2. Backend: `list_tools`에서 도구 설명(Description)에 `[System]`, `[Dynamic]` 태그 추가
+- [x] 3. Frontend: `Tester.tsx`에서 태그를 파싱하여 도구 목록에 `(System)`, `(Dynamic)` 구분 표시
+- [x] 4. Frontend: 실행 결과 JSON 복사 버튼 추가
+- [x] 5. 기능 검증
+
+## 31. 시스템 설정 관리 기능 구현 (System Config UI) - [Refactor]
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_system_config` 테이블 재생성 (Drop & Create) - `name`, `configuration` (JSON), `description`
+- [x] 2. DB: `src/db/system_config.py` 로직 수정 (JSON 처리)
+- [x] 3. Backend: API 수정 (`GET`, `POST` - JSON handling)
+- [x] 4. Frontend: Type 수정 (`types/systemConfig.ts`)
+- [x] 5. Frontend: `SystemConfig.tsx` 수정 (JSON Editor implementation)
+
+## 32. Gmail 메일 발송 기능 구현 (DB Config 활용)
+- [ ] 1. Utils: `src/utils/mailer.py` 구현 (`smtplib` + DB Config JSON Parsing)
+- [ ] 2. Backend: `send_email` Tool 추가 (`sse_server.py`)
+- [ ] 3. 기능 검증 (테스트 메일 발송)
+
+
+## 33. 프론트엔드 메뉴 구조 개편 (New)
+- [x] 메뉴 그룹화 및 라벨 변경 (대시보드, 기능, 이력, 설정 및 관리)
+- [x] App.tsx 사이드바 렌더링 로직 수정 (그룹 헤더 지원)
