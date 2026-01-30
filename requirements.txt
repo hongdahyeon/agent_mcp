@@ -4,3 +4,8 @@ uvicorn
 sse-starlette
 
 apscheduler
+
+# JWT Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart

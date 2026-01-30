@@ -37,10 +37,14 @@ export function Login({ onLogin }: Props) {
 
         setLoading(true);
         try {
+            // OAuth2 Password Request Flow (form-data)
+            const formData = new FormData();
+            formData.append('username', userId);
+            formData.append('password', password);
+
             const res = await fetch('/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, password })
+                body: formData
             });
 
             if (!res.ok) {
@@ -50,11 +54,10 @@ export function Login({ onLogin }: Props) {
             }
 
             const data = await res.json();
-            if (data.success && data.user) {
-                // API Token 저장 (SSE 연결용)
-                if (data.token) {
-                    localStorage.setItem('mcp_api_token', data.token);
-                }
+            // JWT Response: { access_token, token_type, user }
+            if (data.access_token && data.user) {
+                // API Token 저장 (SSE 연결 및 API 호출용)
+                localStorage.setItem('mcp_api_token', data.access_token);
 
                 // 아이디 기억하기 처리
                 if (rememberMe) {

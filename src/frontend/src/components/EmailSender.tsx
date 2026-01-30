@@ -1,9 +1,10 @@
 import { AlertCircle, Calendar, CheckCircle, Clock, RefreshCw, RotateCw, Send, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import type { EmailLog, Props } from '../types/emailSend';
+import type { EmailLog } from '../types/emailSend';
+import { getAuthHeaders } from '../utils/auth';
 
 
-export const EmailSender: React.FC<Props> = ({ user }) => {
+export const EmailSender: React.FC = () => {
     // API State
     const [apiLoading, setApiLoading] = useState(false);
     
@@ -26,7 +27,7 @@ export const EmailSender: React.FC<Props> = ({ user }) => {
         setLoadingLogs(true);
         try {
             const res = await fetch('/api/email/logs?limit=50', {
-                headers: { 'X-User-Id': user.user_id }
+                headers: getAuthHeaders()
             });
             if (res.ok) {
                 const data = await res.json();
@@ -68,7 +69,7 @@ export const EmailSender: React.FC<Props> = ({ user }) => {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'X-User-Id': user.user_id 
+                    ...getAuthHeaders()
                 },
                 body: JSON.stringify(payload)
             });
@@ -102,9 +103,7 @@ export const EmailSender: React.FC<Props> = ({ user }) => {
         try {
             const res = await fetch(`/api/email/cancel/${logId}`, {
                 method: 'POST',
-                headers: { 
-                    'X-User-Id': user.user_id 
-                }
+                headers: getAuthHeaders()
             });
             const data = await res.json();
             

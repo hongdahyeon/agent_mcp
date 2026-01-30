@@ -91,33 +91,7 @@ def get_user_info(user_id: str) -> str:
         
     return str(user_dict)
 
-@mcp.tool()
-@audit_log
-def get_user_tokens(user_id: str) -> str:
-    """
-        [Admin Only] 특정 사용자의 토큰 이력을 조회합니다.
-        인자로 'user' 값이 넘어와도, 해당 값을 사용자 ID로 인식하고 조회합니다.
-    """
-    # 권한 체크
-    token = os.environ.get('token')
-    if not token:
-        return "Error: Authentication token required"
-        
-    current_user = db.get_user_by_active_token(token)
-    if not current_user or current_user.get('role') != 'ROLE_ADMIN':
-        return "WARN: Admin privileges required for this tool"
 
-    target_user = db.get_user(user_id)
-    if not target_user:
-        return f"User not found: {user_id}"
-        
-    # get_all_user_tokens 함수 사용
-    try:
-        tokens = db.get_all_user_tokens(target_user['uid'])
-        return str(tokens)
-    except AttributeError:
-        # 혹시 db_manager가 갱신되지 않았을 경우
-        return "Error: Server logic update required (function missing)"
 
 
 if __name__ == "__main__":

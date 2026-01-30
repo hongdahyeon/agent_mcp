@@ -1,8 +1,4 @@
-import type { User } from "./auth";
 
-export interface Props {
-    user: User;
-}
 
 export interface EmailLog {
     id: number;

@@ -57,12 +57,14 @@ from .custom_tool_param import (
     clear_tool_params
 )
 
-from .user_token import (
-    create_user_token,
-    get_user_token,
-    get_user_by_active_token,
-    get_all_user_tokens
+from .access_token import (
+    create_access_token,
+    get_access_token,
+    get_all_access_tokens,
+    delete_access_token
 )
+
+
 
 from .schema import (
     get_all_tables,
@@ -116,10 +118,7 @@ __all__ = [
     'get_tool_params',
     'add_tool_param',
     'clear_tool_params',
-    'create_user_token',
-    'get_user_token',
-    'get_user_by_active_token',
-    'get_all_user_tokens',
+
     'get_all_tables',
     'get_table_schema',
     'get_table_data',
@@ -131,5 +130,9 @@ __all__ = [
     'update_email_status',
     'get_email_logs',
     'cancel_email_log',
-    'init_db'
+    'init_db',
+    'create_access_token',
+    'get_access_token',
+    'get_all_access_tokens',
+    'delete_access_token'
 ]

@@ -5,6 +5,7 @@ import {
     AlertCircle, ToggleLeft, ToggleRight, UserPlus
 } from 'lucide-react';
 import clsx from 'clsx';
+import { getAuthHeaders } from '../utils/auth';
 
 /* 
 * 사용자 관리 화면에 대한 컴포넌트
@@ -40,7 +41,9 @@ export function Users() {
     const fetchUsers = async (pageNum: number = 1) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/users?page=${pageNum}&size=${PAGE_SIZE}`);
+            const res = await fetch(`/api/users?page=${pageNum}&size=${PAGE_SIZE}`, {
+                headers: getAuthHeaders()
+            });
 
             if (!res.ok) {
 
@@ -96,7 +99,9 @@ export function Users() {
         if (!formData.user_id) return;
         setIdCheckStatus('checking');
         try {
-            const res = await fetch(`/api/users/check/${formData.user_id}`);
+            const res = await fetch(`/api/users/check/${formData.user_id}`, {
+                headers: getAuthHeaders()
+            });
             const data = await res.json();
             setIdCheckStatus(data.exists ? 'taken' : 'available');
         } catch {
@@ -124,7 +129,10 @@ export function Users() {
 
             const res = await fetch(url, {
                 method,
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify(formData)
             });
 
@@ -149,7 +157,10 @@ export function Users() {
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
                 body: JSON.stringify({ is_enable: newStatus })
             });
             if (!res.ok) throw new Error('상태 변경 실패');

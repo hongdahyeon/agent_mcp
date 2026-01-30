@@ -53,18 +53,23 @@ def init_db():
     )
     ''')
     
-    # 사용자 토큰 테이블 (User Token Table)
+    
+    # 사용자 토큰 테이블 (User Token Table) - 제거됨 (26.01.30)
+    cursor.execute("DROP TABLE IF EXISTS h_user_token")
+
+
+    # 외부 접속용 액세스 토큰 (Access Token Table) - New (26.01.30)
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS h_user_token (
+    CREATE TABLE IF NOT EXISTS h_access_token (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_uid INTEGER NOT NULL,
-        token_value TEXT UNIQUE NOT NULL,
-        expired_at TEXT,
-        is_active TEXT DEFAULT 'Y',
-        reg_dt TEXT,
-        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+        name TEXT NOT NULL,         -- 토큰 별칭/용도
+        token TEXT UNIQUE NOT NULL, -- 실제 토큰 값 (sk_...)
+        can_use TEXT DEFAULT 'Y',   -- 사용 가능 여부 (Y/N)
+        is_delete TEXT DEFAULT 'N', -- 삭제 여부 (Y/N, Soft Delete)
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
     )
-    ''')
+    ''') 
+
 
     # MCP Tool 제한 테이블 (MCP Tool Limit Table)
     cursor.execute('''
@@ -211,12 +216,7 @@ def init_db():
         ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)", file=sys.stderr)
         
-    # - 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
-    cursor.execute("PRAGMA table_info(h_user_token)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if 'reg_dt' not in columns:
-        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가", file=sys.stderr)
-        cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
+
 
     # - 7. 외부 연동용 유저 시딩 (external)
     cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('external',))
@@ -228,18 +228,7 @@ def init_db():
         ''', ('external', password_hash, 'External System', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         print("[DB] 외부 연동용 유저 생성됨 (ID: external)", file=sys.stderr)
         
-        # 토큰 자동 생성
-        import secrets
-        cursor.execute("SELECT uid FROM h_user WHERE user_id = 'external'")
-        uid = cursor.fetchone()[0]
-        token_value = f"sk_mcp_{secrets.token_urlsafe(32)}"
-        expired_at = (datetime.now() + timedelta(days=3650)).strftime("%Y-%m-%d %H:%M:%S") # 10 years
-        
-        cursor.execute('''
-            INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active, reg_dt)
-            VALUES (?, ?, ?, 'Y', ?)
-        ''', (uid, token_value, expired_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print(f"[DB] External User Token Generated: {token_value}", file=sys.stderr)
+        print("[DB] 외부 연동용 유저 생성됨 (ID: external)", file=sys.stderr)
     
 
         
