@@ -1,14 +1,15 @@
 
-from fastapi import FastAPI, Request, HTTPException, Header, Query
+from fastapi import FastAPI, Request, HTTPException, Header, Query, Depends, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import uvicorn
 from mcp.server.sse import SseServerTransport
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 import json
 from contextlib import asynccontextmanager
@@ -20,11 +21,13 @@ try:
     from src.utils.mailer import EmailSender
     from src.db.email_manager import log_email, update_email_status, get_email_logs, cancel_email_log
     from src.scheduler import start_scheduler, shutdown_scheduler
+    from src.utils.auth import create_access_token, verify_token, verify_password, get_password_hash
 except ImportError:
     from utils.context import set_current_user, get_current_user, clear_current_user
     from tool_executor import execute_sql_tool, execute_python_tool
     from utils.mailer import EmailSender
     from db.email_manager import log_email, update_email_status, get_email_logs
+    from utils.auth import create_access_token, verify_token, verify_password, get_password_hash
     try:
         from scheduler import start_scheduler, shutdown_scheduler
     except ImportError:
@@ -94,6 +97,34 @@ app = FastAPI(lifespan=lifespan)
 mcp = Server("agent-mcp-sse")
 sse = SseServerTransport("/messages")
 
+# ==========================================
+# Auth Dependency & Scheme
+# ==========================================
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+async def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
+    """
+    Validate JWT token and return user info.
+    Replacing X-User-Id header validation.
+    """
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+        
+    user = get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    return dict(user)
+
 # 2-1. Tool 목록 조회
 @mcp.list_tools()
 async def list_tools():
@@ -154,21 +185,9 @@ async def list_tools():
                 "required": ["user_id"]
             }
         ),
-        # 관리자 전용: 사용자 토큰 이력 조회
-        Tool(
-            name="get_user_tokens",
-            description="""
-                [Admin Only] 특정 사용자의 토큰 발급 이력을 조회합니다.
-                사용자의 ID(user_id)를 입력하면 발급된 토큰 목록과 활성(is_active), 만료일 정보를 반환합니다.
-            """,
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "user_id": {"type": "string", "description": "조회할 사용자의 ID"}
-                },
-                "required": ["user_id"]
-            }
-        )
+
+        # get_user_tokens tool 삭제 (2026.01.30)
+
     ]
     
     # Mark static tools as [System]
@@ -479,10 +498,12 @@ try:
     from src.db import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
-        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_tool_usage_logs, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
-        log_email, update_email_status, get_email_logs, cancel_email_log
+        get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
+        get_all_configs, get_config_value, set_config, delete_config,
+        log_email, update_email_status, get_email_logs, cancel_email_log,
+        create_access_token, get_access_token, get_all_access_tokens, delete_access_token
     )
 except ImportError:
     # 실행 위치에 따라 경로가 다를 수 있음
@@ -494,12 +515,12 @@ except ImportError:
     from db import (
         get_user, verify_password, log_login_attempt, get_login_history,
         get_all_users, create_user, update_user, check_user_id, log_tool_usage,
-        get_tool_usage_logs, create_user_token, get_user_token, get_user_by_active_token,
-        get_all_user_tokens, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_tool_usage_logs, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
         get_all_configs, get_config_value, set_config, delete_config,
-        log_email, update_email_status, get_email_logs, cancel_email_log
+        log_email, update_email_status, get_email_logs, cancel_email_log,
+        create_access_token, get_access_token, get_all_access_tokens, delete_access_token
     )
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -523,36 +544,52 @@ class LoginRequest(BaseModel):
 # ==========================================
 # 5. 로그인 API
 # ==========================================
+# ==========================================
+# 5. 로그인 API (JWT Based)
+# ==========================================
 @app.post("/auth/login")
-async def login(req: LoginRequest, request: Request):
-    """로그인 처리 및 이력 기록."""
-    if not req.user_id or not req.password:
-        raise HTTPException(status_code=400, detail="Missing credentials")
-
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None):
+    """
+    OAuth2 Password Flow Login.
+    Returns JWT Access Token.
+    """
     # 사용자 조회
-    user = get_user(req.user_id)
-    ip_addr = request.client.host
-    if user and verify_password(req.password, user['password']):
+    user = get_user(form_data.username)
+    ip_addr = request.client.host if request else "unknown"
+    
+    if user and verify_password(form_data.password, user['password']):
         if dict(user).get('is_enable', 'Y') == 'N':
             log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
             raise HTTPException(status_code=403, detail="Account is disabled")
-        # API Token 자동 발급/조회
-        token_data = get_user_token(user['uid'])
-        if token_data:
-            token_value = token_data['token_value']
-        else:
-            token_value = create_user_token(user['uid'])
-
-        log_login_attempt(user['uid'], ip_addr, True, "Login Successful")
+            
+        # JWT 생성
+        access_token_expires = timedelta(hours=12)
+        access_token = create_access_token(
+            data={"sub": user['user_id'], "role": user['role']},
+            expires_delta=access_token_expires
+        )
+        
+        # 로그인 이력 기록
+        log_login_attempt(user['uid'], ip_addr, True, "Login Successful (JWT)")
+        
         return {
-            "success": True, 
-            "user": {"uid": user['uid'], "user_id": user['user_id'], "user_nm": user['user_nm'], "role": user['role']},
-            "token": token_value
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "uid": user['uid'], 
+                "user_id": user['user_id'], 
+                "user_nm": user['user_nm'], 
+                "role": user['role']
+            }
         }
     else:
         user_uid = user['uid'] if user else None
         log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 # ==========================================
@@ -585,14 +622,18 @@ class UserUpdateRequest(BaseModel):
 
 # 7-1. 모든 사용자 조회 API (관리자 전용) => 페이징 포함 (26.01.23)
 @app.get("/api/users")
-async def api_get_users(request: Request, page: int = 1, size: int = 20):
+async def api_get_users(request: Request, page: int = 1, size: int = 20, current_user: dict = Depends(get_current_user_jwt)):
     """모든 사용자 조회 (프론트엔드에서 관리자 체크 필요, 페이징 포함)."""
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return get_all_users(page, size)
 
 # 7-2. 새 사용자 생성 API (관리자 전용)
 @app.post("/api/users")
-async def api_create_user(req: UserCreateRequest):
+async def api_create_user(req: UserCreateRequest, current_user: dict = Depends(get_current_user_jwt)):
     """새 사용자 생성."""
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
     if check_user_id(req.user_id):
         raise HTTPException(status_code=400, detail="User ID already exists")
     create_user(req.dict())
@@ -600,15 +641,19 @@ async def api_create_user(req: UserCreateRequest):
 
 # 7-3. 사용자 정보 수정 API (관리자 전용)
 @app.put("/api/users/{user_id}")
-async def api_update_user(user_id: str, req: UserUpdateRequest):
+async def api_update_user(user_id: str, req: UserUpdateRequest, current_user: dict = Depends(get_current_user_jwt)):
     """사용자 정보 수정."""
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
     update_user(user_id, req.dict(exclude_unset=True))
     return {"success": True}
 
 # 7-4. 사용자 ID 존재 여부 확인 API (관리자 전용)
 @app.get("/api/users/check/{user_id}")
-async def api_check_user_id(user_id: str):
+async def api_check_user_id(user_id: str, current_user: dict = Depends(get_current_user_jwt)):
     """사용자 ID 존재 여부 확인."""
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return {"exists": check_user_id(user_id)}
 
 
@@ -648,12 +693,10 @@ async def get_usage_history(
     user_id: str | None = None,
     tool_nm: str | None = None,
     success: str | None = None,
-    x_user_id: str | None = Header(default=None, alias="X-User-Id")
+    current_user: dict = Depends(get_current_user_jwt)
 ):
     """MCP Tool 사용 이력 조회 (관리자 전용, 필터링 포함)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
@@ -669,33 +712,7 @@ async def get_dashboard_stats():
 
 
 
-# ==========================================
-# 10. 사용자 토큰 관리
-# ==========================================
-# 10-1. 사용자 토큰 생성/재발급 API
-@app.post("/api/user/token")
-async def api_create_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """사용자 토큰 생성/재발급."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user: raise HTTPException(status_code=401, detail="User not found")
-    
-    token = create_user_token(user['uid'])
-    return {"success": True, "token": token}
-
-# 10-2. 사용자 토큰 조회 API
-@app.get("/api/user/token")
-async def api_get_token(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
-    """사용자 현재 토큰 조회."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user: raise HTTPException(status_code=401, detail="User not found")
-    
-    token_data = get_user_token(user['uid'])
-    if token_data:
-        return {"exists": True, "token": token_data['token_value'], "expired_at": token_data['expired_at']}
-    else:
-        return {"exists": False}
+# 10. 사용자 토큰 관리(h_user_token) 삭제 .. (2026.01.30)
 
 
 # ==========================================
@@ -708,21 +725,17 @@ except ImportError:
     from db import get_all_tables, get_table_schema, get_table_data
 # 11-1. 전체 테이블 목록 조회 API (관리자 전용)
 @app.get("/api/db/tables")
-async def api_get_tables(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_tables(current_user: dict = Depends(get_current_user_jwt)):
     """전체 테이블 목록 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return {"tables": get_all_tables()}
 
 # 11-2. 특정 테이블 스키마 조회 API (관리자 전용)
 @app.get("/api/db/schema/{table_name}")
-async def api_get_table_schema(table_name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_table_schema(table_name: str, current_user: dict = Depends(get_current_user_jwt)):
     """특정 테이블 스키마 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         return {"columns": get_table_schema(table_name)}
@@ -731,11 +744,9 @@ async def api_get_table_schema(table_name: str, x_user_id: str | None = Header(d
 
 # 11-3. 특정 테이블 데이터 조회 API (관리자 전용)
 @app.get("/api/db/data/{table_name}")
-async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_table_data(table_name: str, limit: int = 100, current_user: dict = Depends(get_current_user_jwt)):
     """특정 테이블 데이터 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         return {"rows": get_table_data(table_name, limit)}
@@ -748,11 +759,9 @@ async def api_get_table_data(table_name: str, limit: int = 100, x_user_id: str |
 # ==========================================
 # 12-1. 각 개인 사용자별 잔여, 사용량 조회 API
 @app.get("/api/mcp/my-usage")
-async def api_get_my_usage(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_my_usage(current_user: dict = Depends(get_current_user_jwt)):
     """내 금일 사용량 및 잔여 횟수 조회."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user: raise HTTPException(status_code=401, detail="User not found")
+    user = current_user
     
     usage = get_user_daily_usage(user['uid'])
     limit = get_user_limit(user['uid'], user['role'])
@@ -769,11 +778,9 @@ async def api_get_my_usage(x_user_id: str | None = Header(default=None, alias="X
 
 # 12-2. 관리자> 전체 사용자의 사용량 통계 조회 API
 @app.get("/api/mcp/usage-stats")
-async def api_get_usage_stats(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_usage_stats(current_user: dict = Depends(get_current_user_jwt)):
     """(관리자용) 전체 사용자 사용량 통계 조회."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return get_admin_usage_stats()
 
@@ -787,32 +794,26 @@ class LimitUpsertRequest(BaseModel):
 
 # 12-4. 관리자> 제한 정책 목록 조회 API
 @app.get("/api/mcp/limits")
-async def api_get_limits(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_limits(current_user: dict = Depends(get_current_user_jwt)):
     """제한 정책 목록 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return {"limits": get_limit_list()}
 
 # 12-5. 관리자> 제한 정책 추가/수정 API
 @app.post("/api/mcp/limits")
-async def api_upsert_limit(req: LimitUpsertRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_upsert_limit(req: LimitUpsertRequest, current_user: dict = Depends(get_current_user_jwt)):
     """제한 정책 추가/수정 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     upsert_limit(req.target_type, req.target_id, req.max_count, req.description)
     return {"success": True}
 
 # 12-6. 관리자> 제한 정책 삭제 API
 @app.delete("/api/mcp/limits/{limit_id}")
-async def api_delete_limit(limit_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_delete_limit(limit_id: int, current_user: dict = Depends(get_current_user_jwt)):
     """제한 정책 삭제 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     delete_limit(limit_id)
     return {"success": True}
@@ -845,21 +846,17 @@ class SystemConfigUpsertRequest(BaseModel):
     
 # 14-1. 설정 목록 조회 API (관리자 전용)
 @app.get("/api/system/config")
-async def api_get_configs(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_configs(current_user: dict = Depends(get_current_user_jwt)):
     """시스템 설정 목록 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return {"configs": get_all_configs()}
 
 # 14-2. 설정 추가/수정 API (관리자 전용)
 @app.post("/api/system/config")
-async def api_upsert_config(req: SystemConfigUpsertRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_upsert_config(req: SystemConfigUpsertRequest, current_user: dict = Depends(get_current_user_jwt)):
     """시스템 설정 추가/수정 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     if not req.name or not req.configuration or not req.description:
          raise HTTPException(status_code=400, detail="All fields (name, configuration, description) are required.")
@@ -879,11 +876,9 @@ async def api_upsert_config(req: SystemConfigUpsertRequest, x_user_id: str | Non
 
 # 14-3. 설정 삭제 API (관리자 전용)
 @app.delete("/api/system/config/{name}")
-async def api_delete_config(name: str, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_delete_config(name: str, current_user: dict = Depends(get_current_user_jwt)):
     """시스템 설정 삭제 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     delete_config(name)
     return {"success": True}
@@ -901,21 +896,17 @@ class CustomToolUpdateRequest(BaseModel):
 
 # 13-1. 동적 Tool 목록 조회 > {ROLE_ADMIN} 권한만 가능
 @app.get("/api/mcp/custom-tools")
-async def api_get_custom_tools(x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_custom_tools(current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 목록 조회 (관리자 전용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     return get_all_tools()
 
 # 13-2. 동적 Tool 상세 조회 > {ROLE_ADMIN} 권한만 가능
 @app.get("/api/mcp/custom-tools/{tool_id}")
-async def api_get_custom_tool_detail(tool_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_get_custom_tool_detail(tool_id: int, current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 상세 조회 (파라미터 포함)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     tool = get_tool_by_id(tool_id)
     if not tool:
@@ -926,11 +917,9 @@ async def api_get_custom_tool_detail(tool_id: int, x_user_id: str | None = Heade
 
 # 13-3. 동적 Tool 생성 > {ROLE_ADMIN} 권한만 가능
 @app.post("/api/mcp/custom-tools")
-async def api_create_custom_tool(req: CustomToolCreateRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_create_custom_tool(req: CustomToolCreateRequest, current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 생성."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         # 1. Tool 생성
@@ -940,7 +929,7 @@ async def api_create_custom_tool(req: CustomToolCreateRequest, x_user_id: str | 
             definition=req.definition,
             description_user=req.description_user or "",
             description_agent=req.description_agent or "",
-            created_by=x_user_id
+            created_by=current_user['uid']
         )
         
         # 2. Params 생성
@@ -960,11 +949,9 @@ async def api_create_custom_tool(req: CustomToolCreateRequest, x_user_id: str | 
 
 # 13-4. 동적 Tool 수정 > {ROLE_ADMIN} 권한만 가능
 @app.put("/api/mcp/custom-tools/{tool_id}")
-async def api_update_custom_tool(tool_id: int, req: CustomToolUpdateRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_update_custom_tool(tool_id: int, req: CustomToolUpdateRequest, current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 수정."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         # 1. Tool 정보 수정
@@ -996,11 +983,9 @@ async def api_update_custom_tool(tool_id: int, req: CustomToolUpdateRequest, x_u
 
 # 13-5. 동적 Tool 삭제 > {ROLE_ADMIN} 권한만 가능
 @app.delete("/api/mcp/custom-tools/{tool_id}")
-async def api_delete_custom_tool(tool_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_delete_custom_tool(tool_id: int, current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 삭제."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     delete_tool(tool_id)
     return {"success": True}
@@ -1013,11 +998,9 @@ class ToolTestRequest(BaseModel):
 
 # 13-7. 동적 Tool 테스트 실행 > {ROLE_ADMIN} 권한만 가능
 @app.post("/api/mcp/custom-tools/test")
-async def api_test_custom_tool(req: ToolTestRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_test_custom_tool(req: ToolTestRequest, current_user: dict = Depends(get_current_user_jwt)):
     """동적 Tool 로직 테스트 실행 (저장 전 확인용)."""
-    if not x_user_id: raise HTTPException(status_code=401, detail="Missing User ID header")
-    user = get_user(x_user_id)
-    if not user or user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     
     try:
         try:
@@ -1054,15 +1037,10 @@ class EmailSendRequest(BaseModel):
 
 # 15-1. 메일 발송 API
 @app.post("/api/email/send")
-async def api_send_email(req: EmailSendRequest, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_send_email(req: EmailSendRequest, current_user: dict = Depends(get_current_user_jwt)):
     """메일 발송 요청 ( 즉시/예약 )"""
-    # 1. 인증 체크
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    user = get_user(x_user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+    # 1. 인증 체크 (Depends에서 처리됨)
+    user = current_user
 
     # 2. DB 이력 저장 (PENDING)
     try:
@@ -1109,15 +1087,10 @@ async def api_send_email(req: EmailSendRequest, x_user_id: str | None = Header(d
 
 # 15-2. 메일 발송 이력 조회 API
 @app.get("/api/email/logs")
-async def api_get_email_logs(x_user_id: str | None = Header(default=None, alias="X-User-Id"), limit: int = 100):
+async def api_get_email_logs(limit: int = 100, current_user: dict = Depends(get_current_user_jwt)):
     """메일 발송 이력 조회"""
-    # 1. 인증 체크
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    user = get_user(x_user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+    # authenticated user
+    user = current_user
         
     # 관리자는 전체 조회, 일반 유저는 본인 것만 조회? 
     # 요구사항에는 명시 없으나 일단 본인 것만 조회하도록 하거나, 
@@ -1131,14 +1104,9 @@ async def api_get_email_logs(x_user_id: str | None = Header(default=None, alias=
 
 # 15-3. 메일 발송 취소 API
 @app.post("/api/email/cancel/{log_id}")
-async def api_cancel_email(log_id: int, x_user_id: str | None = Header(default=None, alias="X-User-Id")):
+async def api_cancel_email(log_id: int, current_user: dict = Depends(get_current_user_jwt)):
     """예약 메일 발송 취소"""
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    user = get_user(x_user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+    user = current_user
         
     is_admin = user['role'] == 'ROLE_ADMIN'
     
@@ -1148,6 +1116,41 @@ async def api_cancel_email(log_id: int, x_user_id: str | None = Header(default=N
         raise HTTPException(status_code=400, detail=msg)
         
     return {"success": True, "message": msg}
+
+
+# ==========================================
+# 16. 외부 접속 토큰 관리 API (h_access_token)
+# ==========================================
+class AccessTokenCreateRequest(BaseModel):
+    name: str
+
+# 16-1. 토큰 목록 조회 (관리자 전용)
+@app.get("/api/access-tokens")
+async def api_get_access_tokens(current_user: dict = Depends(get_current_user_jwt)):
+    """외부 접속용 토큰 목록 조회."""
+    if current_user['role'] != 'ROLE_ADMIN':
+         raise HTTPException(status_code=403, detail="Admin access required")
+    return {"tokens": get_all_access_tokens()}
+
+# 16-2. 토큰 생성 (관리자 전용)
+@app.post("/api/access-tokens")
+async def api_create_access_token(req: AccessTokenCreateRequest, current_user: dict = Depends(get_current_user_jwt)):
+    """외부 접속용 토큰 생성."""
+    if current_user['role'] != 'ROLE_ADMIN':
+         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    token = create_access_token(req.name)
+    return {"success": True, "token": token}
+
+# 16-3. 토큰 삭제 (관리자 전용)
+@app.delete("/api/access-tokens/{token_id}")
+async def api_delete_access_token(token_id: int, current_user: dict = Depends(get_current_user_jwt)):
+    """외부 접속용 토큰 삭제 (Soft Delete)."""
+    if current_user['role'] != 'ROLE_ADMIN':
+         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    delete_access_token(token_id)
+    return {"success": True}
 
 
 # ==========================================
@@ -1175,15 +1178,40 @@ async def handle_sse(request: Request, token: str = Query(None)):
         if token:
             print(f"*** SSE REQUEST RECEIVED. Token: {token} ***")
             try:
-                # 토큰으로 사용자 조회 (유효성 체크 포함)
-                user = get_user_by_active_token(token)
-                if user:
-                     print(f"*** Token validation result: {user['user_id']} ({user['role']}) ***")
+                # 1. JWT 토큰 검증 시도
+                payload = None
+                try:
+                    payload = verify_token(token)
+                except Exception:
+                    # JWT 파싱 실패 시, 일반 Access Token으로 간주하고 계속 진행
+                    payload = None
+
+                if payload:
+                     # JWT Valid
+                     user_id = payload.get("sub")
+                     user = get_user(user_id)
+                     if user:
+                         print(f"*** Token validation result: {user['user_id']} ({user['role']}) ***")
+                     else:
+                         print("*** User not found (JWT) ***")
                 else:
-                     print("*** TOKEN INVALID ***")
+                     # 2. h_access_token 검증 시도
+                     access_token_data = get_access_token(token)
+                     if access_token_data:
+                         print(f"*** Valid Access Token Found: {access_token_data['name']} ***")
+                         # 외부 접속용 토큰은 'external' 시스템 관리자 계정 권한으로 매핑
+                         user = get_user('external')
+                         if not user:
+                             # 만약 external 유저가 없다면 admin으로 매핑하거나 에러 처리 (여기서는 Admin 매핑 시도)
+                             user = get_user('admin')
+                             print("*** 'external' user not found, fallback to 'admin' ***")
+                     else:
+                         print("*** TOKEN INVALID (Neither JWT nor AccessToken) ***")
+                         user = None
             except Exception as e:
                 print(f"*** Token validation error: {e} ***")
                 logger.error(f"Token validation error: {e}")
+                user = None
 
         # 13-2-2. 사용자 컨텍스트 설정 (User Context Setup)
         if user:
@@ -1193,7 +1221,7 @@ async def handle_sse(request: Request, token: str = Query(None)):
                  raise HTTPException(status_code=403, detail="Account is disabled")
 
             # ContextVar에 사용자 정보 저장 -> 이후 Tool 실행 시 get_current_user()로 접근 가능
-            set_current_user(user)
+            set_current_user(dict(user))
             logger.info(f"SSE Connected: {user['user_id']} ({user['role']})")
         else:
             # 토큰이 없거나 유효하지 않은 경우 -> Guest 모드로 접속 허용

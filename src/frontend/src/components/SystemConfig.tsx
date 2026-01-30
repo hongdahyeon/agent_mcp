@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Settings, Plus, Edit2, Trash2, Save, X, Search } from 'lucide-react';
+import { getAuthHeaders } from '../utils/auth';
 import type { Props, SystemConfig, ConfigFormData } from '../types/systemConfig';
 
 
@@ -23,7 +24,7 @@ export function SystemConfig({ token }: Props) {
         setLoading(true);
         try {
             const res = await fetch('/api/system/config', {
-                headers: { 'X-User-Id': 'admin' }
+                headers: getAuthHeaders()
             });
             if (!res.ok) throw new Error('Failed to fetch configs');
             const data = await res.json();
@@ -70,7 +71,7 @@ export function SystemConfig({ token }: Props) {
         try {
             const res = await fetch(`/api/system/config/${name}`, {
                 method: 'DELETE',
-                headers: { 'X-User-Id': 'admin' }
+                headers: getAuthHeaders()
             });
             
             if (!res.ok) throw new Error('Failed to delete config');
@@ -103,7 +104,7 @@ export function SystemConfig({ token }: Props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-User-Id': 'admin'
+                    ...getAuthHeaders()
                 },
                 body: JSON.stringify(formData)
             });

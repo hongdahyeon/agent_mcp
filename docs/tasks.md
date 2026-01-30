@@ -125,18 +125,18 @@
 - [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
 - [x] 4. 기능 검증
 
-## 19. 사용자 토큰 관리 (Phase 1) (Completed)
+## 19. 사용자 토큰 관리 (Phase 1) (REMOVED)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. DB 스키마 생성 (Token Management)
     - [x] `h_user_token`: 사용자별 API 토큰 관리 (token_value, expired_at 등)
-- [x] 2. Backend API 구현
-    - [x] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
-    - [x] `POST /api/user/token`: 토큰 발급 API
-    - [x] `GET /api/user/token`: 현재 유효 토큰 조회 API
-- [x] 3. Frontend UI 구현
-    - [x] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
-    - [x] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
-- [x] 4. 기능 검증
+- [ ] 2. Backend API 구현 (Removed per user request)
+    - [ ] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
+    - [ ] `POST /api/user/token`: 토큰 발급 API
+    - [ ] `GET /api/user/token`: 현재 유효 토큰 조회 API
+- [ ] 3. Frontend UI 구현 (Removed)
+    - [ ] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
+    - [ ] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
+- [ ] 4. 기능 검증
 
 ## 20. 버그 수정: get_user_info DB 오류 (Completed)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
@@ -309,3 +309,10 @@
     - [x] 스케줄러 로직 작성 (Setup, Process)
 - [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
 - [x] 5. 기능 검증
+
+## 39. JWT 인증 구현 (Phase 22)
+- [x] 1. Dependency: `requirements.txt` 패키지 설치
+- [x] 2. Auth Utility: `src/utils/auth.py` 구현 (JWT, Bcrypt)
+- [x] 3. DB Refactor: `src/db/user.py` 해싱 로직 변경 (SHA256 -> Bcrypt)
+- [x] 4. Server Refactor: `src/sse_server.py` 로그인 API 및 의존성 주입 변경
+- [x] 5. 기능 검증 (로그인, 토큰 검증)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AccessTokenManager } from './components/AccessTokenManager';
 import clsx from 'clsx';
 import { useMcp } from './hooks/useMcp';
 import { Dashboard } from './components/Dashboard';
@@ -21,6 +22,7 @@ import {
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
 } from 'lucide-react';
 import type { UsageData } from './types/usage';
+import { getAuthHeaders } from './utils/auth';
 
 // 세션은 최대 3시간까지 유지할 수 있다.
 const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
@@ -74,7 +76,9 @@ function App() {
   });
 
   // 화면 상태 (View State)
-  const [activeView, setActiveView] = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users' | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'config' | 'email'>('dashboard');
+  const [activeView, setActiveView] 
+  = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
+   | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -94,9 +98,7 @@ function App() {
     try {
       console.log("[App] Fetching usage stats for user:", userId);
       const res = await fetch('/api/mcp/my-usage', {
-        headers: {
-          'X-User-Id': userId
-        }
+        headers: getAuthHeaders()
       });
 
       if (res.ok) {
@@ -229,6 +231,7 @@ function App() {
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
+        { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
         { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
       ]
@@ -335,13 +338,14 @@ function App() {
           {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
-          {activeView === 'email' && user && <EmailSender user={user} />}
+          {activeView === 'email' && user && <EmailSender />}
           {activeView === 'history' && <LoginHistViewer />}
           {activeView === 'mypage' && <MyPage />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}
           {activeView === 'usage-history' && user.role === 'ROLE_ADMIN' && <UsageHistory />}
           {activeView === 'limits' && user.role === 'ROLE_ADMIN' && <LimitManagement />}
           {activeView === 'custom-tools' && user.role === 'ROLE_ADMIN' && <CustomTools />}
+          {activeView === 'access-tokens' && user.role === 'ROLE_ADMIN' && <AccessTokenManager />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig token={authToken} />}
         </div>

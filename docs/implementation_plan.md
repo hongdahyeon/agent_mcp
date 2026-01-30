@@ -649,8 +649,45 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 -   `setup_scheduler(app)`: FastAPI 앱 시작 시 스케줄러 구동.
 -   `process_scheduled_emails()`: 실제 발송 로직 (DB 조회 -> Mailer 전송 -> DB 업데이트).
 
-### 4. Integration (`src/sse_server.py`)
--   `contextlib.asynccontextmanager`(`lifespan`)을 사용하여 서버 시작/종료 시 스케줄러 제어.
+###- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
+- [x] 5. 기능 검증
+
+---
+
+## Phase 22: JWT Authentication Implementation [Completed]
+
+### Goal
+기존의 단순 토큰 방식을 **JWT (JSON Web Token)** 기반 인증으로 교체하여 보안성 및 표준성을 강화합니다.
+관리자 페이지 접근 시 토큰 검증 및 권한 체크를 수행하며, 로그인 지속 시간은 **12시간**으로 설정합니다.
+**[Update]**: 사용자 토큰 시스템(`h_user_token`)은 제거되었으며, 모든 인증은 **로그인 기반의 JWT**로 통일되었습니다.
+
+### Requirements
+1.  **Tech Stack**:
+    -   `python-jose` (JWT 생성 및 검증)
+    -   `passlib[bcrypt]` (비밀번호 해싱 및 검증)
+    -   `python-multipart` (OAuth2PasswordRequestForm 지원)
+2.  **Auth Flow**:
+    -   **Login**: OAuth2 Password Flow (`username`/`password`) -> 검증 -> JWT Access Token 발급 (12h).
+    -   **MCP Connection**: MyPage -> '토큰 발급' -> JWT Access Token 발급 (365 days).
+    -   **Verification**: 요청 헤더 `Authorization: Bearer {token}` -> JWT 디코딩 -> 사용자 식별 & 권한 체크.
+3.  **Token Policy**:
+    -   Algorithm: `HS256`
+    -   Expiration: 12시간 (Login), 1년 (MCP Key)
+    -   Payload: `sub` (user_id), `role` (권한), `type` (api_key/login)
+4.  **Admin Protection**:
+    -   관리자 전용 API 접근 시, JWT의 `role`이 `ROLE_ADMIN`인지 확인.
+
+### Implemented Changes
+-   **Dependencies**: `python-jose`, `passlib`, `python-multipart` 추가.
+-   **Auth Utility**: `src/utils/auth.py` (JWT Creation/Verification, Bcrypt).
+-   **User Token**: `src/db/user_token.py` 수정 (Random String -> Long-lived JWT).
+-   **Server Refactor**: `src/sse_server.py`의 `handle_sse` 및 API 의존성을 JWT 기반으로 변경.
+-   **Frontend**: `App.tsx`, `MyPage.tsx` 등에서 `Authorization: Bearer` 헤더 사용.
+
+### Verification Results
+1.  **Login**: JWT 발급 및 로그인 성공.
+2.  **MCP Token**: MyPage에서 Long-lived JWT 발급 확인.
+3.  **Validation**: `curl` 및 Frontend API 호출 테스트 완료.
 
 ## Verification Plan
 1.  **Dependency Install**: `pip install apscheduler`

@@ -1,9 +1,13 @@
-import hashlib
+# import hashlib  <-- Removed
 from .connection import get_db_connection
+try:
+    from src.utils.auth import verify_password, get_password_hash
+except ImportError:
+    from utils.auth import verify_password, get_password_hash
 
 """
     h_user 테이블 관련
-    - [1] verify_password: 비밀번호 검증
+    - [1] verify_password: 비밀번호 검증 (Delegated to auth.py)
     - [2] get_user: {user_id} 값으로 사용자 정보 조회
     - [3] get_all_users: 모든 사용자 조회 (비밀번호 제외, 페이징 포함)
     - [4] check_user_id: 사용자 ID 중복 확인
@@ -12,11 +16,9 @@ from .connection import get_db_connection
 """
 
 # [1] verify_password: 비밀번호 검증
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """비밀번호 검증 (SHA256) 및 길이 체크."""
-    if len(plain_password) < 4:
-        return False
-    return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
+# auth.py에서 import하여 사용하므로 별도 정의 불필요하나,
+# 기존 인터페이스 유지를 위해 그대로 두거나 재export 됨.
+# (verify_password는 위에서 import 되었음)
 
 
 # [2] get_user: 유저 ID 값으로 조회
@@ -66,7 +68,7 @@ def create_user(user_data: dict):
     
     # 비밀번호 해시
     if 'password' in user_data and user_data['password']:
-         password_hash = hashlib.sha256(user_data['password'].encode()).hexdigest()
+         password_hash = get_password_hash(user_data['password'])
     else:
          raise ValueError("비밀번호는 필수입니다")
 
