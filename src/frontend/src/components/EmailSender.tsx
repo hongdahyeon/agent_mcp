@@ -175,7 +175,16 @@ export const EmailSender: React.FC<Props> = ({ user }) => {
                                     <input 
                                         type="checkbox" 
                                         checked={isScheduled} 
-                                        onChange={(e) => setIsScheduled(e.target.checked)}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setIsScheduled(checked);
+                                            if (checked && !scheduledDt) {
+                                                // 현재 시간(Local)으로 설정 (YYYY-MM-DDThh:mm)
+                                                const now = new Date();
+                                                const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                                                setScheduledDt(localIso);
+                                            }
+                                        }}
                                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                     />
                                     예약 발송

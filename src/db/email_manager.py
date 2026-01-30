@@ -10,6 +10,7 @@ except ImportError:
     - [2] update_email_status: 이메일 발송 상태를 업데이트합니다.
     - [3] get_email_logs: 이메일 발송 이력을 조회합니다.
     - [4] cancel_email_log: 예약된 이메일 발송을 취소합니다.
+    - [5] get_pending_scheduled_emails: 발송 대기 중인 예약 이메일을 조회합니다.
 """
 
 # [1] log_email: 이메일 발송 이력을 DB에 기록합니다.
@@ -121,3 +122,32 @@ def cancel_email_log(log_id: int, user_uid: int, is_admin: bool = False) -> tupl
     conn.close()
     
     return True, "Email cancelled successfully."
+
+# [5] get_pending_scheduled_emails: 발송 대기 중인 예약 이메일을 조회합니다.
+def get_pending_scheduled_emails():
+    """
+    발송 대기 중인 예약 이메일을 조회합니다.
+    조건: status='PENDING' AND is_scheduled=1 AND scheduled_dt <= NOW
+    """
+    conn = get_db_connection()
+    conn.row_factory = None  # 딕셔너리가 아닌 튜플로 받기 위해 (또는 dict_factory 사용 시 주의)
+    # 여기서는 dict factory를 사용하는 connection.py의 설정을 따르므로, 
+    # connection.py가 row_factory를 sqlite3.Row로 설정한다면 dict처럼 접근 가능.
+    
+    cursor = conn.cursor()
+    
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    query = """
+        SELECT *
+        FROM h_email_log
+        WHERE status = 'PENDING' 
+          AND is_scheduled = 1 
+          AND scheduled_dt <= ?
+    """
+    
+    cursor.execute(query, (now_str,))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]

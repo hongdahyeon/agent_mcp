@@ -11,16 +11,24 @@ import os
 from datetime import datetime
 import sys
 import json
+from contextlib import asynccontextmanager
+import requests
+
 try:
     from src.utils.context import set_current_user, get_current_user, clear_current_user
     from src.tool_executor import execute_sql_tool, execute_python_tool
     from src.utils.mailer import EmailSender
     from src.db.email_manager import log_email, update_email_status, get_email_logs, cancel_email_log
+    from src.scheduler import start_scheduler, shutdown_scheduler
 except ImportError:
     from utils.context import set_current_user, get_current_user, clear_current_user
     from tool_executor import execute_sql_tool, execute_python_tool
     from utils.mailer import EmailSender
     from db.email_manager import log_email, update_email_status, get_email_logs
+    try:
+        from scheduler import start_scheduler, shutdown_scheduler
+    except ImportError:
+        from src.scheduler import start_scheduler, shutdown_scheduler
 
 # CRITICAL DEBUG: Verify exact file execution
 print(f"!!! SERVER STARTING FROM: {os.path.abspath(__file__)} !!!")
@@ -36,9 +44,12 @@ current_time = datetime.now().strftime("%Y-%m-%d")
 log_filename = f"{LOG_DIR}/{current_time}.txt"
 
 # 로깅 구성 - 핸들러를 로거에 직접 연결하여 유지되도록 함
-logger = logging.getLogger("mcp-server")
+# ROOT Logger 설정 (모든 모듈의 로그를 캡처하기 위해)
+logger = logging.getLogger() 
 logger.setLevel(logging.INFO)
-logger.propagate = False # Uvicorn이 로그를 중복 처리하지 않도록 설정
+
+# APScheduler 로그 레벨 조정 (매 분마다 실행 로그 찍히는 것 방지)
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 # 핸들러 생성
 # buffering=1: 라인 단위 버퍼링
@@ -62,7 +73,24 @@ logger.info(f"Server started. Log file: {log_filename}")
 # ==========================================
 # 2. MCP 서버 초기화
 # ==========================================
-app = FastAPI()
+# [1] lifespan: 스케줄러 시작/종료 관리
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: 스케줄러 시작
+    try:
+        start_scheduler()
+    except Exception as e:
+        logger.error(f"Failed to start scheduler: {e}")
+    
+    yield
+    
+    # Shutdown: 스케줄러 종료
+    try:
+        shutdown_scheduler()
+    except Exception as e:
+        logger.error(f"Failed to shutdown scheduler: {e}")
+
+app = FastAPI(lifespan=lifespan)
 mcp = Server("agent-mcp-sse")
 sse = SseServerTransport("/messages")
 
@@ -1064,8 +1092,20 @@ async def api_send_email(req: EmailSendRequest, x_user_id: str | None = Header(d
             
         return {"success": True, "log_id": log_id, "status": "SENT"}
     
-    # 예약 발송인 경우, 일단 PENDING 상태로 유지 (추후 스케줄러가 처리)
-    return {"success": True, "log_id": log_id, "status": "PENDING (Scheduled)"}
+    # 예약 발송인 경우: 스케줄러에 작업 등록
+    try:
+         try:
+             from src.scheduler import add_scheduled_job
+         except ImportError:
+             from scheduler import add_scheduled_job
+            
+         logger.info("Scheduling email job for log_id: {}".format(log_id))
+         add_scheduled_job(log_id, req.scheduled_dt)
+         return {"success": True, "log_id": log_id, "status": "PENDING (Scheduled)"}
+    except Exception as e:
+         logger.error(f"Failed to schedule job: {e}")
+         # 스케줄러 등록 실패해도 DB에는 PENDING 상태로 남아있으므로 Polling Job이 처리 가능
+         return {"success": True, "log_id": log_id, "status": "PENDING (Scheduled, Job Add Failed)", "warning": str(e)}
 
 # 15-2. 메일 발송 이력 조회 API
 @app.get("/api/email/logs")
