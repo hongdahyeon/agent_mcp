@@ -301,3 +301,11 @@
 - [x] 1. Backend: `cancel_email_log` DB 함수 및 `POST /api/email/cancel/{log_id}` API 구현
 - [x] 2. Frontend: 발송 이력 목록에 '취소' 버튼 추가 (PENDING 상태일 때만 표시)
 
+## 38. 예약 발송 스케줄러 구현
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Dependency: `requirements.txt`에 `apscheduler` 추가
+- [x] 2. DB: `get_pending_scheduled_emails` 함수 구현 (`src/db/email_manager.py`)
+- [x] 3. Scheduler: `src/scheduler.py` 구현
+    - [x] 스케줄러 로직 작성 (Setup, Process)
+- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
+- [x] 5. 기능 검증

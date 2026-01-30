@@ -620,3 +620,42 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ### 1. Mailer Utility
 -   Get config by name `gmail_config`.
 -   Parse JSON -> extract host, port, user, password.
+
+---
+
+# Phase 21: Email Scheduler Implementation
+
+## Goal
+예약된 이메일(`is_scheduled=1`, `status='PENDING'`, `scheduled_dt <= now`)을 주기적으로 확인하여 자동으로 발송하는 스케줄러를 구현합니다.
+
+## Requirements
+1.  **Scheduler Library**: `APScheduler` (Advanced Python Scheduler) 사용.
+2.  **Job**: 1분 주기로 DB를 조회하여 발송 대상 이메일을 찾음.
+3.  **Process**:
+    -   DB에서 `PENDING` 상태이면서 `scheduled_dt`가 현재 시간보다 과거/현재인 건 조회.
+    -   SMTP를 통해 메일 발송.
+    -   성공 시 `status='SENT'`, `sent_dt=now`.
+    -   실패 시 `status='FAILED'`, `error_msg` 기록.
+
+## Proposed Changes
+
+### 1. Dependencies
+-   `requirements.txt`: `apscheduler` 추가.
+
+### 2. Database Logic (`src/db/email_manager.py`)
+-   `get_pending_scheduled_emails()`: 발송 대상 이메일 조회 함수 추가.
+
+### 3. Scheduler Logic (`src/scheduler.py`) [New]
+-   `setup_scheduler(app)`: FastAPI 앱 시작 시 스케줄러 구동.
+-   `process_scheduled_emails()`: 실제 발송 로직 (DB 조회 -> Mailer 전송 -> DB 업데이트).
+
+### 4. Integration (`src/sse_server.py`)
+-   `contextlib.asynccontextmanager`(`lifespan`)을 사용하여 서버 시작/종료 시 스케줄러 제어.
+
+## Verification Plan
+1.  **Dependency Install**: `pip install apscheduler`
+2.  **Schedule Test**:
+    -   이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
+    -   DB `h_email_log`에 `PENDING` 상태 확인.
+    -   2분 후 자동으로 `SENT`로 변경되는지 확인.
+    -   실제 메일 수신 확인.

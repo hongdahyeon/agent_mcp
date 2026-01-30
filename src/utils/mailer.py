@@ -1,3 +1,4 @@
+import logging
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -5,6 +6,8 @@ try:
     from src.db.system_config import get_config_value
 except ImportError:
     from db.system_config import get_config_value
+
+logger = logging.getLogger(__name__)
 
 """
    이메일 발송 관련 py 파일 
@@ -34,6 +37,7 @@ class EmailSender:
         Send an email immediately using Gmail SMTP.
         Returns: (success: bool, error_msg: str | None)
         """
+        logger.info("Sending email to {}".format(recipient))
         try:
             config = self._get_config()
             

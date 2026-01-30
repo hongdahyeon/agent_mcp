@@ -2,3 +2,5 @@ mcp
 fastapi
 uvicorn
 sse-starlette
+
+apscheduler
