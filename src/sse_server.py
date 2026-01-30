@@ -21,13 +21,13 @@ try:
     from src.utils.mailer import EmailSender
     from src.db.email_manager import log_email, update_email_status, get_email_logs, cancel_email_log
     from src.scheduler import start_scheduler, shutdown_scheduler
-    from src.utils.auth import create_access_token, verify_token, verify_password, get_password_hash
+    from src.utils.auth import create_access_token as create_jwt_token, verify_token, verify_password, get_password_hash
 except ImportError:
     from utils.context import set_current_user, get_current_user, clear_current_user
     from tool_executor import execute_sql_tool, execute_python_tool
     from utils.mailer import EmailSender
     from db.email_manager import log_email, update_email_status, get_email_logs
-    from utils.auth import create_access_token, verify_token, verify_password, get_password_hash
+    from utils.auth import create_access_token as create_jwt_token, verify_token, verify_password, get_password_hash
     try:
         from scheduler import start_scheduler, shutdown_scheduler
     except ImportError:
@@ -564,7 +564,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
             
         # JWT 생성
         access_token_expires = timedelta(hours=12)
-        access_token = create_access_token(
+        access_token = create_jwt_token(
             data={"sub": user['user_id'], "role": user['role']},
             expires_delta=access_token_expires
         )
