@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
     Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code
 } from 'lucide-react';
-import type { CustomTool, ToolParam, CustomToolFormData } from '../types/CustomTool';
+import type { CustomTool, ToolParam, CustomToolFormData } from '../types/CustomToolMng';
 import { getAuthHeaders } from '../utils/auth';
 
 /**

@@ -21,7 +21,7 @@ import {
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
 } from 'lucide-react';
-import type { UsageData } from './types/Usage';
+import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
 
 // 세션은 최대 3시간까지 유지할 수 있다.
