@@ -6,9 +6,11 @@ from typing import Any, Callable
 try:
     from src.db import get_active_tools, get_tool_params
     from src.tool_executor import execute_sql_tool, execute_python_tool
+    from src.utils.server_audit import audit_log
 except ImportError:
     from db import get_active_tools, get_tool_params
     from tool_executor import execute_sql_tool, execute_python_tool
+    from utils.server_audit import audit_log
 
 """
     해당 파일은 python server 시작 시점에 사용자가 동적으로 생성한 tool 목록을 로딩하기 위한 def
@@ -73,6 +75,7 @@ def _register_single_tool(mcp: FastMCP, tool: dict):
     DynamicModel = create_model(f"DynamicArgs_{tool_name}", **field_definitions)
     
     # 3. 실행 핸들러 생성 (Closure 활용)
+    @audit_log
     async def dynamic_handler(**kwargs) -> str:
         # 인자 검증 (Pydantic이 이미 수행했으나, 값 추출)
         # kwargs에는 모델의 필드들이 들어옴
