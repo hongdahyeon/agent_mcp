@@ -20,7 +20,7 @@ interface Props {
 export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const [selectedTool, setSelectedTool] = useState<string>('');
     const [formValues, setFormValues] = useState<Record<string, any>>({});
-    
+
     // Result handling (Local state for display control)
     const [displayResult, setDisplayResult] = useState<any>(lastResult || null);
     const [copied, setCopied] = useState(false);
@@ -52,13 +52,33 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
         const props = currentTool.inputSchema.properties;
 
         Object.keys(formValues).forEach(key => {
-            const type = props[key]?.type;
+            const prop = props[key];
+            const type = prop?.type;
+            const value = formValues[key];
+
+            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+                return; // Skip empty values
+            }
+
             if (type === 'integer' || type === 'number') {
-                args[key] = Number(formValues[key]);
+                const numericVal = Number(value);
+                if (!isNaN(numericVal)) {
+                    args[key] = numericVal;
+                }
+            } else if (type === 'boolean') {
+                args[key] = value === 'true' || value === true;
             } else {
-                args[key] = formValues[key];
+                args[key] = value;
             }
         });
+
+        // Check required fields
+        const requiredFields = currentTool.inputSchema.required || [];
+        const missingFields = requiredFields.filter(f => args[f] === undefined);
+        if (missingFields.length > 0) {
+            alert(`필수 파라미터가 누락되었습니다: ${missingFields.join(', ')}`);
+            return;
+        }
 
         // Use tool name as ID for stats tracking in hook
         sendRpc('tools/call', { name: selectedTool, arguments: args }, selectedTool);
@@ -108,7 +128,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                         >
                             <option value="">선택하세요 (Select Tool)</option>
                             {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
-                                {tools.map(t => {
+                            {tools.map(t => {
                                 const isDynamic = t.description?.startsWith('[Dynamic]');
                                 const isSystem = t.description?.startsWith('[System]');
                                 const typeLabel = isDynamic ? '(Dynamic)' : isSystem ? '(System)' : '';
@@ -116,7 +136,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                             })}
                         </select>
                         {refreshTools && (
-                            <button 
+                            <button
                                 onClick={refreshTools}
                                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
                                 title="도구 목록 새로고침"
@@ -168,9 +188,9 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                         실행 결과 (JSON)
                         {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
                     </h3>
-                    
+
                     {displayResult && (
-                        <button 
+                        <button
                             onClick={handleCopy}
                             className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
                             title="결과 복사"

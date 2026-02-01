@@ -21,7 +21,7 @@ import {
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
 } from 'lucide-react';
-import type { UsageData } from './types/usage';
+import type { UsageData } from './types/Usage';
 import { getAuthHeaders } from './utils/auth';
 
 // 세션은 최대 3시간까지 유지할 수 있다.
@@ -76,9 +76,9 @@ function App() {
   });
 
   // 화면 상태 (View State)
-  const [activeView, setActiveView] 
-  = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-   | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email'>('dashboard');
+  const [activeView, setActiveView]
+    = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
+      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));

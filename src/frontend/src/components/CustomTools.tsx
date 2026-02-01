@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
-import { 
-    Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code 
+import {
+    Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code
 } from 'lucide-react';
-import type { CustomTool, ToolParam, CustomToolFormData } from '../types/customTool';
+import type { CustomTool, ToolParam, CustomToolFormData } from '../types/CustomTool';
 import { getAuthHeaders } from '../utils/auth';
 
 /**
@@ -15,7 +15,7 @@ export function CustomTools() {
     // -------------------------------------------------------------------------
     // 1. 상태 관리 (State Management)
     // -------------------------------------------------------------------------
-    
+
     // 도구 목록 및 로딩/에러 상태
     const [tools, setTools] = useState<CustomTool[]>([]);
     const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ export function CustomTools() {
     // 모달(Modal) 관련 상태
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTool, setEditingTool] = useState<CustomTool | null>(null); // 수정 시 해당 도구 정보
-    
+
     // 폼 데이터 (생성/수정 시 사용)
     const [formData, setFormData] = useState<CustomToolFormData>({
         name: '',
@@ -39,11 +39,11 @@ export function CustomTools() {
 
     // 필드별 유효성 검사 에러 상태 (key: 필드명, value: 에러메시지)
     // 파라미터의 경우 `param_name_${index}` 형태로 키를 생성
-    const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
+    const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
     // 테스트 실행(Run) 관련 상태
     const [testResult, setTestResult] = useState<string>('');
-    const [testParams, setTestParams] = useState<{[key: string]: any}>({});
+    const [testParams, setTestParams] = useState<{ [key: string]: any }>({});
     const [isTestRunning, setIsTestRunning] = useState(false);
 
     // -------------------------------------------------------------------------
@@ -81,7 +81,7 @@ export function CustomTools() {
             });
             if (res.ok) {
                 const data = await res.json();
-                
+
                 setEditingTool(data.tool);
                 setFormData({
                     name: data.tool.name,
@@ -145,12 +145,12 @@ export function CustomTools() {
         const newParams = [...formData.params];
         newParams.splice(index, 1);
         setFormData({ ...formData, params: newParams });
-        
+
         // 삭제된 인덱스 이후의 에러 메시지 키 정리 (복잡하므로 에러도 날림)
         setFieldErrors(prev => {
             const next = { ...prev };
             // 단순히 전체 파라미터 에러를 날리고 재검증 유도하거나, 여기서 놔둬도 submit시 갱신됨
-            return next; 
+            return next;
         });
     };
 
@@ -159,7 +159,7 @@ export function CustomTools() {
         const newParams = [...formData.params];
         newParams[index] = { ...newParams[index], [field]: value };
         setFormData({ ...formData, params: newParams });
-        
+
         // 입력 시 해당 필드 에러 제거
         if (field === 'param_name') {
             setFieldErrors(prev => ({ ...prev, [`param_name_${index}`]: '' }));
@@ -167,7 +167,7 @@ export function CustomTools() {
             setFieldErrors(prev => ({ ...prev, [`param_desc_${index}`]: '' }));
         }
     };
-    
+
     // 일반 입력 필드 변경 핸들러
     const handleChange = (field: keyof CustomToolFormData, value: any) => {
         setFormData({ ...formData, [field]: value });
@@ -179,18 +179,18 @@ export function CustomTools() {
         e.preventDefault();
         setProcessing(true);
         setGlobalError('');
-        
+
         // ---------------------------------------------------------------------
         // Validation Check (필수값 검증) - 인라인 에러용
         // ---------------------------------------------------------------------
-        const newErrors: {[key: string]: string} = {};
-        
+        const newErrors: { [key: string]: string } = {};
+
         if (!formData.name.trim()) newErrors.name = "도구 이름(영문)을 입력해주세요.";
         if (!formData.description_user.trim()) newErrors.description_user = "사용자용 설명을 입력해주세요.";
         if (!formData.description_agent.trim()) newErrors.description_agent = "Agent용 설명을 입력해주세요.";
         if (!formData.definition.trim()) {
-            newErrors.definition = formData.tool_type === 'SQL' 
-                ? "SQL 쿼리를 입력해주세요." 
+            newErrors.definition = formData.tool_type === 'SQL'
+                ? "SQL 쿼리를 입력해주세요."
                 : "Python 표현식을 입력해주세요.";
         }
 
@@ -212,15 +212,15 @@ export function CustomTools() {
         // ---------------------------------------------------------------------
 
         try {
-            const url = editingTool 
+            const url = editingTool
                 ? `/api/mcp/custom-tools/${editingTool.id}`
                 : '/api/mcp/custom-tools';
-            
+
             const method = editingTool ? 'PUT' : 'POST';
 
             const res = await fetch(url, {
                 method: method,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -244,7 +244,7 @@ export function CustomTools() {
     /** 도구 삭제 */
     const handleDelete = async (id: number) => {
         if (!confirm("정말 이 도구를 삭제하시겠습니까?")) return;
-        
+
         try {
             const res = await fetch(`/api/mcp/custom-tools/${id}`, {
                 method: 'DELETE',
@@ -265,7 +265,7 @@ export function CustomTools() {
         try {
             const res = await fetch('/api/mcp/custom-tools/test', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -275,7 +275,7 @@ export function CustomTools() {
                     params: testParams
                 })
             });
-            
+
             const data = await res.json();
             if (data.success) {
                 setTestResult(data.result);
@@ -343,7 +343,7 @@ export function CustomTools() {
                                 <tr key={tool.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center">
-                                            {tool.tool_type === 'SQL' 
+                                            {tool.tool_type === 'SQL'
                                                 ? <Database className="w-4 h-4 text-orange-500 mr-2" />
                                                 : <Code className="w-4 h-4 text-green-500 mr-2" />
                                             }
@@ -362,9 +362,8 @@ export function CustomTools() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            tool.is_active === 'Y' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                        }`}>
+                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tool.is_active === 'Y' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
                                             {tool.is_active === 'Y' ? 'Active' : 'Inactive'}
                                         </span>
                                     </td>
@@ -391,7 +390,7 @@ export function CustomTools() {
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        
+
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* 기본 정보 (Basic Info) */}
                             <div className="grid grid-cols-2 gap-4">
@@ -399,9 +398,8 @@ export function CustomTools() {
                                     <label className="block text-sm font-medium text-gray-700">도구 이름 (영문)</label>
                                     <input
                                         type="text"
-                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${
-                                            fieldErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
+                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${fieldErrors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                                            }`}
                                         value={formData.name}
                                         onChange={e => handleChange('name', e.target.value)}
                                         placeholder="get_user_info"
@@ -426,9 +424,8 @@ export function CustomTools() {
                                     <label className="block text-sm font-medium text-gray-700">사용자용 설명</label>
                                     <input
                                         type="text"
-                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${
-                                            fieldErrors.description_user ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
+                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${fieldErrors.description_user ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                                            }`}
                                         value={formData.description_user}
                                         onChange={e => handleChange('description_user', e.target.value)}
                                         placeholder="사용자 정보를 조회합니다."
@@ -439,9 +436,8 @@ export function CustomTools() {
                                     <label className="block text-sm font-medium text-gray-700">Agent용 설명 (프롬프트)</label>
                                     <input
                                         type="text"
-                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${
-                                            fieldErrors.description_agent ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
+                                        className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm ${fieldErrors.description_agent ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                                            }`}
                                         value={formData.description_agent}
                                         onChange={e => handleChange('description_agent', e.target.value)}
                                         placeholder="Retrieve user information from DB."
@@ -456,13 +452,12 @@ export function CustomTools() {
                                     {formData.tool_type === 'SQL' ? 'SQL Query (Use :param_name for binding)' : 'Python Expression'}
                                 </label>
                                 <textarea
-                                    className={`w-full h-32 font-mono text-sm border rounded-md p-3 focus:outline-none bg-gray-50 ${
-                                        fieldErrors.definition ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                    }`}
+                                    className={`w-full h-32 font-mono text-sm border rounded-md p-3 focus:outline-none bg-gray-50 ${fieldErrors.definition ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                                        }`}
                                     value={formData.definition}
                                     onChange={e => handleChange('definition', e.target.value)}
-                                    placeholder={formData.tool_type === 'SQL' 
-                                        ? "SELECT * FROM h_user WHERE user_id = :user_id" 
+                                    placeholder={formData.tool_type === 'SQL'
+                                        ? "SELECT * FROM h_user WHERE user_id = :user_id"
                                         : "a * b"
                                     }
                                 />
@@ -483,13 +478,12 @@ export function CustomTools() {
                                                     <input
                                                         type="text"
                                                         placeholder="Name"
-                                                        className={`w-full border rounded px-2 py-1 text-sm ${
-                                                            fieldErrors[`param_name_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
-                                                        }`}
+                                                        className={`w-full border rounded px-2 py-1 text-sm ${fieldErrors[`param_name_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+                                                            }`}
                                                         value={param.param_name}
                                                         onChange={e => handleParamChange(idx, 'param_name', e.target.value)}
                                                     />
-                                                    
+
                                                 </div>
                                                 <select
                                                     className="w-24 border border-gray-300 rounded px-2 py-1 text-sm"
@@ -512,9 +506,8 @@ export function CustomTools() {
                                                     <input
                                                         type="text"
                                                         placeholder="Description"
-                                                        className={`w-full border rounded px-2 py-1 text-sm ${
-                                                            fieldErrors[`param_desc_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
-                                                        }`}
+                                                        className={`w-full border rounded px-2 py-1 text-sm ${fieldErrors[`param_desc_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
+                                                            }`}
                                                         value={param.description}
                                                         onChange={e => handleParamChange(idx, 'description', e.target.value)}
                                                     />
@@ -560,7 +553,7 @@ export function CustomTools() {
                                                         let val: any = e.target.value;
                                                         if (p.param_type === 'NUMBER') val = Number(val);
                                                         if (p.param_type === 'BOOLEAN') val = (val === 'true');
-                                                        setTestParams(prev => ({...prev, [p.param_name]: val}));
+                                                        setTestParams(prev => ({ ...prev, [p.param_name]: val }));
                                                     }}
                                                 />
                                             </div>
@@ -568,8 +561,8 @@ export function CustomTools() {
                                     ))}
                                 </div>
                                 <div className="flex justify-end">
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={handleTestRun}
                                         disabled={isTestRunning}
                                         className="bg-blue-600 text-white px-3 py-1 rounded text-xs font-semibold hover:bg-blue-700 disabled:opacity-50"

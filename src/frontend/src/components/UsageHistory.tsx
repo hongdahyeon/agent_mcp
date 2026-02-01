@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/usage';
+import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/Usage';
 import { getAuthHeaders } from '../utils/auth';
 
 
