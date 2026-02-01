@@ -98,11 +98,13 @@ uvicorn src.sse_server:app --reload --port 8000
 ```json
 {
   "mcpServers": {
-    "agent-mcp-v2": {
-      "command": "python",
-      "args": ["ABSOLUTE_PATH\\src\\sse_server.py"],
+    "agent-mcp": {
+      "command": "{venv\\Scripts\\python.exe}",
+      "args": [
+        "{server.py path}"
+      ],
       "env": {
-        "MCP_TOKEN": "YOUR_JWT_HERE" 
+        "token": "{token}"
       }
     }
   }
