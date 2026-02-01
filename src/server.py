@@ -80,16 +80,17 @@ def get_user_info(user_id: str) -> str:
     if not current_user or current_user.get('role') != 'ROLE_ADMIN':
         return "WARN: Admin privileges required for this tool"
 
-    user = db.get_user(user_id)
-    if not user:
+    target_user = db.get_user(user_id)
+    if not target_user:
         return f"User not found with ID: {user_id}"
     
     # dict 변환 및 password 제거
-    user_dict = dict(user)
+    user_dict = dict(target_user)
     if 'password' in user_dict:
         del user_dict['password']
         
-    return str(user_dict)
+    import json
+    return json.dumps(user_dict, default=str, ensure_ascii=False)
 
 
 

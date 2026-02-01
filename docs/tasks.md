@@ -181,15 +181,16 @@
 - [x] 10. `db_manager.py` 제거 및 테스트
 
 ## 24. 버그 수정 및 최적화 (Troubleshooting) (Completed)
-- [x] 1. Invalid request parameters (-32602) 해결
-    - [x] 원인: Frontend 빌드 미반영으로 인한 토큰 누락
-    - [x] 조치: `useMcp.ts` 수정 및 Frontend 재빌드 (시도) -> 근본적인 토큰 전송 로직 수정
+- [x] Bcrypt hashing error & Invalid request parameters 해결 (#40)
+    - [x] bcrypt 라이브러리 버전 고정 (4.0.1)으로 Passlib 호환성 문제 해결
+    - [x] Frontend(Tester.tsx)에서 파라미터 타입 변환 로직 추가 (string -> int/bool)
+    - [x] Stdio (Claude Desktop) 연동을 위한 stdout 출력 제거 및 sys.path 보강
+근본적인 토큰 전송 로직 수정
 - [x] 2. DB Layer 리팩토링 마무리
     - [x] `db_init_manager.py` -> `src/db/init_manager.py` 이동
     - [x] `src/db/__init__.py`에 `init_db` 노출 및 Import 경로 수정
 - [x] 3. MCP Stdio 연결 오류 해결 (Cloud not attach)
     - [x] 원인: `src/db/init_manager.py` (구 `db_init_manager.py`)의 `print()`(stdout) 출력이 JSON-RPC 통신 방해
-    - [x] 조치 1: `sse_server.py`는 웹 전용이므로 로그 출력 방식을 그대로 유지 (수정 후 유저가 원복)
     - [x] 조치 2: `db_init_manager.py` -> `init_manager.py`로 이동 후, Stdio 연결 시 문제가 되는 내부 `print`들을 `sys.stderr`로 수정
 - [x] 4. Claude Desktop 연결 설정
     - [x] `claude_desktop_config.json`을 `src/server.py` (Stdio 모드)로 실행하도록 수정
@@ -316,3 +317,23 @@
 - [x] 3. DB Refactor: `src/db/user.py` 해싱 로직 변경 (SHA256 -> Bcrypt)
 - [x] 4. Server Refactor: `src/sse_server.py` 로그인 API 및 의존성 주입 변경
 - [x] 5. 기능 검증 (로그인, 토큰 검증)
+
+## 40. Bcrypt 호환성 및 도구 테스터 오류 해결 (Completed)
+- [x] 1. Bcrypt 및 환경 문제 해결
+    - 원인: `passlib`와 최신 `bcrypt` (5.0.0+) 간의 호환성 문제로 인한 AttributeError 및 72바이트 제한 오류
+    - 조치: `requirements.txt`에 `bcrypt==4.0.1` 피닝(Pinning)하여 호환성 확보
+- [x] 2. 도구 테스터 파라미터 타입 오류 해결
+    - 원인: MCP SDK의 엄격한 타입 검증으로 인해 문자열로 전송된 숫자 파라미터가 거절됨 (-32602)
+    - 조치: `Tester.tsx`에서 `inputSchema`에 따라 숫자형 자동 변환 로직 추가
+- [x] 3. 서버 안정성 복구 및 디버깅
+    - 조치: SSE 메시지 핸들러 내 스트림 간섭 코드 제거 및 ASGI 상태 머신 오류 해결
+
+## 41. Claude Desktop (Stdio) 연동 및 도구 구현 동기화 (Completed)
+- [x] 1. 인증 브릿지 함수(`get_user_by_active_token`) 구현
+    - 원인: Stdio 모드에서 외부 토큰(`sk_...`)을 통한 사용자 식별 기능 누락
+    - 조치: JWT와 외부 토큰을 모두 지원하는 통합 인증 함수를 `src/db/access_token.py`에 구현하고, 외부 토큰 성공 시 `external` 계정(ROLE_ADMIN) 부여
+- [x] 2. Stdio 서버 도구 구현 동기화 (`server.py`)
+    - 조치: `get_user_info` 도구의 반환 형식을 `json.dumps`를 사용하도록 수정하여 SSE 서버와 일관성 확보
+- [x] 3. Database Layer 타입 오류 수정 (`sqlite3.Row`)
+    - 원인: `sqlite3.Row` 객체에 `.get()` 메서드가 없어 발생하는 AttributeError 해결
+    - 조치: DB 조회 결과를 `dict()`로 명시적 변환 후 반환하도록 수정

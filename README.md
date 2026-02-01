@@ -48,6 +48,9 @@
 
 ## 4. 설치 및 실행 (Setup & Run)
 
+### 0. 가상 환경 활성화
+.\venv\Scripts\activate
+
 ### 1. 환경 설정 및 설치
 ```bash
 # 의존성 설치

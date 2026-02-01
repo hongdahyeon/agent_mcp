@@ -61,7 +61,8 @@ from .access_token import (
     create_access_token,
     get_access_token,
     get_all_access_tokens,
-    delete_access_token
+    delete_access_token,
+    get_user_by_active_token
 )
 
 
@@ -134,5 +135,6 @@ __all__ = [
     'create_access_token',
     'get_access_token',
     'get_all_access_tokens',
-    'delete_access_token'
+    'delete_access_token',
+    'get_user_by_active_token'
 ]

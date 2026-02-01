@@ -9,6 +9,9 @@ import logging
 import os
 import sys
 
+# 프로젝트 루트를 sys.path에 추가하여 'src' 모듈을 찾을 수 있게 합니다.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from src.db.init_manager import init_db
 from src.mcp_server_impl import mcp
 from src.scheduler import start_scheduler, shutdown_scheduler
