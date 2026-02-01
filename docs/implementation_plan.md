@@ -623,7 +623,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ---
 
-# Phase 21: Email Scheduler Implementation
+# Phase 21: Email Scheduler Implementation [Completed]
 
 ## Goal
 예약된 이메일(`is_scheduled=1`, `status='PENDING'`, `scheduled_dt <= now`)을 주기적으로 확인하여 자동으로 발송하는 스케줄러를 구현합니다.
@@ -689,10 +689,34 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 2.  **MCP Token**: MyPage에서 Long-lived JWT 발급 확인.
 3.  **Validation**: `curl` 및 Frontend API 호출 테스트 완료.
 
+---
+
+## 작업 결과 및 워크스루 (Walkthrough)
+
+### 1. Database Layer 수정
+- **`src/db/access_token.py`**: `get_user_by_active_token(token)` 함수를 구현했습니다.
+    - JWT 토큰인 경우 디코딩하여 해당 유저 정보를 반환합니다.
+    - 외부 액세스 토큰(`sk_...`)인 경우 `h_access_token` 테이블 확인 후, 유효하다면 시스템 연동용 유저인 `external` 계정 정보를 반환합니다.
+- **`src/db/__init__.py`**: 위 함수를 외부 모듈에서 `db.get_user_by_active_token`으로 접근할 수 있도록 노출했습니다.
+
+### 2. Stdio Server (`server.py`) 수정
+- **`get_user_info` 도구**: 
+    - 조회 결과 반환 시 `json.dumps`를 사용하여 SSE 버전과 동일하게 JSON 문자열 형식을 갖추도록 수정했습니다.
+    - `ROLE_ADMIN` 권한 체크 및 오류 메시지 형식을 통일했습니다.
+
+### 3. 오류 수정 및 성능 개선
+- **`sqlite3.Row` 오류 해결**: `db.get_user_by_active_token`이 `sqlite3.Row` 객체를 반환하여 `server.py`에서 `.get()` 메서드를 사용할 수 없던 문제를 `dict()` 변환을 통해 해결했습니다.
+- **응답 형식 일치**: `get_user_info` 실행 시 사용자 정보가 SSE 서버와 동일한 JSON 포맷으로 응답됩니다.
+- **데이터 시딩 중단**: `src/db/init_manager.py`에서 서버 시작 시 마다 데이터가 초기화되는 로직을 주석 처리하여 데이터 보존성을 높였습니다.
+
+### 4. 동적 도구(Dynamic Tool) 감사 로그 추가
+- **`src/utils/server_audit.py`**: `audit_log` 데코레이터가 `async` 함수(Coroutine)를 지원하도록 수정했습니다.
+- **`src/dynamic_loader.py`**: 동적으로 생성된 도구 핸들러에 `@audit_log`를 적용하여, Claude Desktop 등 Stdio 방식을 사용할 때도 동적 도구 실행 이력이 DB에 정상적으로 기록되도록 했습니다.
+
 ## Verification Plan
-1.  **Dependency Install**: `pip install apscheduler`
-2.  **Schedule Test**:
-    -   이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
-    -   DB `h_email_log`에 `PENDING` 상태 확인.
-    -   2분 후 자동으로 `SENT`로 변경되는지 확인.
-    -   실제 메일 수신 확인.
+1. [x] **Dependency Install**: `pip install apscheduler`
+2. [x] **Schedule Test**:
+    - [x] 이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
+    - [x] DB `h_email_log`에 `PENDING` 상태 확인.
+    - [x] 2분 후 자동으로 `SENT`로 변경되는지 확인.
+    - [x] 실제 메일 수신 확인.

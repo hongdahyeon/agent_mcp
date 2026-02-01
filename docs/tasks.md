@@ -337,3 +337,10 @@
 - [x] 3. Database Layer 타입 오류 수정 (`sqlite3.Row`)
     - 원인: `sqlite3.Row` 객체에 `.get()` 메서드가 없어 발생하는 AttributeError 해결
     - 조치: DB 조회 결과를 `dict()`로 명시적 변환 후 반환하도록 수정
+
+## 42. 비동기 감사 로그(Audit Log) 처리 원리 (Documentation)
+- **비동기 처리 원리**:
+    - `audit_log` 데코레이터는 `asyncio.iscoroutinefunction(func)`를 사용하여 실행하려는 함수가 비동기(`async def`)인지 확인합니다.
+    - **비동기 함수(예: 동적 도구)**일 경우: `await func(*args, **kwargs)`를 호출하여 비동기 작업이 완료될 때까지 기다린 후 결과를 로그에 담습니다.
+    - **동기 함수(예: add)**일 경우: 일반 함수 호출처럼 즉시 실행하여 결과를 로그에 담습니다.
+    - 이 방식을 통해 동적 도구처럼 나중에 실행이 완료되는 도구들도 누락 없이 이력을 저장할 수 있습니다.
