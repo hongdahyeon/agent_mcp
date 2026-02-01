@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { User } from '../types/auth';
 import { Lock, User as UserIcon, LogIn, AlertCircle } from 'lucide-react';
 
@@ -11,10 +11,20 @@ interface Props {
 }
 
 export function Login({ onLogin }: Props) {
-    const [userId, setUserId] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [userId, setUserId] = useState('');               // 아이디
+    const [password, setPassword] = useState('');           // 비밀번호
+    const [rememberMe, setRememberMe] = useState(false);    // 아이디 기억하기
+    const [error, setError] = useState('');                 // 에러 메시지
+    const [loading, setLoading] = useState(false);          // 로딩 상태
+
+    // 컴포넌트 마운트 시 저장된 아이디 불러오기
+    useEffect(() => {
+        const savedId = localStorage.getItem('saved_user_id');
+        if (savedId) {
+            setUserId(savedId);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -27,10 +37,14 @@ export function Login({ onLogin }: Props) {
 
         setLoading(true);
         try {
+            // OAuth2 Password Request Flow (form-data)
+            const formData = new FormData();
+            formData.append('username', userId);
+            formData.append('password', password);
+
             const res = await fetch('/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, password })
+                body: formData
             });
 
             if (!res.ok) {
@@ -40,11 +54,18 @@ export function Login({ onLogin }: Props) {
             }
 
             const data = await res.json();
-            if (data.success && data.user) {
-                // API Token 저장 (SSE 연결용)
-                if (data.token) {
-                    localStorage.setItem('mcp_api_token', data.token);
+            // JWT Response: { access_token, token_type, user }
+            if (data.access_token && data.user) {
+                // API Token 저장 (SSE 연결 및 API 호출용)
+                localStorage.setItem('mcp_api_token', data.access_token);
+
+                // 아이디 기억하기 처리
+                if (rememberMe) {
+                    localStorage.setItem('saved_user_id', userId);
+                } else {
+                    localStorage.removeItem('saved_user_id');
                 }
+
                 onLogin(data.user);
             }
         } catch (err) {
@@ -110,6 +131,19 @@ export function Login({ onLogin }: Props) {
                                     required
                                 />
                             </div>
+                        </div>
+
+                        <div className="flex items-center">
+                            <input
+                                id="remember-me"
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                            />
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                                아이디 기억하기
+                            </label>
                         </div>
 
                         <button

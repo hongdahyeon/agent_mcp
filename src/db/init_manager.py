@@ -1,6 +1,7 @@
 import hashlib
 from datetime import datetime, timedelta
 import sys
+import json
 try:
     from .connection import get_db_connection
 except ImportError:
@@ -52,18 +53,22 @@ def init_db():
     )
     ''')
     
-    # 사용자 토큰 테이블 (User Token Table)
+    
+    # 사용자 토큰 테이블 (User Token Table) - 제거됨 (26.01.30)
+    cursor.execute("DROP TABLE IF EXISTS h_user_token")
+
+    # 외부 접속용 액세스 토큰 (Access Token Table) - New (26.01.30)
     cursor.execute('''
-    CREATE TABLE IF NOT EXISTS h_user_token (
+    CREATE TABLE IF NOT EXISTS h_access_token (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_uid INTEGER NOT NULL,
-        token_value TEXT UNIQUE NOT NULL,
-        expired_at TEXT,
-        is_active TEXT DEFAULT 'Y',
-        reg_dt TEXT,
-        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+        name TEXT NOT NULL,         -- 토큰 별칭/용도
+        token TEXT UNIQUE NOT NULL, -- 실제 토큰 값 (sk_...)
+        can_use TEXT DEFAULT 'Y',   -- 사용 가능 여부 (Y/N)
+        is_delete TEXT DEFAULT 'N', -- 삭제 여부 (Y/N, Soft Delete)
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
     )
-    ''')
+    ''') 
+
 
     # MCP Tool 제한 테이블 (MCP Tool Limit Table)
     cursor.execute('''
@@ -77,7 +82,93 @@ def init_db():
     )
     ''')
     
+    # 동적 Tool 정의 테이블 (Dynamic Tool Definition Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_custom_tool (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        description_agent TEXT,
+        description_user TEXT,
+        tool_type TEXT NOT NULL, -- 'SQL' or 'PYTHON'
+        definition TEXT NOT NULL, -- SQL Query or Python Script
+        is_active TEXT DEFAULT 'Y',
+        reg_dt TEXT NOT NULL,
+        created_by TEXT
+    )
+    ''')
     
+    # 동적 Tool 파라미터 테이블 (Dynamic Tool Parameters Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_custom_tool_param (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tool_id INTEGER NOT NULL,
+        param_name TEXT NOT NULL,
+        param_type TEXT NOT NULL, -- 'STRING', 'NUMBER', 'BOOLEAN'
+        is_required TEXT DEFAULT 'Y', -- 'Y' or 'N'
+        description TEXT,
+        FOREIGN KEY (tool_id) REFERENCES h_custom_tool (id) ON DELETE CASCADE
+    )
+    ''')
+    
+    
+    # 시스템 설정 테이블 (System Config Table) - Refactored to JSON based
+    # 기존 테이블이 Key-Value 구조라면 Drop하고 재생성 (Migration logic simplified for dev)
+    cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='h_system_config'")
+    row = cursor.fetchone()
+    if row:
+        # Check if 'conf_key' exists in definition, if so, it's old schema
+        if 'conf_key' in row[0]:
+            print("[DB] 기존 h_system_config 테이블 삭제 후 재생성 (Schema Change)", file=sys.stderr)
+            cursor.execute("DROP TABLE h_system_config")
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_system_config (
+        name TEXT PRIMARY KEY,
+        configuration TEXT,
+        description TEXT,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+    
+    # 메일 발송 이력 테이블 (Email History Table)
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_email_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_uid INTEGER NOT NULL, -- Sender User UID
+        recipient TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        content TEXT NOT NULL,
+        is_scheduled INTEGER DEFAULT 0, -- 0: Immediate, 1: Scheduled
+        scheduled_dt TEXT, -- YYYY-MM-DD HH:MM
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime')),
+        sent_dt TEXT,
+        status TEXT DEFAULT 'PENDING', -- PENDING, SENT, FAILED, CANCELLED
+        error_msg TEXT,
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+    )
+    ''')
+    
+    # 기본 시스템 설정 시딩
+    gmail_config = {
+        "mail.host": "smtp.gmail.com",
+        "mail.port": 587,
+        "mail.username": "",
+        "mail.password": ""
+    }
+    
+    default_configs = [
+        ('gmail_config', json.dumps(gmail_config, ensure_ascii=False), 'Gmail SMTP Settings'),
+    ]
+    
+    for name, config_json, desc in default_configs:
+        cursor.execute("SELECT name FROM h_system_config WHERE name = ?", (name,))
+        if not cursor.fetchone():
+            cursor.execute('''
+            INSERT INTO h_system_config (name, configuration, description, reg_dt)
+            VALUES (?, ?, ?, ?)
+            ''', (name, config_json, desc, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            print(f"[DB] 시스템 설정 생성됨: {name}", file=sys.stderr)
+
     # 기본 제한 정책 시딩
     cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")
     if not cursor.fetchone():
@@ -96,16 +187,6 @@ def init_db():
         ''', ('ROLE', 'ROLE_ADMIN', 'DAILY', -1, 'Admin User Daily Unlimited'))
         print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: Unlimited)", file=sys.stderr)
     
-    # - 3. 관리자 계정이 없으면 시딩 (Seed Admin User if not exists)
-    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('admin',))
-    if not cursor.fetchone():
-        # 데모용 간단 해시 (실제 운영 시에는 bcrypt/argon2 사용 권장)
-        password_hash = hashlib.sha256("1234".encode()).hexdigest()
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('admin', password_hash, '관리자', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 관리자 계정 생성됨 (ID: admin / PW: 1234)", file=sys.stderr)
     
     # - 4. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
     cursor.execute("PRAGMA table_info(h_user)")
@@ -114,47 +195,49 @@ def init_db():
         print("[DB] 마이그레이션: h_user 테이블에 is_enable 컬럼 추가", file=sys.stderr)
         cursor.execute("ALTER TABLE h_user ADD COLUMN is_enable TEXT DEFAULT 'Y'")
 
-    # - 5. 비활성 유저 시딩 (테스트용)
-    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('user',))
-    if not cursor.fetchone():
-        password_hash = hashlib.sha256("1234".encode()).hexdigest()
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('user', password_hash, '사용자(미승인)', 'ROLE_USER', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 비활성 테스트 유저 생성됨 (ID: user / PW: 1234 / Enabled: N)", file=sys.stderr)
-        
-    # - 6. h_user_token 테이블 마이그레이션 (reg_dt 컬럼)
-    cursor.execute("PRAGMA table_info(h_user_token)")
-    columns = [info[1] for info in cursor.fetchall()]
-    if 'reg_dt' not in columns:
-        print("[DB] 마이그레이션: h_user_token 테이블에 reg_dt 컬럼 추가", file=sys.stderr)
-        cursor.execute(f"ALTER TABLE h_user_token ADD COLUMN reg_dt TEXT DEFAULT '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'")
 
-    # - 7. 외부 연동용 유저 시딩 (external)
-    cursor.execute('SELECT * FROM h_user WHERE user_id = ?', ('external',))
-    if not cursor.fetchone():
-        password_hash = hashlib.sha256("external_pass_1234".encode()).hexdigest()
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('external', password_hash, 'External System', 'ROLE_ADMIN', datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print("[DB] 외부 연동용 유저 생성됨 (ID: external)", file=sys.stderr)
-        
-        # 토큰 자동 생성
-        import secrets
-        cursor.execute("SELECT uid FROM h_user WHERE user_id = 'external'")
-        uid = cursor.fetchone()[0]
-        token_value = f"sk_mcp_{secrets.token_urlsafe(32)}"
-        expired_at = (datetime.now() + timedelta(days=3650)).strftime("%Y-%m-%d %H:%M:%S") # 10 years
-        
-        cursor.execute('''
-            INSERT INTO h_user_token (user_uid, token_value, expired_at, is_active, reg_dt)
-            VALUES (?, ?, ?, 'Y', ?)
-        ''', (uid, token_value, expired_at, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        print(f"[DB] External User Token Generated: {token_value}", file=sys.stderr)
+    # =========================================================
+    # 사용자 계정 재설정 (Bcrypt 적용)
+    # =========================================================
+    # 2026.01.30: 기존 SHA256 패스워드 호환성 및 신규 해시 적용을 위해 기본 계정 재설정
     
+    # 기존 계정 삭제 (admin, user, external)
+    cursor.execute("DELETE FROM h_user WHERE user_id IN ('admin', 'user', 'external')")
+    
+    try:
+        try:
+            from src.utils.auth import get_password_hash
+        except ImportError:
+            from utils.auth import get_password_hash
+            
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # 1. Admin (비번: 1234)
+        admin_pw = get_password_hash("1234")
+        cursor.execute('''
+        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+        VALUES (?, ?, ?, ?, ?, 'Y')
+        ''', ('admin', admin_pw, '관리자', 'ROLE_ADMIN', timestamp))
+        print("[DB] 관리자 계정 재생성됨 (ID: admin / PW: 1234 / Bcrypt)", file=sys.stderr)
+
+        # 2. User (비번: 1234, 사용 승인됨)
+        user_pw = get_password_hash("1234")
+        cursor.execute('''
+        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+        VALUES (?, ?, ?, ?, ?, 'N')
+        ''', ('user', user_pw, '사용자(미승인)', 'ROLE_USER', timestamp))
+        print("[DB] 테스트 유저 재생성됨 (ID: user / PW: 1234 / Enabled: N / Bcrypt)", file=sys.stderr)
+
+        # 3. External (비번: external_pass_1234)
+        ext_pw = get_password_hash("external_pass_1234")
+        cursor.execute('''
+        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+        VALUES (?, ?, ?, ?, ?, 'Y')
+        ''', ('external', ext_pw, 'External System', 'ROLE_ADMIN', timestamp))
+        print("[DB] 외부 연동용 유저 재생성됨 (ID: external / Bcrypt)", file=sys.stderr)
+        
+    except Exception as e:
+        print(f"[DB] 사용자 시딩 중 오류 발생: {e}", file=sys.stderr)
         
     conn.commit()
 

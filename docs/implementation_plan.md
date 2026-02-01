@@ -406,3 +406,293 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ## 3. Verification
 - 서버 재시작 후 `get_user_info` 실행 시 정상적으로 DB 조회 및 결과 반환 확인 필요.
+
+# Phase 14: Admin 기능 강화: 도구 사용 제한 관리
+
+## 목표
+관리자(Admin)가 사용자의 도구 사용 제한 정책(h_mcp_tool_limit)을 직접 조회하고 수정할 수 있는 기능을 제공합니다. 이를 통해 특정 사용자에게 추가 사용량을 할당하거나, 등급별 정책을 조정할 수 있습니다.
+
+## 핵심 요구사항
+1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
+2. **Limit List**: 현재 적용된 모든 제한 정책(User별/Role별)을 조회.
+3. **Limit Upsert**: 
+    - 대상 타입(USER/ROLE)과 대상 ID(user_id/role_name) 선택.
+    - 제한 횟수 설정 (-1: 무제한).
+    - 기존 정책이 있으면 업데이트, 없으면 생성.
+4. **Limit Delete**: 적용된 제한 정책 삭제.
+
+## 변경 사항
+
+### Backend (`src/db/mcp_tool_limit.py`, `src/sse_server.py`)
+
+#### 1. DB Logic (`src/db/mcp_tool_limit.py`)
+- **[NEW] `get_limit_list(page, size)`**: 
+    - `h_mcp_tool_limit` 테이블 전체 조회.
+    - 페이징 처리.
+- **[NEW] `upsert_limit(limit_data)`**:
+    - `target_type`, `target_id` 조합으로 기존 레코드 확인.
+    - 존재하면 `UPDATE`, 없으면 `INSERT`.
+- **[NEW] `delete_limit(limit_id)`**:
+    - 해당 ID의 정책 삭제.
+
+#### 2. API Endpoints (`src/sse_server.py`)
+- **Prefix**: `/api/mcp/limits`
+- **`GET /`**: 제한 정책 목록 조회.
+- **`POST /`**: 제한 정책 추가/수정 (Body: `{target_type, target_id, max_count, description}`).
+- **`DELETE /{id}`**: 정책 삭제.
+
+### Frontend (`src/frontend`)
+
+#### 1. Components
+- **[NEW] `LimitManagement.tsx`**
+    - **Header**: "제한 정책 관리" 타이틀 및 "정책 추가" 버튼.
+    - **Table**: 정책 목록 (Type, Target, Limit, Description).
+    - **Modal**: 정책 추가/수정 폼.
+        - Target Type: Select (USER / ROLE).
+        - Target ID: Input (User ID or Role Name).
+        - Limit Count: Input (Number).
+        - Description: Input (Text).
+
+#### 2. Navigation
+- **`App.tsx`**: 라우트 추가 (`/limits`).
+- **Sidebar**: "사용 제한 관리" 메뉴 추가 (Admin Only).
+
+## 검증 계획
+1. **기본 정책 확인**: 페이지 접속 시 초기 시딩된 `ROLE_USER` (50), `ROLE_ADMIN` (-1) 정책이 보이는지 확인.
+2. **Role 정책 수정**: `ROLE_USER`의 제한을 100으로 수정 후 저장 -> 목록 갱신 확인 -> 실제 유저(`user`) 계정으로 `/api/mcp/my-usage` 조회 시 Limit이 100으로 변경되었는지 확인.
+3. **User 정책 추가**: `user` 계정에 대해 별도 제한(200) 추가 -> 저장 -> 실제 유저 계정에서 Limit 200 적용 확인 (Role보다 우선순위 확인).
+4. **정책 삭제**: User 정책 삭제 -> 다시 Role 정책(100)으로 복귀 확인.
+
+# Phase 16: 동적 Tool 생성 기능 (Dynamic Tool Creation) (important)
+
+## Goal
+관리자가 웹 UI를 통해 SQL 쿼리나 간단한 Python 로직을 수행하는 Tool을 동적으로 생성하고, 서버 재배포 없이 Agent가 즉시 사용할 수 있도록 합니다.
+
+## Implementation Steps
+
+### Phase 1: Database Schema & Init
+- **[MODIFY] `src/db/init_manager.py`**:
+    - `h_custom_tool` 테이블 생성 (name, type, definition 등)
+    - `h_custom_tool_param` 테이블 생성 (param_name, type, required 등)
+
+### Phase 2: Dynamic Tool Loader & Handler
+- **[NEW] `src/dynamic_loader.py`**:
+    - DB에서 활성 Tool 목록 로드.
+    - `pydantic.create_model`을 사용하여 인자 모델 동적 생성.
+    - `fastmcp.tool` 데코레이터에 함수 바인딩.
+- **[NEW] `src/tool_executor.py`**:
+    - **SQL Executor**: `connection.py` 활용하여 파라미터 바인딩 및 쿼리 실행.
+    - **Python Executor**: `simpleeval` 등을 활용한 샌드박스 실행.
+
+### Phase 3: Frontend Tool Builder
+- **[NEW] `src/frontend/src/components/CustomTools.tsx`**:
+    - Tool 목록 조회 및 활성/비활성 토글.
+    - Tool 생성/수정 모달 (Step-by-step UI 권장).
+    - 파라미터 추가/삭제 UI.
+    - 로직 작성 에디터 (CodeMirror 등 활용 가능성 검토).
+
+### Phase 4: Integration & Testing
+- Server 시작 시 로드 및 주기적 리로드(Optional) 또는 API 호출 시 리로드 구현.
+- 생성된 Tool이 Client(Agent)에서 정상 호출되는지 테스트.
+- SQL Injection 및 Code Injection 보안 테스트.
+
+
+# Phase 17: Dynamic Tool Tester Integration
+
+## Goal
+동적으로 생성된 도구를 실제 Agent(Tester)가 바로 조회하고 실행할 수 있도록 통합합니다. 서버 재시작 없이 목록을 갱신하고, 실행 결과를 직관적으로 확인할 수 있어야 합니다.
+
+## Implemented Changes
+
+### 1. Backend Integration (`src/sse_server.py`)
+- **`list_tools` Handler Update**: 
+    - 정적 도구 목록 외에 DB(`h_custom_tool`)에서 활성 상태인 동적 도구를 조회하여 합침.
+    - JSON Schema 동적 생성 (Params 정보 기반).
+- **`call_tool` Handler Update**:
+    - 요청된 도구 이름이 정적 도구에 없으면 동적 도구 목록에서 검색.
+    - `ToolExecutor` (SQL/Python)를 호출하여 결과 반환.
+    - 실행 이력(`h_mcp_tool_usage`) 저장 로직 공유.
+
+### 2. Frontend Tester Refinement (`src/frontend`)
+- **[MODIFY] `useMcp.ts`**:
+    - `refreshTools()` 함수 추가: `tools/list` RPC를 명시적으로 재호출하여 도구 목록 갱신.
+- **[MODIFY] `App.tsx`**:
+    - `refreshTools` 함수를 `Tester` 컴포넌트로 전달.
+- **[MODIFY] `Tester.tsx`**:
+    - **Refresh Button**: 도구 선택 셀렉트 박스 옆에 새로고침 버튼 배치.
+    - **Auto Reset**: 도구 변경 시 기존 입력 폼 및 실행 결과 초기화.
+    - **Smart JSON View**: 실행 결과(`content[0].text`)가 JSON 문자열인 경우, 파싱하여 구조화된 형태로 표시.
+
+## Verification Plan
+1. **Frontend Build**: `npm run build` 수행 (React App 배포).
+2. **Dynamic Load**: Admin 메뉴에서 새 도구 생성 후, Tester 화면에서 '새로고침' 클릭 시 목록에 뜨는지 확인.
+3. **Execution**: 생성한 동적 도구 실행 및 결과(JSON Parsing) 확인.
+4. **Usage Log**: 실행 후 Admin > Usage History에 기록 남는지 확인.
+
+# Phase 18: Tool Output JSONization
+
+## Goal
+사용자가 도구의 출력을 더 쉽게 파악하고(JSON 구조화), 도구의 출처(시스템 vs 동적)를 명확히 구별할 수 있도록 개선합니다.
+
+## Requirements
+1. **JSON Output**: `get_user_info`, `get_user_tokens` 등 객체를 반환하는 도구는 Python `dict` 문자열(`{'k': 'v'}`) 대신 표준 `JSON` 문자열(`{"k": "v"}`)을 반환해야 합니다. Frontend의 Smart JSON View가 이를 인식하여 구조화해서 보여줄 수 있습니다.
+2. **Source Distinction**: 도구 목록에서 이 도구가 `server.py`에 정의된 정적 도구인지, Admin이 생성한 동적 도구인지 구분되어야 합니다.
+
+## Proposed Changes
+
+### 1. Backend (`src/sse_server.py`)
+- **JSON Serialization**: `get_user_info`, `get_user_tokens` 결과 반환 시 `str(dict)` 대신 `json.dumps(dict, ensure_ascii=False)` 사용.
+- **Description Tagging**: `list_tools` 반환 시,
+    - Static Tools: Description 앞에 `[System]` 태그 추가.
+    - Dynamic Tools: Description 앞에 `[Dynamic]` 태그 추가.
+
+### 2. Frontend (`src/frontend/src/components/Tester.tsx`)
+- **Dropdown UI**: 도구 선택 옵션 렌더링 시 Description의 태그를 확인.
+    - `[System]` -> 도구명 뒤에 `(System)` 표시.
+    - `[Dynamic]` -> 도구명 뒤에 `(Dynamic)` 표시.
+    - 태그 자체는 툴팁이 아닌 이상 UI에 노출되지 않도록 처리하거나, 이름 옆에만 표기.
+- **Copy Button**: 실행 결과(JSON) 영역 우측 상단에 복사 아이콘(또는 버튼) 추가. 클릭 시 클립보드에 전체 결과 텍스트 복사.
+
+## Verification Plan
+1. **Tool List**: Tester 화면 진입 시 도구 목록에 `(System)` / `(Dynamic)` 라벨이 붙어있는지 확인.
+2. **Execution**: 
+    - `get_user_info` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+    - `get_user_tokens` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+
+# Phase 19: System Config Management UI [Refactor]
+
+## Goal
+기존 단순 Key-Value 구조의 설정을 **그룹화된 JSON 설정 관리** 방식으로 변경합니다.
+예: "Gmail Settings"라는 이름 하에 `host`, `port`, `auth` 정보를 JSON 형태로 한 번에 관리.
+
+## Requirements
+1.  **Database Refactor**:
+    -   Existing `h_system_config` table MUST be dropped and recreated.
+    -   **Columns**:
+        -   `name` (PK, Text): 설정 그룹명 (예: `gmail_config`)
+        -   `configuration` (Text/JSON): 설정 값들의 JSON 문자열
+        -   `description` (Text): 설명
+        -   `reg_dt` (Text): 등록일시
+2.  **Backend API**:
+    -   Update APIs to handle JSON content.
+    -   Validation checks for valid JSON format.
+3.  **Frontend UI**:
+    -   **List**: Show `name`, `description`. `configuration` might be too long, show preview or hidden.
+    -   **Add/Edit**:
+        -   `name` (Input)
+        -   `configuration` (Textarea - JSON format validation required)
+        -   `description` (Input)
+
+## Proposed Changes
+
+### 1. Database Schema (`src/db/init_manager.py`)
+-   Logic to DROP `h_system_config` if schema doesn't match or force drop for this transition.
+-   Create new table with `name`, `configuration`, `description`.
+-   Seed default:
+    ```json
+    {
+        "name": "gmail_config",
+        "configuration": {
+            "mail.host": "smtp.gmail.com",
+            "mail.port": 587,
+            "mail.username": "",
+            "mail.password": ""
+        },
+        "description": "Gmail SMTP Settings"
+    }
+    ```
+
+### 2. Backend Logic (`src/db/system_config.py`)
+-   Update `get_config(name)` logic.
+-   Update `set_config` logic to store JSON string.
+
+### 3. Frontend (`SystemConfig.tsx`)
+-   Update table columns.
+-   Update Form:
+    -   Use a textarea for `configuration`.
+    -   Add "Beautify JSON" or simple validation before submit.
+
+# Phase 20: Gmail Service Integration [Planned]
+
+## Goal
+`h_system_config`의 `gmail_config` (JSON)를 파싱하여 메일 발송.
+
+### 1. Mailer Utility
+-   Get config by name `gmail_config`.
+-   Parse JSON -> extract host, port, user, password.
+
+---
+
+# Phase 21: Email Scheduler Implementation
+
+## Goal
+예약된 이메일(`is_scheduled=1`, `status='PENDING'`, `scheduled_dt <= now`)을 주기적으로 확인하여 자동으로 발송하는 스케줄러를 구현합니다.
+
+## Requirements
+1.  **Scheduler Library**: `APScheduler` (Advanced Python Scheduler) 사용.
+2.  **Job**: 1분 주기로 DB를 조회하여 발송 대상 이메일을 찾음.
+3.  **Process**:
+    -   DB에서 `PENDING` 상태이면서 `scheduled_dt`가 현재 시간보다 과거/현재인 건 조회.
+    -   SMTP를 통해 메일 발송.
+    -   성공 시 `status='SENT'`, `sent_dt=now`.
+    -   실패 시 `status='FAILED'`, `error_msg` 기록.
+
+## Proposed Changes
+
+### 1. Dependencies
+-   `requirements.txt`: `apscheduler` 추가.
+
+### 2. Database Logic (`src/db/email_manager.py`)
+-   `get_pending_scheduled_emails()`: 발송 대상 이메일 조회 함수 추가.
+
+### 3. Scheduler Logic (`src/scheduler.py`) [New]
+-   `setup_scheduler(app)`: FastAPI 앱 시작 시 스케줄러 구동.
+-   `process_scheduled_emails()`: 실제 발송 로직 (DB 조회 -> Mailer 전송 -> DB 업데이트).
+
+###- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
+- [x] 5. 기능 검증
+
+---
+
+## Phase 22: JWT Authentication Implementation [Completed]
+
+### Goal
+기존의 단순 토큰 방식을 **JWT (JSON Web Token)** 기반 인증으로 교체하여 보안성 및 표준성을 강화합니다.
+관리자 페이지 접근 시 토큰 검증 및 권한 체크를 수행하며, 로그인 지속 시간은 **12시간**으로 설정합니다.
+**[Update]**: 사용자 토큰 시스템(`h_user_token`)은 제거되었으며, 모든 인증은 **로그인 기반의 JWT**로 통일되었습니다.
+
+### Requirements
+1.  **Tech Stack**:
+    -   `python-jose` (JWT 생성 및 검증)
+    -   `passlib[bcrypt]` (비밀번호 해싱 및 검증)
+    -   `python-multipart` (OAuth2PasswordRequestForm 지원)
+2.  **Auth Flow**:
+    -   **Login**: OAuth2 Password Flow (`username`/`password`) -> 검증 -> JWT Access Token 발급 (12h).
+    -   **MCP Connection**: MyPage -> '토큰 발급' -> JWT Access Token 발급 (365 days).
+    -   **Verification**: 요청 헤더 `Authorization: Bearer {token}` -> JWT 디코딩 -> 사용자 식별 & 권한 체크.
+3.  **Token Policy**:
+    -   Algorithm: `HS256`
+    -   Expiration: 12시간 (Login), 1년 (MCP Key)
+    -   Payload: `sub` (user_id), `role` (권한), `type` (api_key/login)
+4.  **Admin Protection**:
+    -   관리자 전용 API 접근 시, JWT의 `role`이 `ROLE_ADMIN`인지 확인.
+
+### Implemented Changes
+-   **Dependencies**: `python-jose`, `passlib`, `python-multipart` 추가.
+-   **Auth Utility**: `src/utils/auth.py` (JWT Creation/Verification, Bcrypt).
+-   **User Token**: `src/db/user_token.py` 수정 (Random String -> Long-lived JWT).
+-   **Server Refactor**: `src/sse_server.py`의 `handle_sse` 및 API 의존성을 JWT 기반으로 변경.
+-   **Frontend**: `App.tsx`, `MyPage.tsx` 등에서 `Authorization: Bearer` 헤더 사용.
+
+### Verification Results
+1.  **Login**: JWT 발급 및 로그인 성공.
+2.  **MCP Token**: MyPage에서 Long-lived JWT 발급 확인.
+3.  **Validation**: `curl` 및 Frontend API 호출 테스트 완료.
+
+## Verification Plan
+1.  **Dependency Install**: `pip install apscheduler`
+2.  **Schedule Test**:
+    -   이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
+    -   DB `h_email_log`에 `PENDING` 상태 확인.
+    -   2분 후 자동으로 `SENT`로 변경되는지 확인.
+    -   실제 메일 수신 확인.

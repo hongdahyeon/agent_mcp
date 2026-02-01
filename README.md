@@ -36,7 +36,6 @@
 - **주요 테이블**:
   - `h_user`: 사용자 계정 및 권한 (ROLE_USER, ROLE_ADMIN)
   - `h_login_hist`: 로그인 이력
-  - `h_user_token`: MCP 연결용 API 토큰 관리
   - `h_mcp_tool_usage`: 도구 실행 이력 로그
   - `h_mcp_tool_limit`: 사용자별 도구 사용량 제한 정책
 
@@ -67,8 +66,30 @@ uvicorn src.sse_server:app --reload --port 8000
   - 초기 관리자 ID: `admin` / PW: `1234`
   - 테스트 사용자 ID: `user` / PW: `1234`
 
-### 3. Claude Desktop 연동 (Client Setup)
-클라이언트에서 연결 시, **[내 정보]** 메뉴에서 발급받은 **토큰**이 필요합니다. (추후 적용 예정)
+### 3. 인증 및 보안 (Authentication)
+
+본 프로젝트는 두 가지 방식의 인증을 지원합니다.
+
+1.  **사용자 인증 (Web Login)**:
+    -   **JWT (JSON Web Token)** 기반 인증.
+    -   웹 콘솔 로그인 시 발급되며, 브라우저 세션 및 일반적인 API 호출에 사용됩니다.
+    -   유효기간: 12시간 (재로그인 필요).
+
+2.  **외부 시스템 연동 (External Access)**:
+    -   **Access Token (`h_access_token`)** 기반 인증.
+    -   관리자 페이지의 [보안 토큰 관리: h_access_token] 메뉴에서 발급받은 영구(Long-Lived) 토큰입니다.
+    -   CI/CD, 외부 앱, 스크립트 등에서 MCP 서버에 접속할 때 사용합니다.
+    -   이 토큰으로 접속 시 **'External System' (관리자 권한)**으로 매핑됩니다.
+
+### 4. Claude Desktop 연동 (Client Setup)
+
+#### A. JWT 사용 (일회성 테스트용)
+로그인 후 발급받은 JWT를 사용하여 연결할 수 있습니다. (토큰 만료 시 재설정 필요)
+
+#### B. Access Token 사용 (권장)
+관리자 페이지에서 발급받은 `sk_...` 형식의 토큰을 사용하면 만료 걱정 없이 사용할 수 있습니다.
+
+클라이언트 설정 시, 발급받은 **Token**을 환경변수로 주입해야 합니다.
 
 설정 파일 (`%APPDATA%\Claude\claude_desktop_config.json`) 예시:
 ```json
@@ -76,15 +97,14 @@ uvicorn src.sse_server:app --reload --port 8000
   "mcpServers": {
     "agent-mcp-v2": {
       "command": "python",
-      "args": ["ABSOLUTE_PATH\\src\\server.py"],
+      "args": ["ABSOLUTE_PATH\\src\\sse_server.py"],
       "env": {
-        "MCP_TOKEN": "sk_mcp_YOUR_TOKEN_HERE" 
+        "MCP_TOKEN": "YOUR_JWT_HERE" 
       }
     }
   }
 }
 ```
-*(참고: 현재 버전에서는 로컬 실행 시 토큰 검증이 선택적일 수 있습니다.)*
 
 ## 5. 주요 변경 사항 (Changelog)
 - **v2.0 (Current)**:

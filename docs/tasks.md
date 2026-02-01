@@ -125,18 +125,18 @@
 - [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
 - [x] 4. 기능 검증
 
-## 19. 사용자 토큰 관리 (Phase 1) (Completed)
+## 19. 사용자 토큰 관리 (Phase 1) (REMOVED)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
 - [x] 1. DB 스키마 생성 (Token Management)
     - [x] `h_user_token`: 사용자별 API 토큰 관리 (token_value, expired_at 등)
-- [x] 2. Backend API 구현
-    - [x] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
-    - [x] `POST /api/user/token`: 토큰 발급 API
-    - [x] `GET /api/user/token`: 현재 유효 토큰 조회 API
-- [x] 3. Frontend UI 구현
-    - [x] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
-    - [x] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
-- [x] 4. 기능 검증
+- [ ] 2. Backend API 구현 (Removed per user request)
+    - [ ] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
+    - [ ] `POST /api/user/token`: 토큰 발급 API
+    - [ ] `GET /api/user/token`: 현재 유효 토큰 조회 API
+- [ ] 3. Frontend UI 구현 (Removed)
+    - [ ] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
+    - [ ] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
+- [ ] 4. 기능 검증
 
 ## 20. 버그 수정: get_user_info DB 오류 (Completed)
 - [x] 상세 구현 계획 수립 (implementation_plan.md)
@@ -195,3 +195,124 @@
     - [x] `claude_desktop_config.json`을 `src/server.py` (Stdio 모드)로 실행하도록 수정
     - [x] `server.py`의 `db_manager` 참조 오류 수정
     - [x] `src/utils/server_audit.py` 문법 오류(IndentationError) 수정
+
+## 25. 편의 기능 구현 (Completed)
+- [x] "아이디 기억하기" 기능 구현 <!-- id: 0 -->
+    - [x] `docs/rules.md` 읽기 (완료) <!-- id: 1 -->
+    - [x] 로그인 페이지(`Login.tsx`) 분석 (완료) <!-- id: 2 -->
+    - [x] 구현 계획 수립 (`implementation_plan.md`) <!-- id: 3 -->
+    - [x] UI 수정: "아이디 기억하기" 체크박스 추가 <!-- id: 4 -->
+    - [x] 로직 구현: `localStorage`를 사용하여 아이디 저장 및 불러오기 <!-- id: 5 -->
+    - [x] 테스트: 기능 동작 확인 <!-- id: 6 -->
+
+- [x] Admin 기능 강화: 도구 사용 제한 관리 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: Limit 관리 함수 추가 (mcp_tool_limit.py)
+    - [x] `get_limit_list`: 제한 목록 조회
+    - [x] `upsert_limit`: 제한 규칙 생성/수정 (User/Role)
+    - [x] `delete_limit`: 제한 규칙 삭제
+- [x] 2. API Endpoint 구현 (sse_server.py)
+    - [x] `GET /api/mcp/limits`
+    - [x] `POST /api/mcp/limits`
+    - [x] `DELETE /api/mcp/limits/{id}`
+- [x] 3. Frontend UI 구현
+    - [x] `LimitManagement.tsx`: 목록 조회, 추가(Modal), 삭제
+    - [x] Menu 추가: '사용 제한 관리' (Admin Only)
+
+## 27. 동적 Tool 생성 기능 (New)
+- [x] 상세 설계 및 구현 계획 수립 (design_dynamic_tools.md)
+- [x] 1. DB 스키마 생성 (Phase 1)
+    - [x] `h_custom_tool`: 툴 메타데이터 및 로직
+    - [x] `h_custom_tool_param`: 툴 파라미터 정의
+- [x] 2. 동적 등록 로직 구현 (Backend)
+    - [x] `src/dynamic_loader.py`: DB 로드 및 Pydantic 모델 생성
+    - [x] `src/server.py`: 서버 시작 시 동적 툴 바인딩 (통합 테스트 완료)
+- [x] 3. 실행 핸들러 구현 (Backend)
+    - [x] SQL Type 실행기 (안전한 파라미터 바인딩)
+    - [x] Python Script Type 실행기 (Safe Eval)
+- [x] 4. Frontend UI (Admin Only)
+    - [x] Custom Tool Builder (목록/생성/수정)
+    - [x] SQL/Script 에디터 및 테스트 런너
+
+## 28. 버그 수정 및 UI 개선 (Completed)
+- [x] Error Handling: `No module named 'src'` 수정 (Recursion Import 문제 해결) <!-- id: 7 -->
+- [x] Custom Tool UI 개선 <!-- id: 8 -->
+    - [x] 한글 상세 주석 추가 (CustomTools.tsx) <!-- id: 9 -->
+    - [x] Frontend Validation Check 추가 (필수값 검증) <!-- id: 10 -->
+    - [x] Inline Validation Error 표시 적용 (사용자 경험 개선) <!-- id: 11 -->
+    - [x] 파라미터 렌더링 버그 수정 (index key 사용) <!-- id: 12 -->
+- [x] Code Refactoring <!-- id: 13 -->
+    - [x] Auth Header 중앙화 (`utils/auth.ts`: `getAuthHeaders`) <!-- id: 14 -->
+    - [x] `CustomTools.tsx`, `LimitManagement.tsx`, `UsageHistory.tsx` 리팩토링 적용 <!-- id: 15 -->
+
+## 29. Dynamic Tool Tester 연동 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: `list_tools`에서 DB의 동적 도구 로드 및 반환
+- [x] 2. Backend: `call_tool`에서 동적 도구(`ToolExecutor`) 실행 로직 연동
+- [x] 3. Frontend: `Tester.tsx` UI 개선
+    - [x] 도구 변경 시 폼/결과 리셋 로직
+    - [x] 도구 목록 새로고침 버튼 추가 (`useMcp.ts` 연동)
+    - [x] 실행 결과 JSON View 개선 (Result 텍스트 내 JSON 파싱 표시)
+    - [ ] 기능 검증 (Build & Test)
+
+## 30. 도구 실행 결과 및 목록 개선 (UI/UX)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: `get_user_info`, `get_user_tokens` 결과 JSON 포맷으로 반환 (`json.dumps`)
+- [x] 2. Backend: `list_tools`에서 도구 설명(Description)에 `[System]`, `[Dynamic]` 태그 추가
+- [x] 3. Frontend: `Tester.tsx`에서 태그를 파싱하여 도구 목록에 `(System)`, `(Dynamic)` 구분 표시
+- [x] 4. Frontend: 실행 결과 JSON 복사 버튼 추가
+- [x] 5. 기능 검증
+
+## 31. 시스템 설정 관리 기능 구현 (System Config UI) - [Refactor]
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_system_config` 테이블 재생성 (Drop & Create) - `name`, `configuration` (JSON), `description`
+- [x] 2. DB: `src/db/system_config.py` 로직 수정 (JSON 처리)
+- [x] 3. Backend: API 수정 (`GET`, `POST` - JSON handling)
+- [x] 4. Frontend: Type 수정 (`types/systemConfig.ts`)
+- [x] 5. Frontend: `SystemConfig.tsx` 수정 (JSON Editor implementation)
+
+## 32. Gmail 메일 발송 기능 구현 (DB Config 활용)
+- [ ] 1. Utils: `src/utils/mailer.py` 구현 (`smtplib` + DB Config JSON Parsing)
+- [ ] 2. Backend: `send_email` Tool 추가 (`sse_server.py`)
+- [ ] 3. 기능 검증 (테스트 메일 발송)
+
+
+## 33. 프론트엔드 메뉴 구조 개편 (New)
+- [x] 메뉴 그룹화 및 라벨 변경 (대시보드, 기능, 이력, 설정 및 관리)
+- [x] App.tsx 사이드바 렌더링 로직 수정 (그룹 헤더 지원)
+
+## 34. 메일 발송 이력 관리 (DB)
+- [x] 1. DB: `h_email_log` 테이블 생성 (init_manager.py)
+    - `user_uid`, `recipient`, `subject`, `content`, `is_scheduled`, `scheduled_dt`, `reg_dt`, `sent_dt`, `status`
+
+## 35. 메일 발송 기능 구현 (Backend)
+- [x] 1. DB: `src/db/email_manager.py` 구현 (Insert/Update/Select)
+- [x] 2. Utils: `src/utils/mailer.py` 구현 (`smtplib` + `h_system_config` 연동)
+- [x] 3. API: `POST /api/email/send` (즉시/예약 분기 처리)
+- [x] 4. API: `GET /api/email/logs` (이력 조회 - 검증용)
+
+## 36. 메일 발송 기능 구현 (Frontend)
+- [x] 1. Component: `src/frontend/src/components/EmailSender.tsx` 구현
+    - 메일 작성 폼 (수신자, 제목, 내용, 예약 설정)
+    - 발송 이력 목록 (Logs)
+- [x] 2. Integration: `App.tsx` 메뉴 추가 ('기능' > '메일 발송')
+
+## 37. 메일 발송 취소 기능 구현
+- [x] 1. Backend: `cancel_email_log` DB 함수 및 `POST /api/email/cancel/{log_id}` API 구현
+- [x] 2. Frontend: 발송 이력 목록에 '취소' 버튼 추가 (PENDING 상태일 때만 표시)
+
+## 38. 예약 발송 스케줄러 구현
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Dependency: `requirements.txt`에 `apscheduler` 추가
+- [x] 2. DB: `get_pending_scheduled_emails` 함수 구현 (`src/db/email_manager.py`)
+- [x] 3. Scheduler: `src/scheduler.py` 구현
+    - [x] 스케줄러 로직 작성 (Setup, Process)
+- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
+- [x] 5. 기능 검증
+
+## 39. JWT 인증 구현 (Phase 22)
+- [x] 1. Dependency: `requirements.txt` 패키지 설치
+- [x] 2. Auth Utility: `src/utils/auth.py` 구현 (JWT, Bcrypt)
+- [x] 3. DB Refactor: `src/db/user.py` 해싱 로직 변경 (SHA256 -> Bcrypt)
+- [x] 4. Server Refactor: `src/sse_server.py` 로그인 API 및 의존성 주입 변경
+- [x] 5. 기능 검증 (로그인, 토큰 검증)
