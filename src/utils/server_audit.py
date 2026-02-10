@@ -17,55 +17,86 @@ except ImportError:
         # 실행 위치에 따라 상대 경로가 다를 수 있음
         from .. import db
 
+import inspect
+import asyncio
+
 def audit_log(func):
     """
     Stdio 방식(Claude Desktop) 사용 이력을 DB에 남기기 위한 래퍼.
     환경변수 'token'을 통해 사용자를 식별합니다.
+    비동기(async) 및 동기 함수를 모두 지원합니다.
     """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        tool_name = func.__name__
-        # 모든 인자를 문자열로 변환하여 저장
-        params = {**kwargs}
-        if args:
-            params['args'] = args
-            
-        token = os.environ.get('token')
-        user_uid = None
-        
-        # 사용자 식별
-        if token:
-            try:
-                user = db.get_user_by_active_token(token)
-                if user:
-                    user_uid = user['uid']
-            except:
-                pass
-        
-        is_success = False
-        result_val = ""
-        
-        try:
-            # 실제 함수 실행
-            result = func(*args, **kwargs)
-            result_val = str(result)
-            is_success = True
-            
-            # 논리적 에러 체크
-            if isinstance(result, str) and (result.startswith("Error:") or result.startswith("User not found")):
-                is_success = False
+    # [1] 감싸려는 함수(func)가 비동기(async def)인지 확인합니다.
+    # 동적 도구(dynamic_handler)는 비동기로 정의되므로 이 분기를 타게 됩니다.
+    if asyncio.iscoroutinefunction(func):
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            tool_name = func.__name__
+            params = {**kwargs}
+            if args: params['args'] = args
                 
-            return result
-        except Exception as e:
-            result_val = f"Exception: {str(e)}"
-            is_success = False
-            raise e
-        finally:
-            # DB 기록에 실패해도 메인 로직은 수행되어야 함
-            if user_uid:
+            token = os.environ.get('token')
+            user_uid = None
+            if token:
                 try:
-                    db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
-                except Exception:
-                    pass
-                    
-    return wrapper
+                    user = db.get_user_by_active_token(token)
+                    if user: user_uid = user['uid']
+                except: pass
+            
+            is_success = False
+            result_val = ""
+            try:
+                # [2] 비동기 함수이므로 await를 사용하여 실제 도구 로직이 완료될 때까지 기다립니다.
+                result = await func(*args, **kwargs)
+                result_val = str(result)
+                is_success = True
+                if isinstance(result, str) and (result.startswith("Error:") or result.startswith("User not found")):
+                    is_success = False
+                return result
+            except Exception as e:
+                result_val = f"Exception: {str(e)}"
+                is_success = False
+                raise e
+            finally:
+                # [3] 도구 실행이 끝난 후(성공/실패 무관) DB에 이력을 저장합니다.
+                if user_uid:
+                    try:
+                        db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
+                    except: pass
+        return async_wrapper
+    else:
+        # [4] 일반 동기 함수(def)인 경우 처리 (예: add, subtract 등)
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            tool_name = func.__name__
+            params = {**kwargs}
+            if args: params['args'] = args
+                
+            token = os.environ.get('token')
+            user_uid = None
+            if token:
+                try:
+                    user = db.get_user_by_active_token(token)
+                    if user: user_uid = user['uid']
+                except: pass
+            
+            is_success = False
+            result_val = ""
+            try:
+                # [5] 동기 함수는 await 없이 즉시 실행합니다.
+                result = func(*args, **kwargs)
+                result_val = str(result)
+                is_success = True
+                if isinstance(result, str) and (result.startswith("Error:") or result.startswith("User not found")):
+                    is_success = False
+                return result
+            except Exception as e:
+                result_val = f"Exception: {str(e)}"
+                is_success = False
+                raise e
+            finally:
+                if user_uid:
+                    try:
+                        db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
+                    except: pass
+        return sync_wrapper

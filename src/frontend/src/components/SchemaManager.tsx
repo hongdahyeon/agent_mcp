@@ -153,13 +153,20 @@ export function SchemaManager() {
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-          <Database className="w-6 h-6 mr-2 text-blue-600" />
-          스키마 및 데이터 관리
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">데이터베이스 테이블 구조를 확인하고 데이터를 조회합니다.</p>
-      </div>
+      {/* Header */}
+      <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-lg bg-blue-50">
+            <Database className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              스키마 및 데이터 관리
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">데이터베이스 테이블 구조를 확인하고 데이터를 조회합니다.</p>
+          </div>
+        </div>
+      </header>
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">

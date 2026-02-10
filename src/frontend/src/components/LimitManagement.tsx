@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../types/auth';
-import { 
-    AlertCircle, 
-    Plus, 
-    Trash2, 
-    Edit2, 
+import {
+    AlertCircle,
+    Plus,
+    Trash2,
+    Edit2,
     Shield,
     User as UserIcon,
     Settings,
     Clock
 } from 'lucide-react';
-import type { Limit, LimitFormData } from '../types/limitUsageMng';
+import type { Limit, LimitFormData } from '../types/TargetLimitUsageMng';
 
 import { getAuthHeaders } from '../utils/auth';
 
@@ -18,7 +18,7 @@ export function LimitManagement() {
     const [limits, setLimits] = useState<Limit[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLimit, setEditingLimit] = useState<Limit | null>(null);
@@ -56,9 +56,9 @@ export function LimitManagement() {
             const res = await fetch('/api/mcp/limits', {
                 headers: getAuthHeaders()
             });
-            
+
             if (!res.ok) throw new Error('Failed to fetch limit policies');
-            
+
             const data = await res.json();
             setLimits(data.limits);
         } catch (err) {
@@ -97,7 +97,7 @@ export function LimitManagement() {
         try {
             const res = await fetch('/api/mcp/limits', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -125,7 +125,7 @@ export function LimitManagement() {
             });
 
             if (!res.ok) throw new Error('Failed to delete policy');
-            
+
             await fetchLimits();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete policy');
@@ -133,13 +133,17 @@ export function LimitManagement() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">사용 제한 관리</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        사용자 및 역할별 도구 실행 횟수 제한을 관리합니다.
-                    </p>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <Shield className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용 제한 관리
+                        </h2>
+                    </div>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
@@ -148,14 +152,15 @@ export function LimitManagement() {
                     <Plus className="w-4 h-4 mr-2" />
                     정책 추가
                 </button>
-            </div>
+            </header>
 
-            {error && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    {error}
-                </div>
-            )}
+            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+                {error && (
+                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center">
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        {error}
+                    </div>
+                )}
 
             <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -198,11 +203,10 @@ export function LimitManagement() {
                                             ) : (
                                                 <UserIcon className="w-4 h-4 text-blue-500 mr-2" />
                                             )}
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                limit.target_type === 'ROLE' 
-                                                    ? 'bg-purple-100 text-purple-800' 
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${limit.target_type === 'ROLE'
+                                                    ? 'bg-purple-100 text-purple-800'
                                                     : 'bg-blue-100 text-blue-800'
-                                            }`}>
+                                                }`}>
                                                 {limit.target_type}
                                             </span>
                                             <span className="ml-2 text-sm font-medium text-gray-900">
@@ -280,7 +284,7 @@ export function LimitManagement() {
                                                         <select
                                                             className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                             value={formData.target_type}
-                                                            onChange={(e) => setFormData({...formData, target_type: e.target.value as 'USER' | 'ROLE'})}
+                                                            onChange={(e) => setFormData({ ...formData, target_type: e.target.value as 'USER' | 'ROLE' })}
                                                         >
                                                             <option value="USER">USER</option>
                                                             <option value="ROLE">ROLE</option>
@@ -295,7 +299,7 @@ export function LimitManagement() {
                                                                 required
                                                                 className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                                 value={formData.target_id}
-                                                                onChange={(e) => setFormData({...formData, target_id: e.target.value})}
+                                                                onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                                                             >
                                                                 <option value="">사용자를 선택하세요</option>
                                                                 {userList.map(user => (
@@ -309,7 +313,7 @@ export function LimitManagement() {
                                                                 required
                                                                 className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                                 value={formData.target_id}
-                                                                onChange={(e) => setFormData({...formData, target_id: e.target.value})}
+                                                                onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                                                             >
                                                                 <option value="">역할을 선택하세요</option>
                                                                 <option value="ROLE_USER">ROLE_USER (일반 사용자)</option>
@@ -333,7 +337,7 @@ export function LimitManagement() {
                                                             required
                                                             className="block w-full pl-10 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                             value={formData.max_count}
-                                                            onChange={(e) => setFormData({...formData, max_count: parseInt(e.target.value)})}
+                                                            onChange={(e) => setFormData({ ...formData, max_count: parseInt(e.target.value) })}
                                                         />
                                                     </div>
                                                 </div>
@@ -347,7 +351,7 @@ export function LimitManagement() {
                                                         type="text"
                                                         className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                         value={formData.description}
-                                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                                     />
                                                 </div>
                                             </div>
@@ -375,6 +379,7 @@ export function LimitManagement() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

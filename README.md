@@ -48,6 +48,9 @@
 
 ## 4. 설치 및 실행 (Setup & Run)
 
+### 0. 가상 환경 활성화
+.\venv\Scripts\activate
+
 ### 1. 환경 설정 및 설치
 ```bash
 # 의존성 설치
@@ -95,11 +98,13 @@ uvicorn src.sse_server:app --reload --port 8000
 ```json
 {
   "mcpServers": {
-    "agent-mcp-v2": {
-      "command": "python",
-      "args": ["ABSOLUTE_PATH\\src\\sse_server.py"],
+    "agent-mcp": {
+      "command": "{venv\\Scripts\\python.exe}",
+      "args": [
+        "{server.py path}"
+      ],
       "env": {
-        "MCP_TOKEN": "YOUR_JWT_HERE" 
+        "token": "{token}"
       }
     }
   }

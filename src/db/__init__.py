@@ -31,7 +31,8 @@ from .mcp_tool_usage import (
     log_tool_usage,
     get_tool_usage_logs,
     get_tool_stats,
-    get_user_daily_usage
+    get_user_daily_usage,
+    get_user_tool_stats
 )
 
 from .mcp_tool_limit import (
@@ -39,7 +40,7 @@ from .mcp_tool_limit import (
     get_admin_usage_stats,
     get_limit_list,
     upsert_limit,
-    delete_limit
+    delete_limit,
 )
 
 from .custom_tool import (
@@ -61,7 +62,8 @@ from .access_token import (
     create_access_token,
     get_access_token,
     get_all_access_tokens,
-    delete_access_token
+    delete_access_token,
+    get_user_by_active_token
 )
 
 
@@ -104,6 +106,7 @@ __all__ = [
     'get_tool_usage_logs',
     'get_tool_stats',
     'get_user_daily_usage',
+    'get_user_tool_stats',
     'get_user_limit',
     'get_admin_usage_stats',
     'get_limit_list',
@@ -134,5 +137,6 @@ __all__ = [
     'create_access_token',
     'get_access_token',
     'get_all_access_tokens',
-    'delete_access_token'
+    'delete_access_token',
+    'get_user_by_active_token'
 ]

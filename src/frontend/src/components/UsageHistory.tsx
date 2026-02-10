@@ -1,7 +1,7 @@
 import clsx from 'clsx';
-import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/usage';
+import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
 
 
@@ -101,244 +101,252 @@ export function UsageHistory() {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800">MCP Tool 사용 이력</h2>
-          <p className="text-sm text-gray-500 mt-1">사용자들의 도구 실행 기록 및 금일 사용 통계</p>
-        </div>
-        <button onClick={fetchStats} className="text-sm text-blue-600 hover:underline flex items-center">
-          <RefreshCw className={clsx("w-3 h-3 mr-1", statsLoading && "animate-spin")} /> 통계 갱신
-        </button>
-      </div>
-
-      {/* 사용 통계 테이블 (Usage Stats Table) */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <h3 className="text-sm font-semibold text-gray-700">금일 사용자별 사용 통계</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용량</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">한도</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">잔여</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {statsLoading && stats.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500">로딩 중...</td></tr>
-              ) : stats.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500">통계 데이터 없음</td></tr>
-              ) : (
-                stats.map(s => (
-                  <tr key={s.user_id}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.user_nm} <span className="text-gray-400 font-normal">({s.user_id})</span></td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{s.role}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-bold">{s.usage}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{s.limit === -1 ? '무제한' : s.limit}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">{s.limit === -1 ? '-' : s.remaining}</td>
-                    <td className="px-6 py-4 text-sm">
-                      {s.limit !== -1 && s.remaining === 0 ? (
-                        <span className="text-red-600 font-medium text-xs bg-red-50 px-2 py-1 rounded-full">한도 초과</span>
-                      ) : s.limit !== -1 && s.remaining < 5 ? (
-                        <span className="text-orange-600 font-medium text-xs bg-orange-50 px-2 py-1 rounded-full">임박</span>
-                      ) : (
-                        <span className="text-green-600 font-medium text-xs bg-green-50 px-2 py-1 rounded-full">정상</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* 필터 바 (Filter Bar) */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">사용자 ID</label>
-          <input
-            type="text"
-            value={searchUserId}
-            onChange={(e) => setSearchUserId(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search User ID..."
-            className="px-3 py-2 border rounded-lg text-sm w-40"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">도구명</label>
-          <input
-            type="text"
-            value={searchToolNm}
-            onChange={(e) => setSearchToolNm(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search Tool Name..."
-            className="px-3 py-2 border rounded-lg text-sm w-40"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">성공여부</label>
-          <select
-            value={searchSuccess}
-            onChange={(e) => setSearchSuccess(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm w-32 bg-white"
-          >
-            <option value="ALL">전체</option>
-            <option value="SUCCESS">In Progress / Success</option>
-            <option value="FAIL">Error / Fail</option>
-          </select>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleSearch}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            검색
-          </button>
-          <button
-            onClick={() => {
-              setSearchUserId('');
-              setSearchToolNm('');
-              setSearchSuccess('ALL');
-              // state update is async, so we can't call fetchLogs immediately with new state here easily without extra effect or ref.
-              // But for simplicity, let's just trigger reload which will use old state? No.
-              // We just reset state, user clicks search again or we use effect?
-              // Let's just reset fields. User can click search.
-            }}
-            className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
-          >
-            초기화
-          </button>
-        </div>
-
-        <div className="flex-1 text-right">
-          <button
-            onClick={() => fetchLogs(page)}
-            disabled={loading}
-            className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-            새로고침
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
-          <AlertCircle className="w-5 h-5 mr-2" />
-          {error}
-        </div>
-      )}
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">도구명</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">성공여부</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">파라미터</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결과</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading && logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
-                    로딩 중...
-                  </td>
-                </tr>
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
-                    데이터가 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {log.reg_dt}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="ml-0">
-                          <div className="text-sm font-medium text-gray-900">{log.user_nm}</div>
-                          <div className="text-xs text-gray-500">{log.user_id}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {log.tool_nm}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {log.tool_success === 'SUCCESS' ? (
-                        <div className="flex items-center text-green-600 text-sm">
-                          <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                          성공
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-red-600 text-sm">
-                          <XCircle className="w-4 h-4 mr-1.5" />
-                          실패
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_params}>
-                      {log.tool_params}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_result}>
-                      {log.tool_result}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* 페이징 (Pagination) */}
-        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm text-gray-700">
-                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
-              </p>
-            </div>
-            <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+    return (
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <History className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            MCP Tool 사용 이력
+                        </h2>
+                    </div>
+                </div>
                 <button
-                  onClick={() => fetchLogs(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    onClick={fetchStats}
+                    className="flex items-center text-sm bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-gray-700"
                 >
-                  이전
+                    <RefreshCw className={clsx("w-4 h-4 mr-2", statsLoading && "animate-spin")} />
+                    통계 갱신
                 </button>
-                <button
-                  onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  다음
-                </button>
-              </nav>
+            </header>
+
+            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+                {/* 사용 통계 테이블 (Usage Stats Table) */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                        <h3 className="text-sm font-semibold text-gray-700">금일 사용자별 사용 통계</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용량</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">한도</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">잔여</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {statsLoading && stats.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500">로딩 중...</td></tr>
+                                ) : stats.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500">통계 데이터 없음</td></tr>
+                                ) : (
+                                    stats.map(s => (
+                                        <tr key={s.user_id}>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.user_nm} <span className="text-gray-400 font-normal">({s.user_id})</span></td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{s.role}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-900 font-bold">{s.usage}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{s.limit === -1 ? '무제한' : s.limit}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{s.limit === -1 ? '-' : s.remaining}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                {s.limit !== -1 && s.remaining === 0 ? (
+                                                    <span className="text-red-600 font-medium text-xs bg-red-50 px-2 py-1 rounded-full">한도 초과</span>
+                                                ) : s.limit !== -1 && s.remaining < 5 ? (
+                                                    <span className="text-orange-600 font-medium text-xs bg-orange-50 px-2 py-1 rounded-full">임박</span>
+                                                ) : (
+                                                    <span className="text-green-600 font-medium text-xs bg-green-50 px-2 py-1 rounded-full">정상</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* 필터 바 (Filter Bar) */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">사용자 ID</label>
+                        <input
+                            type="text"
+                            value={searchUserId}
+                            onChange={(e) => setSearchUserId(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Search User ID..."
+                            className="px-3 py-2 border rounded-lg text-sm w-40"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">도구명</label>
+                        <input
+                            type="text"
+                            value={searchToolNm}
+                            onChange={(e) => setSearchToolNm(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Search Tool Name..."
+                            className="px-3 py-2 border rounded-lg text-sm w-40"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">성공여부</label>
+                        <select
+                            value={searchSuccess}
+                            onChange={(e) => setSearchSuccess(e.target.value)}
+                            className="px-3 py-2 border rounded-lg text-sm w-32 bg-white"
+                        >
+                            <option value="ALL">전체</option>
+                            <option value="SUCCESS">In Progress / Success</option>
+                            <option value="FAIL">Error / Fail</option>
+                        </select>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleSearch}
+                            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                            <Search className="w-4 h-4 mr-2" />
+                            검색
+                        </button>
+                        <button
+                            onClick={() => {
+                                setSearchUserId('');
+                                setSearchToolNm('');
+                                setSearchSuccess('ALL');
+                            }}
+                            className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
+                        >
+                            초기화
+                        </button>
+                    </div>
+
+                    <div className="flex-1 text-right">
+                        <button
+                            onClick={() => fetchLogs(page)}
+                            disabled={loading}
+                            className="inline-flex items-center px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                            <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
+                            새로고침
+                        </button>
+                    </div>
+                </div>
+
+                {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        {error}
+                    </div>
+                )}
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">도구명</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">성공여부</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">파라미터</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">결과</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {loading && logs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                                            로딩 중...
+                                        </td>
+                                    </tr>
+                                ) : logs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                                            데이터가 없습니다.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    logs.map((log) => (
+                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {log.reg_dt}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="ml-0">
+                                                        <div className="text-sm font-medium text-gray-900">{log.user_nm}</div>
+                                                        <div className="text-xs text-gray-500">{log.user_id}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    {log.tool_nm}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {log.tool_success === 'SUCCESS' ? (
+                                                    <div className="flex items-center text-green-600 text-sm">
+                                                        <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                                        성공
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center text-red-600 text-sm">
+                                                        <XCircle className="w-4 h-4 mr-1.5" />
+                                                        실패
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_params}>
+                                                {log.tool_params}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_result}>
+                                                {log.tool_result}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* 페이징 (Pagination) */}
+                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm text-gray-700">
+                                    Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
+                                </p>
+                            </div>
+                            <div>
+                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button
+                                        onClick={() => fetchLogs(Math.max(1, page - 1))}
+                                        disabled={page === 1}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    >
+                                        이전
+                                    </button>
+                                    <button
+                                        onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
+                                        disabled={page >= totalPages}
+                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    >
+                                        다음
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

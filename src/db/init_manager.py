@@ -148,44 +148,44 @@ def init_db():
     )
     ''')
     
-    # 기본 시스템 설정 시딩
-    gmail_config = {
-        "mail.host": "smtp.gmail.com",
-        "mail.port": 587,
-        "mail.username": "",
-        "mail.password": ""
-    }
-    
-    default_configs = [
-        ('gmail_config', json.dumps(gmail_config, ensure_ascii=False), 'Gmail SMTP Settings'),
-    ]
-    
-    for name, config_json, desc in default_configs:
-        cursor.execute("SELECT name FROM h_system_config WHERE name = ?", (name,))
-        if not cursor.fetchone():
-            cursor.execute('''
-            INSERT INTO h_system_config (name, configuration, description, reg_dt)
-            VALUES (?, ?, ?, ?)
-            ''', (name, config_json, desc, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-            print(f"[DB] 시스템 설정 생성됨: {name}", file=sys.stderr)
+    # 기본 시스템 설정 시딩 (주석 처리됨)
+    # gmail_config = {
+    #     "mail.host": "smtp.gmail.com",
+    #     "mail.port": 587,
+    #     "mail.username": "",
+    #     "mail.password": ""
+    # }
+    # 
+    # default_configs = [
+    #     ('gmail_config', json.dumps(gmail_config, ensure_ascii=False), 'Gmail SMTP Settings'),
+    # ]
+    # 
+    # for name, config_json, desc in default_configs:
+    #     cursor.execute("SELECT name FROM h_system_config WHERE name = ?", (name,))
+    #     if not cursor.fetchone():
+    #         cursor.execute('''
+    #         INSERT INTO h_system_config (name, configuration, description, reg_dt)
+    #         VALUES (?, ?, ?, ?)
+    #         ''', (name, config_json, desc, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    #         print(f"[DB] 시스템 설정 생성됨: {name}", file=sys.stderr)
 
-    # 기본 제한 정책 시딩
-    cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")
-    if not cursor.fetchone():
-        cursor.execute('''
-        INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
-        VALUES (?, ?, ?, ?, ?)
-        ''', ('ROLE', 'ROLE_USER', 'DAILY', 50, 'General User Daily Limit'))
-        print("[DB] 기본 제한 정책 생성됨 (ROLE_USER: 50/Daily)", file=sys.stderr)
-
-    # - 2. ROLE_ADMIN: 일일 무제한(-1)
-    cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_ADMIN'")
-    if not cursor.fetchone():
-        cursor.execute('''
-        INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
-        VALUES (?, ?, ?, ?, ?)
-        ''', ('ROLE', 'ROLE_ADMIN', 'DAILY', -1, 'Admin User Daily Unlimited'))
-        print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: Unlimited)", file=sys.stderr)
+    # 기본 제한 정책 시딩 (주석 처리됨)
+    # cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_USER'")
+    # if not cursor.fetchone():
+    #     cursor.execute('''
+    #     INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
+    #     VALUES (?, ?, ?, ?, ?)
+    #     ''', ('ROLE', 'ROLE_USER', 'DAILY', 50, 'General User Daily Limit'))
+    #     print("[DB] 기본 제한 정책 생성됨 (ROLE_USER: 50/Daily)", file=sys.stderr)
+    # 
+    # # - 2. ROLE_ADMIN: 일일 무제한(-1)
+    # cursor.execute("SELECT * FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id='ROLE_ADMIN'")
+    # if not cursor.fetchone():
+    #     cursor.execute('''
+    #     INSERT INTO h_mcp_tool_limit (target_type, target_id, limit_type, max_count, description)
+    #     VALUES (?, ?, ?, ?, ?)
+    #     ''', ('ROLE', 'ROLE_ADMIN', 'DAILY', -1, 'Admin User Daily Unlimited'))
+    #     print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: Unlimited)", file=sys.stderr)
     
     
     # - 4. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
@@ -196,55 +196,54 @@ def init_db():
         cursor.execute("ALTER TABLE h_user ADD COLUMN is_enable TEXT DEFAULT 'Y'")
 
 
-    # =========================================================
-    # 사용자 계정 재설정 (Bcrypt 적용)
+    # 사용자 계정 재설정 (Bcrypt 적용) - 주석 처리됨
     # =========================================================
     # 2026.01.30: 기존 SHA256 패스워드 호환성 및 신규 해시 적용을 위해 기본 계정 재설정
-    
-    # 기존 계정 삭제 (admin, user, external)
-    cursor.execute("DELETE FROM h_user WHERE user_id IN ('admin', 'user', 'external')")
-    
-    try:
-        try:
-            from src.utils.auth import get_password_hash
-        except ImportError:
-            from utils.auth import get_password_hash
-            
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # 1. Admin (비번: 1234)
-        admin_pw = get_password_hash("1234")
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('admin', admin_pw, '관리자', 'ROLE_ADMIN', timestamp))
-        print("[DB] 관리자 계정 재생성됨 (ID: admin / PW: 1234 / Bcrypt)", file=sys.stderr)
-
-        # 2. User (비번: 1234, 사용 승인됨)
-        user_pw = get_password_hash("1234")
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'N')
-        ''', ('user', user_pw, '사용자(미승인)', 'ROLE_USER', timestamp))
-        print("[DB] 테스트 유저 재생성됨 (ID: user / PW: 1234 / Enabled: N / Bcrypt)", file=sys.stderr)
-
-        # 3. External (비번: external_pass_1234)
-        ext_pw = get_password_hash("external_pass_1234")
-        cursor.execute('''
-        INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-        VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('external', ext_pw, 'External System', 'ROLE_ADMIN', timestamp))
-        print("[DB] 외부 연동용 유저 재생성됨 (ID: external / Bcrypt)", file=sys.stderr)
-        
-    except Exception as e:
-        print(f"[DB] 사용자 시딩 중 오류 발생: {e}", file=sys.stderr)
+    # 
+    # # 기존 계정 삭제 (admin, user, external)
+    # cursor.execute("DELETE FROM h_user WHERE user_id IN ('admin', 'user', 'external')")
+    # 
+    # try:
+    #     try:
+    #         from src.utils.auth import get_password_hash
+    #     except ImportError:
+    #         from utils.auth import get_password_hash
+    #         
+    #     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 
+    #     # 1. Admin (비번: 1234)
+    #     admin_pw = get_password_hash("1234")
+    #     cursor.execute('''
+    #     INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+    #     VALUES (?, ?, ?, ?, ?, 'Y')
+    #     ''', ('admin', admin_pw, '관리자', 'ROLE_ADMIN', timestamp))
+    #     print("[DB] 관리자 계정 재생성됨 (ID: admin / PW: 1234 / Bcrypt)", file=sys.stderr)
+    # 
+    #     # 2. User (비번: 1234, 사용 승인됨)
+    #     user_pw = get_password_hash("1234")
+    #     cursor.execute('''
+    #     INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+    #     VALUES (?, ?, ?, ?, ?, 'N')
+    #     ''', ('user', user_pw, '사용자(미승인)', 'ROLE_USER', timestamp))
+    #     print("[DB] 테스트 유저 재생성됨 (ID: user / PW: 1234 / Enabled: N / Bcrypt)", file=sys.stderr)
+    # 
+    #     # 3. External (비번: external_pass_1234)
+    #     ext_pw = get_password_hash("external_pass_1234")
+    #     cursor.execute('''
+    #     INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
+    #     VALUES (?, ?, ?, ?, ?, 'Y')
+    #     ''', ('external', ext_pw, 'External System', 'ROLE_ADMIN', timestamp))
+    #     print("[DB] 외부 연동용 유저 재생성됨 (ID: external / Bcrypt)", file=sys.stderr)
+    #     
+    # except Exception as e:
+    #     print(f"[DB] 사용자 시딩 중 오류 발생: {e}", file=sys.stderr)
         
     conn.commit()
 
-    # - 8. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션)
-    cursor.execute("UPDATE h_mcp_tool_limit SET max_count = -1 WHERE target_type='ROLE' AND target_id='ROLE_ADMIN' AND max_count = 50")
-    if cursor.rowcount > 0:
-        print("[DB] 마이그레이션: ROLE_ADMIN 일일 제한을 무제한(-1)으로 변경", file=sys.stderr)
+    # - 8. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션) - 주석 처리됨
+    # cursor.execute("UPDATE h_mcp_tool_limit SET max_count = -1 WHERE target_type='ROLE' AND target_id='ROLE_ADMIN' AND max_count = 50")
+    # if cursor.rowcount > 0:
+    #     print("[DB] 마이그레이션: ROLE_ADMIN 일일 제한을 무제한(-1)으로 변경", file=sys.stderr)
 
     conn.commit()
     conn.close()

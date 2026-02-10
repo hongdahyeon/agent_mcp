@@ -130,34 +130,40 @@ export function SystemConfig({ token }: Props) {
     if (error) return <div className="p-8 text-center text-red-500">에러: {error}</div>;
 
     return (
-        <div className="h-full flex flex-col space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <Settings className="w-8 h-8 mr-3 text-blue-600" />
-                        시스템 설정
-                    </h1>
-                    <p className="text-gray-500 mt-1">시스템 설정 관리</p>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <Settings className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            시스템 설정
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">시스템 설정 관리</p>
+                    </div>
                 </div>
                 <button
                     onClick={handleOpenAdd}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                 >
-                    <Plus className="w-5 h-5 mr-2" />
+                    <Plus className="w-4 h-4 mr-2" />
                     추가
                 </button>
-            </div>
+            </header>
 
             {/* Search Bar */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                    type="text"
-                    placeholder="이름 또는 설명으로 검색..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                        type="text"
+                        placeholder="이름 또는 설명으로 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
             </div>
 
             {/* Table */}
