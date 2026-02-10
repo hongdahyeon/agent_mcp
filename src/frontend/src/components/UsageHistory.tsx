@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
@@ -25,13 +25,16 @@ export function UsageHistory() {
   const [stats, setStats] = useState<UsageStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // 상세 보기 모달 상태 (JSON Viewer Modal State)
+  const [selectedJson, setSelectedJson] = useState<string | null>(null);
+  const [modalTitle, setModalTitle] = useState('');
+
   // 사용 통계 조회 (Fetch Usage Stats)
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) return;
-      // const user = JSON.parse(sessionStr) as User;
 
       const res = await fetch('/api/mcp/usage-stats', {
         headers: getAuthHeaders()
@@ -50,12 +53,9 @@ export function UsageHistory() {
     setLoading(true);
     setError(null);
     try {
-      // 세션에서 사용자 정보 가져오기 (헤더에 X-User-Id 추가용 - getAuthHeaders 내부에서 처리됨)
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) throw new Error("No session found");
-      // const user = JSON.parse(sessionStr) as User;
 
-      // Query String 구성
       const params = new URLSearchParams({
         page: pageNum.toString(),
         size: pageSize.toString()
@@ -88,7 +88,7 @@ export function UsageHistory() {
   // 초기 로딩 및 성공여부 필터 변경 시 자동 검색
   useEffect(() => {
     fetchLogs(1);
-    fetchStats(); // 초기 로딩 시 통계도 조회
+    fetchStats();
   }, [searchSuccess, fetchLogs, fetchStats]);
 
   const handleSearch = () => {
@@ -101,6 +101,19 @@ export function UsageHistory() {
     }
   };
 
+  const formatJson = (content: string) => {
+    try {
+      const parsed = JSON.parse(content);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return content;
+    }
+  };
+
+  const openJsonModal = (title: string, content: string) => {
+    setModalTitle(title);
+    setSelectedJson(formatJson(content));
+  };
 
 
     return (
@@ -241,13 +254,6 @@ export function UsageHistory() {
                     </div>
                 </div>
 
-                {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
-                        <AlertCircle className="w-5 h-5 mr-2" />
-                        {error}
-                    </div>
-                )}
-
                 <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
                     <div className="overflow-x-auto flex-1">
                         <table className="min-w-full divide-y divide-gray-200">
@@ -306,11 +312,29 @@ export function UsageHistory() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_params}>
-                                                {log.tool_params}
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="truncate" title={log.tool_params}>{log.tool_params}</span>
+                                                    <button 
+                                                        onClick={() => openJsonModal('파라미터 상세 (Parameters)', log.tool_params)}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                                                        title="상세 보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_result}>
-                                                {log.tool_result}
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="truncate" title={log.tool_result}>{log.tool_result}</span>
+                                                    <button 
+                                                        onClick={() => openJsonModal('결과 상세 (Result)', log.tool_result)}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                                                        title="상세 보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -333,12 +357,51 @@ export function UsageHistory() {
                              onPageSizeChange={(s) => {
                                  setPageSize(s);
                                  setPage(1);
-                                 // fetchLogs will be triggered by useEffect depending on pageSize
                              }}
                         />
                     </div>
                 </div>
             </div>
+
+            {/* JSON Viewer Modal */}
+            {selectedJson !== null && (
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-fade-in">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-800">{modalTitle}</h3>
+                            <button 
+                                onClick={() => setSelectedJson(null)}
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-6">
+                            <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all shadow-inner">
+                                {selectedJson}
+                            </pre>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 text-right">
+                            <button 
+                                onClick={() => setSelectedJson(null)}
+                                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="fixed bottom-4 right-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 shadow-lg animate-fade-in z-[110]">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    {error}
+                    <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

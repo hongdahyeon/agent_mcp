@@ -269,71 +269,77 @@ export function SystemConfig() {
             </div>
 
             {/* Modal */}
+            {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 animate-fade-in">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900">
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in border border-gray-100">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h2 className="text-lg font-bold text-gray-800">
                                 {isEditMode ? '설정 수정' : '새 설정 추가'}
                             </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <button 
+                                onClick={() => setIsModalOpen(false)} 
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    이름 (Key) <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                    readOnly={isEditMode}
-                                    placeholder="e.g. mail.host"
-                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition ${isEditMode ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-300'}`}
-                                />
-                                {isEditMode && <p className="text-xs text-gray-400 mt-1">이름은 생성 후 변경할 수 없습니다.</p>}
+                        <form onSubmit={handleSubmit} className="flex flex-col">
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        이름 (Key) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        readOnly={isEditMode}
+                                        placeholder="e.g. mail.host"
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${isEditMode ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : 'border-gray-200'}`}
+                                    />
+                                    {isEditMode && <p className="text-xs text-gray-400 mt-1">이름은 생성 후 변경할 수 없습니다.</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        설정 (JSON) <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        value={formData.configuration}
+                                        onChange={(e) => setFormData({...formData, configuration: e.target.value})}
+                                        placeholder='{"key": "value"}'
+                                        rows={5}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm bg-gray-50/30"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        설명 <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        placeholder="설정에 대한 간단한 설명"
+                                        rows={2}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+                                    />
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    설정 (JSON) <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    value={formData.configuration}
-                                    onChange={(e) => setFormData({...formData, configuration: e.target.value})}
-                                    placeholder='{"key": "value"}'
-                                    rows={5}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition font-mono text-sm"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    설명 <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                    placeholder="설정에 대한 간단한 설명"
-                                    rows={2}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
-                                />
-                            </div>
-
-                            <div className="flex justify-end space-x-3 pt-4">
+                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     취소
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center"
                                 >
                                     <Save className="w-4 h-4 mr-2" />
                                     저장

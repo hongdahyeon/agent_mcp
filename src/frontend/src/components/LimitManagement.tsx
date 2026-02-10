@@ -8,7 +8,9 @@ import {
     Shield,
     User as UserIcon,
     Settings,
-    Clock
+    Clock,
+    RefreshCw,
+    X
 } from 'lucide-react';
 import type { Limit, LimitFormData } from '../types/TargetLimitUsageMng';
 
@@ -282,120 +284,127 @@ export function LimitManagement() {
                 </div>
             </div>
 
-            {/* Create/Edit Modal */}
+            {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl animate-fade-in w-full max-w-lg overflow-hidden relative">
-                        <form onSubmit={handleSubmit}>
-                            <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                <div className="flex items-start">
-                                    <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                        <Settings className="h-6 w-6 text-blue-600" />
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in border border-gray-100">
+                        <header className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 rounded-lg bg-blue-50">
+                                    <Settings className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800">
+                                    {editingLimit ? '정책 수정' : '새 정책 추가'}
+                                </h3>
+                            </div>
+                            <button 
+                                onClick={() => setIsModalOpen(false)} 
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </header>
+
+                        <form onSubmit={handleSubmit} className="flex flex-col">
+                            <div className="p-6 space-y-4">
+                                {/* Target Type & ID */}
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            대상 유형
+                                        </label>
+                                        <select
+                                            className="block w-full border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white"
+                                            value={formData.target_type}
+                                            onChange={(e) => setFormData({ ...formData, target_type: e.target.value as 'USER' | 'ROLE' })}
+                                        >
+                                            <option value="USER">USER</option>
+                                            <option value="ROLE">ROLE</option>
+                                        </select>
                                     </div>
-                                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                        <h3 className="text-lg leading-6 font-medium text-gray-900">
-                                            {editingLimit ? '정책 수정' : '새 정책 추가'}
-                                        </h3>
-                                        <div className="mt-4 space-y-4">
-                                            {/* Target Type & ID */}
-                                            <div className="grid grid-cols-3 gap-4">
-                                                <div className="col-span-1">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        대상 유형
-                                                    </label>
-                                                    <select
-                                                        className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                                        value={formData.target_type}
-                                                        onChange={(e) => setFormData({ ...formData, target_type: e.target.value as 'USER' | 'ROLE' })}
-                                                    >
-                                                        <option value="USER">USER</option>
-                                                        <option value="ROLE">ROLE</option>
-                                                    </select>
-                                                </div>
-                                                <div className="col-span-2">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        {formData.target_type === 'USER' ? '사용자 선택' : '역할 선택'}
-                                                    </label>
-                                                    {formData.target_type === 'USER' ? (
-                                                        <select
-                                                            required
-                                                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                                            value={formData.target_id}
-                                                            onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
-                                                        >
-                                                            <option value="">사용자를 선택하세요</option>
-                                                            {userList.map(user => (
-                                                                <option key={user.uid} value={user.user_id}>
-                                                                    {user.user_nm} ({user.user_id})
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    ) : (
-                                                        <select
-                                                            required
-                                                            className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                                            value={formData.target_id}
-                                                            onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
-                                                        >
-                                                            <option value="">역할을 선택하세요</option>
-                                                            <option value="ROLE_USER">ROLE_USER (일반 사용자)</option>
-                                                            <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
-                                                        </select>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Limit Count */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    일일 제한 횟수 (-1: 무제한)
-                                                </label>
-                                                <div className="relative rounded-md shadow-sm">
-                                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                        <Clock className="h-5 w-5 text-gray-400" />
-                                                    </div>
-                                                    <input
-                                                        type="number"
-                                                        required
-                                                        className="block w-full pl-10 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                                        value={formData.max_count}
-                                                        onChange={(e) => setFormData({ ...formData, max_count: parseInt(e.target.value) })}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Description */}
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    설명 (Optional)
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                                    value={formData.description}
-                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
+                                    <div className="col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {formData.target_type === 'USER' ? '사용자 선택' : '역할 선택'}
+                                        </label>
+                                        {formData.target_type === 'USER' ? (
+                                            <select
+                                                required
+                                                className="block w-full border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white"
+                                                value={formData.target_id}
+                                                onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
+                                            >
+                                                <option value="">사용자를 선택하세요</option>
+                                                {userList.map(user => (
+                                                    <option key={user.uid} value={user.user_id}>
+                                                        {user.user_nm} ({user.user_id})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <select
+                                                required
+                                                className="block w-full border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white"
+                                                value={formData.target_id}
+                                                onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
+                                            >
+                                                <option value="">역할을 선택하세요</option>
+                                                <option value="ROLE_USER">ROLE_USER (일반 사용자)</option>
+                                                <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
+
+                                {/* Limit Count */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        일일 제한 횟수 (-1: 무제한)
+                                    </label>
+                                    <div className="relative rounded-lg shadow-sm">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Clock className="h-4 w-4 text-gray-400" />
+                                        </div>
+                                        <input
+                                            type="number"
+                                            required
+                                            className="block w-full pl-10 border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
+                                            value={formData.max_count}
+                                            onChange={(e) => setFormData({ ...formData, max_count: parseInt(e.target.value) })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        설명 (Optional)
+                                    </label>
+                                    <textarea
+                                        className="block w-full border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all h-20 resize-none"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        placeholder="설명을 입력하세요."
+                                    />
+                                </div>
                             </div>
-                            <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
-                                >
-                                    {processing ? '저장 중...' : '저장'}
-                                </button>
+                            
+                            <footer className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     취소
                                 </button>
-                            </div>
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center"
+                                >
+                                    {processing && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+                                    저장
+                                </button>
+                            </footer>
                         </form>
                     </div>
                 </div>

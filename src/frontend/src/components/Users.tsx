@@ -1,10 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { User } from '../types/auth';
-import {
-    Users as UsersIcon, Edit2, X,
-    AlertCircle, ToggleLeft, ToggleRight, UserPlus
-} from 'lucide-react';
 import clsx from 'clsx';
+import {
+    AlertCircle,
+    AlertTriangle,
+    CheckCircle2,
+    Edit2,
+    RefreshCw,
+    Shield,
+    ToggleLeft, ToggleRight, UserIcon, UserPlus,
+    Users as UsersIcon,
+    X
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import type { User as UserType } from '../types/auth';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
 
@@ -13,7 +20,7 @@ import { Pagination } from './common/Pagination';
 */
 
 export function Users() {
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<UserType[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
@@ -87,7 +94,7 @@ export function Users() {
         setIsModalOpen(true);
     };
 
-    const handleOpenUpdate = (user: User) => {
+    const handleOpenUpdate = (user: UserType) => {
         setModalMode('update');
         setFormData({
             user_id: user.user_id,
@@ -154,7 +161,7 @@ export function Users() {
         }
     };
 
-    const toggleEnable = async (user: User) => {
+    const toggleEnable = async (user: UserType) => {
         if (!confirm(`${user.user_nm} 님의 상태를 변경하시겠습니까?`)) return;
 
         const newStatus = user.is_enable === 'Y' ? 'N' : 'Y';
@@ -294,115 +301,144 @@ export function Users() {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
-                        <header className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col animate-scale-in border border-gray-100">
+                        <header className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                            <h2 className="text-lg font-bold text-gray-800">
                                 {modalMode === 'create' ? '사용자 추가' : '사용자 정보 수정'}
                             </h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <button 
+                                onClick={() => setIsModalOpen(false)} 
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
                                 <X className="w-6 h-6" />
                             </button>
                         </header>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">아이디</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={formData.user_id}
-                                        onChange={(e) => {
-                                            if (modalMode === 'update') return;
-                                            setFormData({ ...formData, user_id: e.target.value });
-                                            setIdCheckStatus('idle');
-                                        }}
-                                        disabled={modalMode === 'update'}
-                                        className="flex-1 px-3 py-2 border rounded-lg disabled:bg-gray-100"
-                                        placeholder="영문/숫자 입력"
-                                        required
-                                    />
-                                    {modalMode === 'create' && (
-                                        <button
-                                            type="button"
-                                            onClick={checkUserId}
-                                            disabled={!formData.user_id}
-                                            className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 disabled:opacity-50"
-                                        >
-                                            중복확인
-                                        </button>
+                        <form onSubmit={handleSubmit} className="flex flex-col">
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                        <UserIcon className="w-4 h-4 mr-1.5 text-gray-400" />
+                                        아이디
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.user_id}
+                                            onChange={(e) => {
+                                                if (modalMode === 'update') return;
+                                                setFormData({ ...formData, user_id: e.target.value });
+                                                setIdCheckStatus('idle');
+                                            }}
+                                            disabled={modalMode === 'update'}
+                                            className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${modalMode === 'update' ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : 'border-gray-200'}`}
+                                            placeholder="영문/숫자 입력"
+                                            required
+                                        />
+                                        {modalMode === 'create' && (
+                                            <button
+                                                type="button"
+                                                onClick={checkUserId}
+                                                disabled={!formData.user_id || idCheckStatus === 'checking'}
+                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                            >
+                                                {idCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {idCheckStatus === 'available' && (
+                                        <p className="text-xs text-green-600 mt-1 flex items-center">
+                                            <CheckCircle2 className="w-3 h-3 mr-1" />사용 가능한 아이디입니다.
+                                        </p>
+                                    )}
+                                    {idCheckStatus === 'taken' && (
+                                        <p className="text-xs text-red-600 mt-1 flex items-center">
+                                            <AlertTriangle className="w-3 h-3 mr-1" />이미 사용중인 아이디입니다.
+                                        </p>
                                     )}
                                 </div>
-                                {idCheckStatus === 'available' && <p className="text-xs text-green-600 mt-1">사용 가능한 아이디입니다.</p>}
-                                {idCheckStatus === 'taken' && <p className="text-xs text-red-600 mt-1">이미 사용중인 아이디입니다.</p>}
-                            </div>
 
-                            {modalMode === 'create' && (
+                                {modalMode === 'create' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                            <Shield className="w-4 h-4 mr-1.5 text-gray-400" />
+                                            비밀번호
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                            placeholder="초기 비밀번호"
+                                            required
+                                        />
+                                    </div>
+                                )}
+
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                        <UserIcon className="w-4 h-4 mr-1.5 text-gray-400" />
+                                        이름
+                                    </label>
                                     <input
-                                        type="password"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg"
-                                        placeholder="초기 비밀번호"
+                                        type="text"
+                                        value={formData.user_nm}
+                                        onChange={(e) => setFormData({ ...formData, user_nm: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                        placeholder="홍길동"
                                         required
                                     />
                                 </div>
-                            )}
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
-                                <input
-                                    type="text"
-                                    value={formData.user_nm}
-                                    onChange={(e) => setFormData({ ...formData, user_nm: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-lg"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">권한</label>
-                                <select
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                    className="w-full px-3 py-2 border rounded-lg bg-white"
-                                >
-                                    <option value="ROLE_USER">ROLE_USER (일반)</option>
-                                    <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
-                                </select>
-                            </div>
-
-                            {modalMode === 'update' && (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                        <Shield className="w-4 h-4 mr-1.5 text-gray-400" />
+                                        권한
+                                    </label>
                                     <select
-                                        value={formData.is_enable}
-                                        onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
-                                        className="w-full px-3 py-2 border rounded-lg bg-white"
+                                        value={formData.role}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
                                     >
-                                        <option value="Y">활성 (Y)</option>
-                                        <option value="N">비활성 (N)</option>
+                                        <option value="ROLE_USER">ROLE_USER (일반)</option>
+                                        <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
                                     </select>
                                 </div>
-                            )}
 
-                            <div className="pt-4 flex gap-3">
+                                {modalMode === 'update' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                            <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400" />
+                                            상태
+                                        </label>
+                                        <select
+                                            value={formData.is_enable}
+                                            onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
+                                        >
+                                            <option value="Y">활성 (Y)</option>
+                                            <option value="N">비활성 (N)</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <footer className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
                                     취소
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                                 >
                                     저장
                                 </button>
-                            </div>
+                            </footer>
                         </form>
                     </div>
                 </div>

@@ -386,3 +386,8 @@
 - [x] 2. Backend API 및 DB 모듈 Docstring 업데이트 (Paging 지원 내용 명시)
     - [x] `db/access_token.py`, `db/custom_tool.py`, `db/email_manager.py`, `db/mcp_tool_limit.py`, `db/schema.py`
 - [x] 3. `CustomTools.tsx` 린트 오류 수정 및 `useCallback` 최적화
+
+## 48. 도구 사용 이력 JSON 상세 뷰어 구현
+- [x] 1. `UsageHistory.tsx` 내 상세 조회 모달 구현
+- [x] 2. 파라미터/결과 셀에 눈(`Eye`) 아이콘 버튼 추가
+- [x] 3. JSON 포맷팅 및 예외 처리 로직 적용
