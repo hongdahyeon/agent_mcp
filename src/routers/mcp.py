@@ -4,7 +4,7 @@ import json
 import logging
 try:
     from src.db import (
-        get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
         create_access_token, get_all_access_tokens, delete_access_token
@@ -13,7 +13,7 @@ try:
     from src.tool_executor import execute_sql_tool, execute_python_tool
 except ImportError:
     from db import (
-        get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_limit, get_admin_usage_stats,
+        get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
         create_access_token, get_all_access_tokens, delete_access_token
@@ -42,11 +42,13 @@ async def get_usage_history(
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
-# MCP 도구별 사용 통계 집계 데이터 반환
 @router.get("/mcp/stats")
 async def get_dashboard_stats():
     """도구별 사용 통계 집계 데이터 반환."""
-    return get_tool_stats()
+    return {
+        "tools": get_tool_stats(),
+        "users": get_user_tool_stats()
+    }
 
 # 내 금일 사용량 및 잔여 횟수 조회
 @router.get("/mcp/my-usage")
@@ -83,10 +85,14 @@ class LimitUpsertRequest(BaseModel):
 
 # 제한 정책 목록 조회 (관리자 전용)
 @router.get("/mcp/limits")
-async def api_get_limits(current_user: dict = Depends(get_current_user_jwt)):
-    """제한 정책 목록 조회 (관리자 전용)."""
+async def api_get_limits(
+    page: int = 1,
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """제한 정책 목록 조회 (관리자 전용, 페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return {"limits": get_limit_list()}
+    return get_limit_list(page, size)
 
 # 제한 정책 추가/수정 (관리자 전용)
 @router.post("/mcp/limits")
@@ -111,11 +117,15 @@ class AccessTokenCreateRequest(BaseModel):
 
 # 외부 접속용 토큰 목록 조회
 @router.get("/access-tokens")
-async def api_get_access_tokens(current_user: dict = Depends(get_current_user_jwt)):
-    """외부 접속용 토큰 목록 조회."""
+async def api_get_access_tokens(
+    page: int = 1,
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """외부 접속용 토큰 목록 조회 (페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN':
          raise HTTPException(status_code=403, detail="Admin access required")
-    return {"tokens": get_all_access_tokens()}
+    return get_all_access_tokens(page, size)
 
 # 외부 접속용 토큰 생성
 @router.post("/access-tokens")
@@ -167,10 +177,14 @@ class ToolTestRequest(BaseModel):
 
 # 동적 Tool 목록 조회 (관리자 전용)
 @router.get("/mcp/custom-tools")
-async def api_get_custom_tools(current_user: dict = Depends(get_current_user_jwt)):
-    """동적 Tool 목록 조회 (관리자 전용)."""
+async def api_get_custom_tools(
+    page: int = 1, 
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """동적 Tool 목록 조회 (관리자 전용, 페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return get_all_tools()
+    return get_all_tools(page, size)
 
 # 동적 Tool 상세 조회 (파라미터 포함)
 @router.get("/mcp/custom-tools/{tool_id}")

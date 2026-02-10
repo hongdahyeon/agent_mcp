@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { User } from '../types/auth';
 import {
     Users as UsersIcon, Edit2, X,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 /* 
 * 사용자 관리 화면에 대한 컴포넌트
@@ -17,7 +18,7 @@ export function Users() {
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const PAGE_SIZE = 20;
+    const [pageSize, setPageSize] = useState(10);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,14 +35,12 @@ export function Users() {
 
     const [idCheckStatus, setIdCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
 
-    useEffect(() => {
-        fetchUsers(1);
-    }, []);
 
-    const fetchUsers = async (pageNum: number = 1) => {
+
+    const fetchUsers = useCallback(async (pageNum: number = 1) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/users?page=${pageNum}&size=${PAGE_SIZE}`, {
+            const res = await fetch(`/api/users?page=${pageNum}&size=${pageSize}`, {
                 headers: getAuthHeaders()
             });
 
@@ -62,13 +61,18 @@ export function Users() {
                 setUsers(data.users);
             }
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Error in fetchUsers:", err);
-            setError(`사용자 목록을 불러오는데 실패했습니다: ${err.message}`);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            setError(`사용자 목록을 불러오는데 실패했습니다: ${message}`);
         } finally {
             setLoading(false);
         }
-    };
+    }, [pageSize]);
+
+    useEffect(() => {
+        fetchUsers(1);
+    }, [fetchUsers]);
 
     const handleOpenCreate = () => {
         setModalMode('create');
@@ -171,19 +175,23 @@ export function Users() {
         }
     };
     
-    const totalPages = Math.ceil(total / PAGE_SIZE);
+
 
     if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
 
     return (
-        <div className="space-y-6">
-            <header className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <UsersIcon className="w-8 h-8 text-blue-600" />
-                        사용자 관리
-                    </h1>
-                    <p className="text-gray-500 mt-1">시스템 사용자를 조회하고 관리합니다.</p>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <UsersIcon className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용자 관리
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">시스템 사용자를 조회하고 관리합니다.</p>
+                    </div>
                 </div>
                 <button
                     onClick={handleOpenCreate}
@@ -201,121 +209,92 @@ export function Users() {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-sm">
-                            <th className="py-4 px-6 font-medium">ID / 이름</th>
-                            <th className="py-4 px-6 font-medium">권한</th>
-                            <th className="py-4 px-6 font-medium">상태</th>
-                            <th className="py-4 px-6 font-medium">마지막 접속</th>
-                            <th className="py-4 px-6 font-medium text-right">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {users.map(user => (
-                            <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
-                                <td className="py-4 px-6">
-                                    <div className="flex flex-col">
-                                        <span className="font-medium text-gray-900">{user.user_nm}</span>
-                                        <span className="text-sm text-gray-400">{user.user_id}</span>
-                                    </div>
-                                </td>
-                                <td className="py-4 px-6">
-                                    <span className={clsx(
-                                        "px-2 py-1 rounded-full text-xs font-medium border",
-                                        user.role === 'ROLE_ADMIN'
-                                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                                            : "bg-blue-50 text-blue-700 border-blue-200"
-                                    )}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="py-4 px-6">
-                                    <button
-                                        onClick={() => toggleEnable(user)}
-                                        className="flex items-center gap-2 group cursor-pointer"
-                                    >
-                                        {user.is_enable === 'Y' ? (
-                                            <>
-                                                <ToggleRight className="w-8 h-8 text-green-500 group-hover:text-green-600" />
-                                                <span className="text-sm text-green-600 font-medium">활성</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <ToggleLeft className="w-8 h-8 text-gray-400 group-hover:text-gray-500" />
-                                                <span className="text-sm text-gray-500">비활성</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </td>
-                                <td className="py-4 px-6 text-sm text-gray-500">
-                                    {user.last_cnn_dt || '-'}
-                                </td>
-                                <td className="py-4 px-6 text-right">
-                                    <button
-                                        onClick={() => handleOpenUpdate(user)}
-                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                        title="정보 수정"
-                                    >
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                </td>
+            <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="overflow-x-auto flex-1">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID / 이름</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">마지막 접속</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-                
-                 {/* Pagination */}
-                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                 {/* Mobile Pagination */}
-                  <div className="flex flex-1 justify-between sm:hidden">
-                    <button
-                        onClick={() => fetchUsers(Math.max(1, page - 1))}
-                        disabled={page === 1}
-                        className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
-                    >
-                        이전
-                    </button>
-                    <button
-                        onClick={() => fetchUsers(Math.min(totalPages, page + 1))}
-                        disabled={page >= totalPages}
-                        className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
-                    >
-                        다음
-                    </button>
-                  </div>
-                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-sm text-gray-700">
-                            Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
-                        </p>
-                    </div>
-                    <div>
-                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                            <button
-                                onClick={() => fetchUsers(Math.max(1, page - 1))}
-                                disabled={page === 1}
-                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            >
-                                이전
-                            </button>
-                            <button
-                                onClick={() => fetchUsers(Math.min(totalPages, page + 1))}
-                                disabled={page >= totalPages}
-                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                            >
-                                다음
-                            </button>
-                        </nav>
-                    </div>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {users.map(user => (
+                                <tr key={user.uid} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium text-gray-900">{user.user_nm}</span>
+                                            <span className="text-xs text-gray-500">{user.user_id}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={clsx(
+                                            "px-2 py-1 rounded-full text-xs font-medium border",
+                                            user.role === 'ROLE_ADMIN'
+                                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                                : "bg-blue-50 text-blue-700 border-blue-200"
+                                        )}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => toggleEnable(user)}
+                                            className="flex items-center gap-2 group cursor-pointer"
+                                        >
+                                            {user.is_enable === 'Y' ? (
+                                                <>
+                                                    <ToggleRight className="w-8 h-8 text-green-500 group-hover:text-green-600" />
+                                                    <span className="text-sm text-green-600 font-medium">활성</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <ToggleLeft className="w-8 h-8 text-gray-400 group-hover:text-gray-500" />
+                                                    <span className="text-sm text-gray-500">비활성</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {user.last_cnn_dt || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button
+                                            onClick={() => handleOpenUpdate(user)}
+                                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="정보 수정"
+                                        >
+                                            <Edit2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="bg-white border-t border-gray-200">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={Math.ceil(total / pageSize)}
+                        pageSize={pageSize}
+                        totalItems={total}
+                        onPageChange={(p) => fetchUsers(p)}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                        }}
+                    />
                 </div>
             </div>
-            </div>
+
+
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 animate-in fade-in zoom-in duration-200">
                         <header className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold">

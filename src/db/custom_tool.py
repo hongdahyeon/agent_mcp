@@ -5,7 +5,7 @@ from .connection import get_db_connection
 """
     h_custom_tool 테이블 관련
     - [1] get_active_tools: 활성화된 모든 Tool 조회 (서버 시작/리로드용)
-    - [2] get_all_tools: 모든 Tool 목록 조회 (관리자용)
+    - [2] get_all_tools: 모든 Tool 목록 조회 (관리자용, 페이징 적용)
     - [3] create_tool: 새로운 Tool 생성
     - [4] update_tool: Tool 정보 수정
     - [5] delete_tool: Tool 삭제
@@ -25,18 +25,31 @@ def get_active_tools() -> list[dict]:
     conn.close()
     return tools
 
-# [2] get_all_tools: 모든 tool 목록 조회 (관리자용)
-def get_all_tools() -> list[dict]:
-    """모든 Tool 목록 조회 (관리자용)."""
+# [2] get_all_tools: 모든 tool 목록 조회 (관리자용, 페이징 적용)
+def get_all_tools(page: int = 1, size: int = 10) -> dict:
+    """모든 Tool 목록 조회 (관리자용, 페이징 적용)."""
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM h_custom_tool ORDER BY id DESC").fetchall()
+    offset = (page - 1) * size
+    
+    total = conn.execute("SELECT COUNT(*) FROM h_custom_tool").fetchone()[0]
+    
+    rows = conn.execute("""
+        SELECT * FROM h_custom_tool 
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
+    """, (size, offset)).fetchall()
     
     tools = []
     for row in rows:
         tools.append(dict(row))
         
     conn.close()
-    return tools
+    return {
+        "items": tools,
+        "total": total,
+        "page": page,
+        "size": size
+    }
 
 # [3] get_tool_by_id: 특정 tool 상세 조회
 def get_tool_by_id(tool_id: int) -> dict | None:

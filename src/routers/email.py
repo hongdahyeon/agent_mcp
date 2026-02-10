@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 import logging
 try:
@@ -58,13 +58,25 @@ async def api_send_email(req: EmailSendRequest, current_user: dict = Depends(get
 
 # 이메일 로그 조회
 @router.get("/logs")
-async def api_get_email_logs(limit: int = 100, current_user: dict = Depends(get_current_user_jwt)):
+async def api_get_email_logs(
+    page: int = Query(1, ge=1), 
+    size: int = Query(10, ge=1, le=100), 
+    current_user: dict = Depends(get_current_user_jwt)
+):
     user = current_user
     target_uid = None
     if user['role'] != 'ROLE_ADMIN':
         target_uid = user['uid']
-    logs = get_email_logs(limit, target_uid)
-    return {"logs": logs}
+        
+    offset = (page - 1) * size
+    logs, total = get_email_logs(limit=size, offset=offset, user_uid=target_uid)
+    
+    return {
+        "logs": logs,
+        "total": total,
+        "page": page,
+        "size": size
+    }
 
 # 이메일 취소
 @router.post("/cancel/{log_id}")

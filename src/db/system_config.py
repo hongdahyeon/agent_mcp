@@ -14,17 +14,32 @@ import json
     - [4] delete_config: 설정 삭제
 """
 
-# [1] get_all_configs: 모든 시스템 설정 목록 조회 
-def get_all_configs():
-    """모든 시스템 설정 목록 조회."""
+# [1] get_all_configs: 모든 시스템 설정 목록 조회 (페이징 적용)
+def get_all_configs(page: int = 1, size: int = 10) -> dict:
+    """모든 시스템 설정 목록 조회 (페이징 적용)."""
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT name, configuration, description, reg_dt FROM h_system_config ORDER BY name")
-    rows = cursor.fetchall()
-    conn.close()
     
-    # configuration이 JSON String이므로 그대로 반환 (프론트에서 파싱)
-    return [dict(row) for row in rows]
+    offset = (page - 1) * size
+    try:
+        total = cursor.execute("SELECT COUNT(*) FROM h_system_config").fetchone()[0]
+        
+        cursor.execute("""
+            SELECT name, configuration, description, reg_dt 
+            FROM h_system_config 
+            ORDER BY name
+            LIMIT ? OFFSET ?
+        """, (size, offset))
+        rows = cursor.fetchall()
+        
+        return {
+            "items": [dict(row) for row in rows],
+            "total": total,
+            "page": page,
+            "size": size
+        }
+    finally:
+        conn.close()
 
 # [2] get_config_value: 특정 설정 이름의 JSON 설정 조회.
 def get_config_value(name: str) -> dict | None:

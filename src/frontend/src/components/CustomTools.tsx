@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code
 } from 'lucide-react';
 import type { CustomTool, ToolParam, CustomToolFormData } from '../types/CustomToolMng';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 /**
  * 사용자 정의 도구 (Custom Tools) 관리 컴포넌트
@@ -21,6 +22,14 @@ export function CustomTools() {
     const [loading, setLoading] = useState(true);
     const [globalError, setGlobalError] = useState(''); // API 에러 등 글로벌 에러
     const [processing, setProcessing] = useState(false); // 저장/삭제 중 로딩 상태
+    
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
+    
+    // Server-side pagination
+    const displayedTools = Array.isArray(tools) ? tools : [];
 
     // 모달(Modal) 관련 상태
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,26 +52,23 @@ export function CustomTools() {
 
     // 테스트 실행(Run) 관련 상태
     const [testResult, setTestResult] = useState<string>('');
-    const [testParams, setTestParams] = useState<{ [key: string]: any }>({});
+    const [testParams, setTestParams] = useState<{ [key: string]: string | number | boolean }>({});
     const [isTestRunning, setIsTestRunning] = useState(false);
 
     // -------------------------------------------------------------------------
     // 2. 초기화 및 데이터 로딩
     // -------------------------------------------------------------------------
-    useEffect(() => {
-        fetchTools();
-    }, []);
-
     /** 도구 목록 조회 API 호출 */
-    const fetchTools = async () => {
+    const fetchTools = useCallback(async (pageNum = page, size = pageSize) => {
         setLoading(true);
         try {
-            const res = await fetch('/api/mcp/custom-tools', {
+            const res = await fetch(`/api/mcp/custom-tools?page=${pageNum}&size=${size}`, {
                 headers: getAuthHeaders()
             });
             if (res.ok) {
-                const data: CustomTool[] = await res.json();
-                setTools(data);
+                const data = await res.json();
+                setTools(data.items);
+                setTotalItems(data.total);
             } else {
                 throw new Error('Failed to fetch tools');
             }
@@ -71,7 +77,11 @@ export function CustomTools() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, pageSize]);
+
+    useEffect(() => {
+        fetchTools(page, pageSize);
+    }, [fetchTools, page, pageSize]);
 
     /** 도구 상세 정보 조회 (수정을 위해 파라미터 정보까지 로드) */
     const fetchToolDetail = async (toolId: number) => {
@@ -169,7 +179,7 @@ export function CustomTools() {
     };
 
     // 일반 입력 필드 변경 핸들러
-    const handleChange = (field: keyof CustomToolFormData, value: any) => {
+    const handleChange = (field: keyof CustomToolFormData, value: string | 'Y' | 'N' | ToolParam[]) => {
         setFormData({ ...formData, [field]: value });
         setFieldErrors(prev => ({ ...prev, [field]: '' })); // 입력 시 에러 제거
     };
@@ -295,15 +305,17 @@ export function CustomTools() {
     return (
         <div className="space-y-6 h-full flex flex-col">
             {/* Header 섹션 */}
-            <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <Database className="w-6 h-6 mr-2 text-blue-500" />
-                        사용자 정의 도구 (Custom Tools)
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.
-                    </p>
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                       <Database className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용자 정의 도구 (Custom Tools)
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.</p>
+                    </div>
                 </div>
                 <button
                     onClick={handleOpenModal}
@@ -312,7 +324,8 @@ export function CustomTools() {
                     <Plus className="w-4 h-4 mr-2" />
                     새 도구 만들기
                 </button>
-            </div>
+            </header>
+
 
             {/* 글로벌 에러 메시지 (API 에러 등) */}
             {globalError && (
@@ -323,64 +336,79 @@ export function CustomTools() {
             )}
 
             {/* 도구 목록 테이블 (Tool List) */}
-            <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200 flex-1 overflow-y-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50 sticky top-0 z-10">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름 / 타입</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명 (Agent용)</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {loading ? (
-                            <tr><td colSpan={4} className="text-center py-10 text-gray-500">로딩 중...</td></tr>
-                        ) : tools.length === 0 ? (
-                            <tr><td colSpan={4} className="text-center py-10 text-gray-500">등록된 도구가 없습니다.</td></tr>
-                        ) : (
-                            tools.map(tool => (
-                                <tr key={tool.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center">
-                                            {tool.tool_type === 'SQL'
-                                                ? <Database className="w-4 h-4 text-orange-500 mr-2" />
-                                                : <Code className="w-4 h-4 text-green-500 mr-2" />
-                                            }
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">{tool.name}</div>
-                                                <div className="text-xs text-gray-500">{tool.tool_type}</div>
+            <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200 flex-1 flex flex-col">
+                <div className="overflow-x-auto flex-1">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름 / 타입</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명 (Agent용)</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {loading ? (
+                                <tr><td colSpan={4} className="text-center py-10 text-gray-500">로딩 중...</td></tr>
+                            ) : tools.length === 0 ? (
+                                <tr><td colSpan={4} className="text-center py-10 text-gray-500">등록된 도구가 없습니다.</td></tr>
+                            ) : (
+                                displayedTools.map(tool => (
+                                    <tr key={tool.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center">
+                                                {tool.tool_type === 'SQL'
+                                                    ? <Database className="w-4 h-4 text-orange-500 mr-2" />
+                                                    : <Code className="w-4 h-4 text-green-500 mr-2" />
+                                                }
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">{tool.name}</div>
+                                                    <div className="text-xs text-gray-500">{tool.tool_type}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="text-sm text-gray-900 max-w-md truncate" title={tool.description_agent}>
-                                            {tool.description_agent}
-                                        </div>
-                                        <div className="text-xs text-gray-400 max-w-md truncate">
-                                            {tool.description_user}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tool.is_active === 'Y' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {tool.is_active === 'Y' ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-sm font-medium">
-                                        <button onClick={() => fetchToolDetail(tool.id)} className="text-indigo-600 hover:text-indigo-900 mr-4 transition-colors"><Edit2 className="w-4 h-4 inline" /></button>
-                                        <button onClick={() => handleDelete(tool.id)} className="text-red-600 hover:text-red-900 transition-colors"><Trash2 className="w-4 h-4 inline" /></button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-900 max-w-md truncate" title={tool.description_agent}>
+                                                {tool.description_agent}
+                                            </div>
+                                            <div className="text-xs text-gray-400 max-w-md truncate">
+                                                {tool.description_user}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${tool.is_active === 'Y' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {tool.is_active === 'Y' ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right text-sm font-medium">
+                                            <button onClick={() => fetchToolDetail(tool.id)} className="text-indigo-600 hover:text-indigo-900 mr-4 transition-colors"><Edit2 className="w-4 h-4 inline" /></button>
+                                            <button onClick={() => handleDelete(tool.id)} className="text-red-600 hover:text-red-900 transition-colors"><Trash2 className="w-4 h-4 inline" /></button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="bg-white border-t border-gray-200">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={Math.ceil(totalItems / pageSize)}
+                        pageSize={pageSize}
+                        totalItems={totalItems}
+                        onPageChange={(p) => setPage(p)}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                            setPage(1);
+                        }}
+                    />
+                </div>
             </div>
 
             {/* 도구 생성/수정 모달 (Modal) */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="flex justify-between items-center px-6 py-4 border-b">
                             <h3 className="text-lg font-medium text-gray-900">
@@ -550,9 +578,10 @@ export function CustomTools() {
                                                     className="w-full text-sm border rounded px-2 py-1"
                                                     placeholder={p.param_type}
                                                     onChange={e => {
-                                                        let val: any = e.target.value;
-                                                        if (p.param_type === 'NUMBER') val = Number(val);
-                                                        if (p.param_type === 'BOOLEAN') val = (val === 'true');
+                                                        const valInput = e.target.value;
+                                                        let val: string | number | boolean = valInput;
+                                                        if (p.param_type === 'NUMBER') val = Number(valInput);
+                                                        if (p.param_type === 'BOOLEAN') val = (valInput === 'true');
                                                         setTestParams(prev => ({ ...prev, [p.param_name]: val }));
                                                     }}
                                                 />

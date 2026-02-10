@@ -1,7 +1,8 @@
 import clsx from 'clsx';
 import { AlertCircle, Columns, Database, FileText, RefreshCw, Table } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 /**
  * 스키마 및 데이터 관리 컴포넌트
@@ -9,15 +10,114 @@ import { getAuthHeaders } from '../utils/auth';
  * - 선택한 테이블의 스키마(컬럼 정보) 조회
  * - 선택한 테이블의 실제 데이터 조회 (Limit 기능 포함)
  */
+export interface ColumnDefinition {
+  cid: number;
+  name: string;
+  type: string;
+  notnull: number;
+  dflt_value: any;
+  pk: number;
+}
+
 export function SchemaManager() {
   const [tables, setTables] = useState<string[]>([]); // 테이블 목록
   const [selectedTable, setSelectedTable] = useState<string | null>(null); // 현재 선택된 테이블 이름
-  const [schema, setSchema] = useState<any[]>([]); // 선택된 테이블의 스키마 정보
+  const [schema, setSchema] = useState<ColumnDefinition[]>([]); // 선택된 테이블의 스키마 정보
   const [dataRows, setDataRows] = useState<any[]>([]); // 선택된 테이블의 데이터 행
   const [loading, setLoading] = useState(false); // 로딩 상태
   const [error, setError] = useState<string | null>(null); // 에러 메시지
   const [activeTab, setActiveTab] = useState<'schema' | 'data'>('schema'); // 현재 활성화된 탭 (스키마/데이터)
-  const [dataLimit, setDataLimit] = useState(100); // 데이터 조회 개수 제한
+  
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+
+  /**
+   * 전체 테이블 목록 조회
+   */
+  const fetchTables = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/db/tables', { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setTables(data.tables);
+    } catch (err) {
+        const error = err as Error;
+        setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * 특정 테이블 스키마 조회
+   */
+  const fetchSchema = useCallback(async (tableName: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/db/schema/${tableName}`, { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setSchema(data.columns); // [{cid, name, type, notnull, dflt_value, pk}, ...]
+    } catch (err) {
+        const error = err as Error;
+        setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * 특정 테이블 데이터 조회 (Limit 파라미터 적용)
+   */
+  const fetchData = useCallback(async (tableName: string, pageNum: number = page, size: number = pageSize) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/db/data/${tableName}?page=${pageNum}&size=${size}`, { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setDataRows(data.rows);
+      setTotal(data.total);
+    } catch (err) {
+        const error = err as Error;
+        setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, pageSize]);
+
+  /**
+   * 컴포넌트 마운트 시 테이블 목록 로드
+   */
+  useEffect(() => {
+    fetchTables();
+  }, [fetchTables]);
+
+  /**
+   * 테이블 선택 또는 탭 변경 시 데이터 다시 로드
+   */
+  useEffect(() => {
+    if (selectedTable) {
+      if (activeTab === 'schema') fetchSchema(selectedTable);
+      else {
+          if (activeTab === 'data') {
+             setPage(1); 
+             fetchData(selectedTable, 1);
+          }
+      }
+    }
+  }, [selectedTable, activeTab, fetchSchema, fetchData]);
+
+  useEffect(() => {
+    if (selectedTable && activeTab === 'data') {
+        fetchData(selectedTable, page, pageSize);
+    }
+  }, [page, pageSize, selectedTable, activeTab, fetchData]);
 
   /**
    * 컴포넌트 마운트 시 테이블 목록 로드
@@ -32,63 +132,12 @@ export function SchemaManager() {
   useEffect(() => {
     if (selectedTable) {
       if (activeTab === 'schema') fetchSchema(selectedTable);
-      else fetchData(selectedTable);
+      else {
+          setPage(1); // 탭 변경 시 페이지 초기화
+          fetchData(selectedTable, 1);
+      }
     }
   }, [selectedTable, activeTab]);
-
-  /**
-   * 전체 테이블 목록 조회
-   */
-  const fetchTables = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/db/tables', { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setTables(data.tables);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 특정 테이블 스키마 조회
-   */
-  const fetchSchema = async (tableName: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/db/schema/${tableName}`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setSchema(data.columns); // [{cid, name, type, notnull, dflt_value, pk}, ...]
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * 특정 테이블 데이터 조회 (Limit 파라미터 적용)
-   */
-  const fetchData = async (tableName: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/db/data/${tableName}?limit=${dataLimit}`, { headers: getAuthHeaders() });
-      if (!res.ok) throw new Error(await res.text());
-      const data = await res.json();
-      setDataRows(data.rows);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 스키마 정보 테이블 렌더링
   const renderSchemaTable = () => (
@@ -125,27 +174,29 @@ export function SchemaManager() {
     if (dataRows.length === 0) return <div className="p-8 text-center text-gray-500">데이터가 없습니다.</div>;
     const columns = Object.keys(dataRows[0]);
     return (
-      <div className="overflow-x-auto max-h-[600px]"> {/* Scrollable container for data */}
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 sticky top-0">
-            <tr>
-              {columns.map(col => (
-                <th key={col} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {dataRows.map((row, idx) => (
-              <tr key={idx} className="hover:bg-gray-50">
-                {columns.map(col => (
-                  <td key={col} className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap max-w-xs truncate" title={String(row[col])}>
-                    {String(row[col])}
-                  </td>
+      <div className="flex-1 overflow-x-auto flex flex-col"> {/* Scrollable container for data */}
+        <div className="overflow-x-auto flex-1">
+             <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  {columns.map(col => (
+                    <th key={col} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {dataRows.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-gray-50">
+                    {columns.map(col => (
+                      <td key={col} className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap max-w-xs truncate" title={String(row[col])}>
+                        {String(row[col])}
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+        </div>
       </div>
     );
   };
@@ -153,13 +204,20 @@ export function SchemaManager() {
   return (
     <div className="h-full flex flex-col space-y-4">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-          <Database className="w-6 h-6 mr-2 text-blue-600" />
-          스키마 및 데이터 관리
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">데이터베이스 테이블 구조를 확인하고 데이터를 조회합니다.</p>
-      </div>
+      {/* Header */}
+      <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-lg bg-blue-50">
+            <Database className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">
+              스키마 및 데이터 관리
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">데이터베이스 테이블 구조를 확인하고 데이터를 조회합니다.</p>
+          </div>
+        </div>
+      </header>
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
@@ -242,27 +300,21 @@ export function SchemaManager() {
                  )}
                  {activeTab === 'data' && (
                    <div className="flex flex-col h-full">
-                     {/* Data Toolbar */}
-                     <div className="p-3 border-b border-gray-100 bg-gray-50 flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <label className="text-xs font-medium text-gray-600">조회 개수 (Limit):</label>
-                          <input 
-                            type="number" 
-                            value={dataLimit} 
-                            onChange={(e) => setDataLimit(Number(e.target.value))}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                            min="1"
-                          />
-                        </div>
-                        <button 
-                          onClick={() => fetchData(selectedTable)} 
-                          className="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors"
-                        >
-                          조회
-                        </button>
-                     </div>
                      <div className="flex-1 overflow-hidden">
                        {renderDataTable()}
+                     </div>
+                     <div className="bg-white">
+                        <Pagination
+                             currentPage={page}
+                             totalPages={Math.ceil(total / pageSize)}
+                             pageSize={pageSize}
+                             totalItems={total}
+                             onPageChange={(p) => setPage(p)}
+                             onPageSizeChange={(s) => {
+                                 setPageSize(s);
+                                 setPage(1);
+                             }}
+                        />
                      </div>
                    </div>
                  )}

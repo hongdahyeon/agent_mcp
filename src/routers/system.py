@@ -29,9 +29,13 @@ class SystemConfigUpsertRequest(BaseModel):
 
 # 설정 목록 조회
 @router.get("/api/system/config")
-async def api_get_configs(current_user: dict = Depends(get_current_user_jwt)):
+async def api_get_configs(
+    page: int = 1,
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return {"configs": get_all_configs()}
+    return get_all_configs(page, size)
 
 # 설정 추가/수정
 @router.post("/api/system/config")
@@ -75,10 +79,23 @@ async def api_get_table_schema(table_name: str, current_user: dict = Depends(get
 
 # 테이블 데이터 조회
 @router.get("/api/db/data/{table_name}")
-async def api_get_table_data(table_name: str, limit: int = 100, current_user: dict = Depends(get_current_user_jwt)):
+async def api_get_table_data(
+    table_name: str, 
+    page: int = 1, 
+    size: int = 100, 
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    offset = (page - 1) * size
     try:
-        return {"rows": get_table_data(table_name, limit)}
+        rows, total = get_table_data(table_name, limit=size, offset=offset)
+        return {
+            "rows": rows,
+            "total": total,
+            "page": page,
+            "size": size
+        }
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

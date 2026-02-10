@@ -46,19 +46,24 @@ export function LogViewer() {
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
-            <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                    <FileText className="w-6 h-6 mr-2 text-blue-600" />
-                    서버 로그 뷰어
-                </h2>
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            서버 로그 뷰어
+                        </h2>
+                    </div>
+                </div>
                 <button
                     onClick={fetchFiles}
-                    className="flex items-center text-sm bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-gray-700"
-                >
+                    className="flex items-center text-sm bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-gray-700">
                     <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
                     목록 새로고침
                 </button>
-            </div>
+            </header>
 
             <div className="flex-1 grid grid-cols-12 gap-6 min-h-0">
                 {/* File List */}

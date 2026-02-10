@@ -115,112 +115,129 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-            {/* Input Area */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">테스트할 도구 선택</label>
-                    <div className="flex items-center space-x-2">
-                        <select
-                            value={selectedTool}
-                            onChange={handleToolChange}
-                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
-                        >
-                            <option value="">선택하세요 (Select Tool)</option>
-                            {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
-                            {tools.map(t => {
-                                const isDynamic = t.description?.startsWith('[Dynamic]');
-                                const isSystem = t.description?.startsWith('[System]');
-                                const typeLabel = isDynamic ? '(Dynamic)' : isSystem ? '(System)' : '';
-                                return <option key={t.name} value={t.name}>{t.name} {typeLabel}</option>
-                            })}
-                        </select>
-                        {refreshTools && (
-                            <button
-                                onClick={refreshTools}
-                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
-                                title="도구 목록 새로고침"
-                            >
-                                <RefreshCw className="w-5 h-5" />
-                            </button>
-                        )}
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <Play className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            도구 테스터
+                        </h2>
                     </div>
                 </div>
-
-                <div className="flex-1 space-y-4 mb-6 overflow-y-auto">
-                    {currentTool ? Object.keys(currentTool.inputSchema.properties).map(key => {
-                        const prop = currentTool.inputSchema.properties[key];
-                        return (
-                            <div key={key}>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {key} {prop.description && <span className="text-gray-400 text-xs">({prop.description})</span>}
-                                </label>
-                                <input
-                                    type={prop.type === 'integer' || prop.type === 'number' ? 'number' : 'text'}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                                    onChange={(e) => setFormValues(prev => ({ ...prev, [key]: e.target.value }))}
-                                    value={formValues[key] || ''}
-                                />
+            </header>
+            
+            <div className="flex-1 min-h-0">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                    {/* Input Area */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+                        <div className="mb-6 flex-shrink-0">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">테스트할 도구 선택</label>
+                            <div className="flex items-center space-x-2">
+                                <select
+                                    value={selectedTool}
+                                    onChange={handleToolChange}
+                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
+                                >
+                                    <option value="">선택하세요 (Select Tool)</option>
+                                    {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
+                                    {tools.map(t => {
+                                        const isDynamic = t.description?.startsWith('[Dynamic]');
+                                        const isSystem = t.description?.startsWith('[System]');
+                                        const typeLabel = isDynamic ? '(Dynamic)' : isSystem ? '(System)' : '';
+                                        return <option key={t.name} value={t.name}>{t.name} {typeLabel}</option>
+                                    })}
+                                </select>
+                                {refreshTools && (
+                                    <button
+                                        onClick={refreshTools}
+                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                        title="도구 목록 새로고침"
+                                    >
+                                        <RefreshCw className="w-5 h-5" />
+                                    </button>
+                                )}
                             </div>
-                        )
-                    }) : (
-                        <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                            <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
-                            <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
                         </div>
-                    )}
-                </div>
 
-                <button
-                    onClick={handleExecute}
-                    disabled={!selectedTool}
-                    className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group"
-                >
-                    <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                    실행 (Execute)
-                </button>
-            </div>
+                        <div className="flex-1 space-y-4 mb-6 overflow-y-auto">
+                            {currentTool ? Object.keys(currentTool.inputSchema.properties).map(key => {
+                                const prop = currentTool.inputSchema.properties[key];
+                                return (
+                                    <div key={key}>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {key} {prop.description && <span className="text-gray-400 text-xs">({prop.description})</span>}
+                                        </label>
+                                        <input
+                                            type={prop.type === 'integer' || prop.type === 'number' ? 'number' : 'text'}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            onChange={(e) => setFormValues(prev => ({ ...prev, [key]: e.target.value }))}
+                                            value={formValues[key] || ''}
+                                        />
+                                    </div>
+                                )
+                            }) : (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
+                                    <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
+                                </div>
+                            )}
+                        </div>
 
-            {/* Result Area */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[400px]">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-                        실행 결과 (JSON)
-                        {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
-                    </h3>
+                        <div className="flex-shrink-0">
+                            <button
+                                onClick={handleExecute}
+                                disabled={!selectedTool}
+                                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group"
+                            >
+                                <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                                실행 (Execute)
+                            </button>
+                        </div>
+                    </div>
 
-                    {displayResult && (
-                        <button
-                            onClick={handleCopy}
-                            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
-                            title="결과 복사"
-                        >
-                            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            <span>{copied ? 'Copied!' : 'Copy'}</span>
-                        </button>
-                    )}
-                </div>
-                <pre className="flex-1 bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 shadow-inner">
-                    {displayResult ? (() => {
-                        // Deep clone to avoid mutating state directly if we were modifying it (though here we just render)
-                        // But we want to parse the 'text' fields if they are JSON strings
-                        const renderedResult = JSON.parse(JSON.stringify(displayResult));
-                        if (renderedResult.content && Array.isArray(renderedResult.content)) {
-                            renderedResult.content.forEach((item: any) => {
-                                if (item.type === 'text' && typeof item.text === 'string') {
-                                    try {
-                                        // Try to parse inner JSON
-                                        const parsed = JSON.parse(item.text);
-                                        item.text = parsed;
-                                    } catch (e) {
-                                        // Ignore if not valid JSON, keep as string
-                                    }
+                    {/* Result Area */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+                        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                                실행 결과 (JSON)
+                                {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
+                            </h3>
+
+                            {displayResult && (
+                                <button
+                                    onClick={handleCopy}
+                                    className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                    title="결과 복사"
+                                >
+                                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                    <span>{copied ? 'Copied!' : 'Copy'}</span>
+                                </button>
+                            )}
+                        </div>
+                        <pre className="flex-1 bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 shadow-inner custom-scrollbar">
+                            {displayResult ? (() => {
+                                // Deep clone to avoid mutating state directly
+                                const renderedResult = JSON.parse(JSON.stringify(displayResult));
+                                if (renderedResult.content && Array.isArray(renderedResult.content)) {
+                                    renderedResult.content.forEach((item: any) => {
+                                        if (item.type === 'text' && typeof item.text === 'string') {
+                                            try {
+                                                const parsed = JSON.parse(item.text);
+                                                item.text = parsed;
+                                            } catch (e) {
+                                                // Ignore
+                                            }
+                                        }
+                                    });
                                 }
-                            });
-                        }
-                        return JSON.stringify(renderedResult, null, 2);
-                    })() : <span className="text-gray-600"> ... 실행 결과가 여기에 표시됩니다.</span>}
-                </pre>
+                                return JSON.stringify(renderedResult, null, 2);
+                            })() : <span className="text-gray-600"> ... 실행 결과가 여기에 표시됩니다.</span>}
+                        </pre>
+                    </div>
+                </div>
             </div>
         </div>
     );

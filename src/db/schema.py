@@ -37,7 +37,7 @@ def get_table_schema(table_name: str):
     return columns
 
 # [3] get_table_data: 특정 테이블의 데이터 조회 (단순 조회, Limit 지원)
-def get_table_data(table_name: str, limit: int = 100):
+def get_table_data(table_name: str, limit: int = 100, offset: int = 0):
     """특정 테이블의 데이터 조회 (단순 조회, Limit 지원)."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -47,11 +47,14 @@ def get_table_data(table_name: str, limit: int = 100):
     if not cursor.fetchone():
         conn.close()
         raise ValueError(f"Table '{table_name}' not found")
+
+    # 전체 개수 조회
+    cursor.execute(f"SELECT COUNT(*) as count FROM {table_name}")
+    total_count = cursor.fetchone()['count']
     
     # 데이터 조회 (f-string 사용하되, table_name은 위에서 검증됨)
-    # limit는 int로 강제되므로 안전
-    query = f"SELECT * FROM {table_name} LIMIT ?"
-    cursor.execute(query, (limit,))
+    query = f"SELECT * FROM {table_name} LIMIT ? OFFSET ?"
+    cursor.execute(query, (limit, offset))
     rows = [dict(row) for row in cursor.fetchall()]
     conn.close()
-    return rows
+    return rows, total_count

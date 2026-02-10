@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Query
+from fastapi import FastAPI, Request, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -144,9 +144,30 @@ async def handle_sse(request: Request, token: str = Query(None)):
         traceback.print_exc()
         raise e
 
+""" 
+    # 'FastAPI가 이미 완료된 요청에 대해 중복으로 응답을 보내려다 에러가 나는 것을 막기 위한 "가짜 응답 객체'
+    - /messages POST 요청을 받아서 SSE로 전달
+    - NoOpResponse를 사용하여 중복 응답 방지
+    - 상황
+        (1) sse.handle_post_message 함수가 실행되면서 이미 client에게 응답(202)을 보냄
+        (2) 문제
+            - FastAPI는 기본적으로 모든 라우터 함수가 끝나면 응답을 보내려고 함
+            - 이 때, 이미 SSE가 응답을 보냈기 때문에 중복 응답이 발생하여 에러가 남
+        (3) 해결
+            이를 방지하기 위해 NoOpResponse를 사용하여 중복 응답을 방지
+"""
+class NoOpResponse(Response):
+    def __init__(self):
+        super().__init__()
+    
+    async def __call__(self, scope, receive, send):
+        # Do not send anything, assuming sse.handle_post_message already handled the response
+        pass
+
 @app.post("/messages")
 async def handle_messages(request: Request):
     await sse.handle_post_message(request.scope, request.receive, request._send)
+    return NoOpResponse()
 
 # ==========================================
 # 5. Static Files

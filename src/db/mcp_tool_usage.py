@@ -7,6 +7,7 @@ from .connection import get_db_connection
     - [2] get_tool_usage_logs: MCP Tool 사용 이력을 조회 (페이징 + 필터링)
     - [3] get_tool_stats: 도구별 사용 통계 집계 (Total, Success, Failure)
     - [4] get_user_daily_usage: 사용자의 금일 도구 사용 횟수 조회
+    - [5] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
 """
 
 # [1] log_tool_usage: MCP Tool 사용 이력 관리 함수 (관리자용)
@@ -149,3 +150,26 @@ def get_user_daily_usage(user_uid: int) -> int:
     count = conn.execute(query, (user_uid, today_start, today_end)).fetchone()[0]
     conn.close()
     return count
+
+# [5] get_user_tool_stats: 사용자별 도구 사용 횟수 집계 (New for Dashboard)
+def get_user_tool_stats() -> dict:
+    """사용자별 도구 사용 횟수 집계."""
+    conn = get_db_connection()
+    query = '''
+        SELECT u.user_id, COUNT(*) as cnt
+        FROM h_mcp_tool_usage t
+        LEFT JOIN h_user u ON t.user_uid = u.uid
+        GROUP BY u.user_id
+    '''
+    cursor = conn.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    stats = {}
+    for row in rows:
+        user_id = row['user_id']
+        if not user_id:
+            user_id = "Unknown"
+        stats[user_id] = row['cnt']
+            
+    return stats
