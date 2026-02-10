@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Key, Plus, Trash2, Copy, Check } from 'lucide-react';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 interface AccessToken {
     id: number;
@@ -18,19 +19,43 @@ export function AccessTokenManager() {
     const [newName, setNewName] = useState('');
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchTokens();
-    }, []);
+    // Pagination
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
+    
+    // Server-side pagination
+    const displayedTokens = Array.isArray(tokens) ? tokens : [];
 
-    const fetchTokens = async () => {
+    useEffect(() => {
+        fetchTokens(page, pageSize);
+    }, [page, pageSize]);
+
+    const fetchTokens = async (pageNum = page, size = pageSize) => {
         try {
             setLoading(true);
-            const res = await fetch('/api/access-tokens', {
+            const res = await fetch(`/api/access-tokens?page=${pageNum}&size=${size}`, {
                 headers: getAuthHeaders(),
             });
             if (!res.ok) throw new Error('Failed to fetch tokens');
             const data = await res.json();
-            setTokens(data.tokens);
+            // Handle both legacy ( {tokens: []} ) and new paginated ( {items: [], total: 0} ) formats
+            let items = [];
+            let total = 0;
+
+            if (data.tokens) {
+                items = data.tokens;
+                total = data.tokens.length;
+            } else if (data.items) {
+                items = data.items;
+                total = data.total;
+            } else if (Array.isArray(data)) {
+                 items = data;
+                 total = data.length;
+            }
+
+            setTokens(items || []);
+            setTotalItems(total || 0);
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -113,7 +138,7 @@ export function AccessTokenManager() {
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+            <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 {/* 토큰 생성 폼 */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                     <h2 className="text-lg font-semibold mb-4">새 토큰 발급</h2>
@@ -141,73 +166,90 @@ export function AccessTokenManager() {
                 </div>
 
                 {/* 토큰 목록 */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="w-full">
-                        <thead className="bg-gray-50 text-gray-600 text-sm">
-                            <tr>
-                                <th className="px-6 py-4 text-left font-medium">ID</th>
-                                <th className="px-6 py-4 text-left font-medium">이름</th>
-                                <th className="px-6 py-4 text-left font-medium">토큰 값</th>
-                                <th className="px-6 py-4 text-center font-medium">상태</th>
-                                <th className="px-6 py-4 text-center font-medium">생성일</th>
-                                <th className="px-6 py-4 text-center font-medium">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {tokens.map((token) => (
-                                <tr key={token.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 text-sm text-gray-500">{token.id}</td>
-                                    <td className="px-6 py-4 font-medium">{token.name}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 group">
-                                            <code className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-600 font-mono">
-                                                {token.token.substring(0, 10)}...****************
-                                            </code>
-                                            <button 
-                                                onClick={() => copyToClipboard(token.token)}
-                                                className="text-gray-400 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="토큰 복사"
-                                            >
-                                                {copiedToken === token.token ? (
-                                                    <Check className="w-4 h-4 text-green-600" />
-                                                ) : (
-                                                    <Copy className="w-4 h-4" />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                            token.can_use === 'Y' 
-                                                ? 'bg-green-100 text-green-800' 
-                                                : 'bg-red-100 text-red-800'
-                                        }`}>
-                                            {token.can_use === 'Y' ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center text-sm text-gray-500">
-                                        {token.created_at}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button
-                                            onClick={() => handleDelete(token.id)}
-                                            className="text-red-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"
-                                            title="삭제"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {tokens.length === 0 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
+                    <div className="overflow-x-auto flex-1">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50 text-gray-600 text-sm sticky top-0 z-10">
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                        발급된 토큰이 없습니다.
-                                    </td>
+                                    <th className="px-6 py-4 text-left font-medium">ID</th>
+                                    <th className="px-6 py-4 text-left font-medium">이름</th>
+                                    <th className="px-6 py-4 text-left font-medium">토큰 값</th>
+                                    <th className="px-6 py-4 text-center font-medium">상태</th>
+                                    <th className="px-6 py-4 text-center font-medium">생성일</th>
+                                    <th className="px-6 py-4 text-center font-medium">작업</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {displayedTokens.map((token) => (
+                                    <tr key={token.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 text-sm text-gray-500">{token.id}</td>
+                                        <td className="px-6 py-4 font-medium">{token.name}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 group">
+                                                <code className="bg-gray-100 px-2 py-1 rounded text-sm text-gray-600 font-mono">
+                                                    {token.token.substring(0, 10)}...****************
+                                                </code>
+                                                <button 
+                                                    onClick={() => copyToClipboard(token.token)}
+                                                    className="text-gray-400 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="토큰 복사"
+                                                >
+                                                    <div className="w-4 h-4">
+                                                        {copiedToken === token.token ? (
+                                                            <Check className="w-4 h-4 text-green-600" />
+                                                        ) : (
+                                                            <Copy className="w-4 h-4" />
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                token.can_use === 'Y' 
+                                                    ? 'bg-green-100 text-green-800' 
+                                                    : 'bg-red-100 text-red-800'
+                                            }`}>
+                                                {token.can_use === 'Y' ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center text-sm text-gray-500">
+                                            {token.created_at}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => handleDelete(token.id)}
+                                                className="text-red-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                                title="삭제"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {displayedTokens.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                            발급된 토큰이 없습니다.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="bg-white border-t border-gray-200">
+                        <Pagination
+                            currentPage={page}
+                            totalPages={Math.ceil(totalItems / pageSize)}
+                            pageSize={pageSize}
+                            totalItems={totalItems}
+                            onPageChange={(p) => setPage(p)}
+                            onPageSizeChange={(s) => {
+                                setPageSize(s);
+                                setPage(1);
+                            }}
+                        />
+                    </div>
                 </div>
                 
                 {error && (

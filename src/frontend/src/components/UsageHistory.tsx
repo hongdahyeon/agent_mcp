@@ -1,8 +1,9 @@
 import clsx from 'clsx';
-import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 
 export function UsageHistory() {
@@ -12,8 +13,8 @@ export function UsageHistory() {
 
   // 페이징 (Pagination)
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const PAGE_SIZE = 20;
 
   // 검색 필터 (Filters)
   const [searchUserId, setSearchUserId] = useState('');
@@ -24,13 +25,16 @@ export function UsageHistory() {
   const [stats, setStats] = useState<UsageStats[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
 
+  // 상세 보기 모달 상태 (JSON Viewer Modal State)
+  const [selectedJson, setSelectedJson] = useState<string | null>(null);
+  const [modalTitle, setModalTitle] = useState('');
+
   // 사용 통계 조회 (Fetch Usage Stats)
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) return;
-      // const user = JSON.parse(sessionStr) as User;
 
       const res = await fetch('/api/mcp/usage-stats', {
         headers: getAuthHeaders()
@@ -49,15 +53,12 @@ export function UsageHistory() {
     setLoading(true);
     setError(null);
     try {
-      // 세션에서 사용자 정보 가져오기 (헤더에 X-User-Id 추가용 - getAuthHeaders 내부에서 처리됨)
       const sessionStr = localStorage.getItem('user_session');
       if (!sessionStr) throw new Error("No session found");
-      // const user = JSON.parse(sessionStr) as User;
 
-      // Query String 구성
       const params = new URLSearchParams({
         page: pageNum.toString(),
-        size: PAGE_SIZE.toString()
+        size: pageSize.toString()
       });
       if (searchUserId) params.append('user_id', searchUserId);
       if (searchToolNm) params.append('tool_nm', searchToolNm);
@@ -76,18 +77,19 @@ export function UsageHistory() {
       setLogs(data.items);
       setTotal(data.total);
       setPage(data.page);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setLoading(false);
     }
-  }, [searchUserId, searchToolNm, searchSuccess]);
+  }, [searchUserId, searchToolNm, searchSuccess, pageSize]);
 
   // 초기 로딩 및 성공여부 필터 변경 시 자동 검색
   useEffect(() => {
     fetchLogs(1);
-    fetchStats(); // 초기 로딩 시 통계도 조회
-  }, [searchSuccess]);
+    fetchStats();
+  }, [searchSuccess, fetchLogs, fetchStats]);
 
   const handleSearch = () => {
     fetchLogs(1);
@@ -99,7 +101,20 @@ export function UsageHistory() {
     }
   };
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const formatJson = (content: string) => {
+    try {
+      const parsed = JSON.parse(content);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return content;
+    }
+  };
+
+  const openJsonModal = (title: string, content: string) => {
+    setModalTitle(title);
+    setSelectedJson(formatJson(content));
+  };
+
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
@@ -123,9 +138,9 @@ export function UsageHistory() {
                 </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+            <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 {/* 사용 통계 테이블 (Usage Stats Table) */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-none">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <h3 className="text-sm font-semibold text-gray-700">금일 사용자별 사용 통계</h3>
                     </div>
@@ -171,8 +186,8 @@ export function UsageHistory() {
                     </div>
                 </div>
 
-                {/* 필터 바 (Filter Bar) */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+                {/* 필터 바 (Filter Bar) - flex-none */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end flex-none">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">사용자 ID</label>
                         <input
@@ -239,17 +254,10 @@ export function UsageHistory() {
                     </div>
                 </div>
 
-                {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700">
-                        <AlertCircle className="w-5 h-5 mr-2" />
-                        {error}
-                    </div>
-                )}
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
+                <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div className="overflow-x-auto flex-1">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
@@ -304,11 +312,29 @@ export function UsageHistory() {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_params}>
-                                                {log.tool_params}
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="truncate" title={log.tool_params}>{log.tool_params}</span>
+                                                    <button 
+                                                        onClick={() => openJsonModal('파라미터 상세 (Parameters)', log.tool_params)}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                                                        title="상세 보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={log.tool_result}>
-                                                {log.tool_result}
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="truncate" title={log.tool_result}>{log.tool_result}</span>
+                                                    <button 
+                                                        onClick={() => openJsonModal('결과 상세 (Result)', log.tool_result)}
+                                                        className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                                                        title="상세 보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -318,35 +344,64 @@ export function UsageHistory() {
                     </div>
 
                     {/* 페이징 (Pagination) */}
-                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button
-                                        onClick={() => fetchLogs(Math.max(1, page - 1))}
-                                        disabled={page === 1}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                    >
-                                        이전
-                                    </button>
-                                    <button
-                                        onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-                                        disabled={page >= totalPages}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                    >
-                                        다음
-                                    </button>
-                                </nav>
-                            </div>
-                        </div>
+                    <div className="bg-white border-t border-gray-200">
+                        <Pagination
+                             currentPage={page}
+                             totalPages={Math.ceil(total / pageSize)}
+                             pageSize={pageSize}
+                             totalItems={total}
+                             onPageChange={(p) => {
+                                 setPage(p);
+                                 fetchLogs(p);
+                             }}
+                             onPageSizeChange={(s) => {
+                                 setPageSize(s);
+                                 setPage(1);
+                             }}
+                        />
                     </div>
                 </div>
             </div>
+
+            {/* JSON Viewer Modal */}
+            {selectedJson !== null && (
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-fade-in">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-800">{modalTitle}</h3>
+                            <button 
+                                onClick={() => setSelectedJson(null)}
+                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-auto p-6">
+                            <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm font-mono whitespace-pre-wrap break-all shadow-inner">
+                                {selectedJson}
+                            </pre>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 text-right">
+                            <button 
+                                onClick={() => setSelectedJson(null)}
+                                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="fixed bottom-4 right-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center text-red-700 shadow-lg animate-fade-in z-[110]">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    {error}
+                    <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-600">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

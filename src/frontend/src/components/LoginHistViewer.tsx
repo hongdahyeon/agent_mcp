@@ -1,7 +1,9 @@
+import clsx from 'clsx';
+import { CheckCircle, History, RefreshCw, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { LoginHistory } from '../types/auth';
-import { History, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import clsx from 'clsx';
+
+import { Pagination } from './common/Pagination';
 
 /* 
 * 로그인 이력 화면에 대한 컴포넌트
@@ -11,13 +13,13 @@ export function LoginHistViewer() {
     const [history, setHistory] = useState<LoginHistory[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10); // 기본값 10
     const [total, setTotal] = useState(0);
-    const PAGE_SIZE = 20;
 
     const fetchHistory = async (pageNum: number = 1) => {
         setLoading(true);
         try {
-            const res = await fetch(`/auth/history?page=${pageNum}&size=${PAGE_SIZE}`);
+            const res = await fetch(`/auth/history?page=${pageNum}&size=${pageSize}`);
             const data = await res.json();
             
             // API response structure changed to { total, page, size, items }
@@ -38,12 +40,10 @@ export function LoginHistViewer() {
 
     useEffect(() => {
         fetchHistory(1);
-    }, []);
-
-    const totalPages = Math.ceil(total / PAGE_SIZE);
+    }, [pageSize]); // pageSize 변경 시 재조회
 
     return (
-        <div className="h-full flex flex-col space-y-6">
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
             <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-3">
                     <div className="p-2 bg-purple-100 rounded-lg">
@@ -64,10 +64,10 @@ export function LoginHistViewer() {
                 </button>
             </header>
 
-            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                <div className="overflow-x-auto">
+            <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                <div className="overflow-x-auto flex-1">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
@@ -110,33 +110,21 @@ export function LoginHistViewer() {
                     </table>
                 </div>
                 
-                 {/* Pagination */}
-                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p className="text-sm text-gray-700">
-                                Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
-                            </p>
-                        </div>
-                        <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                <button
-                                    onClick={() => fetchHistory(Math.max(1, page - 1))}
-                                    disabled={page === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                    이전
-                                </button>
-                                <button
-                                    onClick={() => fetchHistory(Math.min(totalPages, page + 1))}
-                                    disabled={page >= totalPages}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                    다음
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
+                {/* Pagination */}
+                <div className="bg-white border-t border-gray-200">
+                    <Pagination
+                        currentPage={page}
+                        totalPages={Math.ceil(total / pageSize)}
+                        pageSize={pageSize}
+                        totalItems={total}
+                        onPageChange={(p) => {
+                            setPage(p);
+                            fetchHistory(p);
+                        }}
+                        onPageSizeChange={(s) => {
+                            setPageSize(s);
+                        }}
+                    />
                 </div>
             </div>
         </div>

@@ -8,7 +8,7 @@ except ImportError:
     h_email_log
     - [1] log_email: 이메일 발송 이력을 DB에 기록합니다.
     - [2] update_email_status: 이메일 발송 상태를 업데이트합니다.
-    - [3] get_email_logs: 이메일 발송 이력을 조회합니다.
+    - [3] get_email_logs: 이메일 발송 이력을 조회합니다. (페이징 적용)
     - [4] cancel_email_log: 예약된 이메일 발송을 취소합니다.
     - [5] get_pending_scheduled_emails: 발송 대기 중인 예약 이메일을 조회합니다.
 """
@@ -57,15 +57,28 @@ def update_email_status(log_id: int, status: str, error_msg: str = None):
     conn.commit()
     conn.close()
 
-# [3] get_email_logs: 이메일 발송 이력을 조회합니다.
-def get_email_logs(limit: int = 100, user_uid: int = None):
+# [3] get_email_logs: 이메일 발송 이력을 조회합니다. (페이징 적용)
+def get_email_logs(limit: int = 10, offset: int = 0, user_uid: int = None):
     """
     이메일 발송 이력을 조회합니다.
     user_uid가 제공되면 해당 사용자의 이력만 조회합니다.
+    Returns: (logs, total_count)
     """
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # 1. Total Count 조회
+    count_query = "SELECT COUNT(*) FROM h_email_log"
+    count_params = []
+    
+    if user_uid:
+        count_query += " WHERE user_uid = ?"
+        count_params.append(user_uid)
+        
+    cursor.execute(count_query, tuple(count_params))
+    total_count = cursor.fetchone()[0]
+    
+    # 2. Logs 조회
     query = """
         SELECT l.*, u.user_id, u.user_nm
         FROM h_email_log l
@@ -77,14 +90,14 @@ def get_email_logs(limit: int = 100, user_uid: int = None):
         query += " WHERE l.user_uid = ?"
         params.append(user_uid)
         
-    query += " ORDER BY l.id DESC LIMIT ?"
-    params.append(limit)
+    query += " ORDER BY l.id DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
     
     cursor.execute(query, tuple(params))
     rows = cursor.fetchall()
     conn.close()
     
-    return [dict(row) for row in rows]
+    return [dict(row) for row in rows], total_count
 
 # [4] cancel_email_log: 예약된 이메일 발송을 취소합니다.
 def cancel_email_log(log_id: int, user_uid: int, is_admin: bool = False) -> tuple[bool, str]:

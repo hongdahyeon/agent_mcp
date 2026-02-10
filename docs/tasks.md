@@ -272,10 +272,10 @@
 - [x] 4. Frontend: Type 수정 (`types/systemConfig.ts`)
 - [x] 5. Frontend: `SystemConfig.tsx` 수정 (JSON Editor implementation)
 
-## 32. Gmail 메일 발송 기능 구현 (DB Config 활용)
-- [ ] 1. Utils: `src/utils/mailer.py` 구현 (`smtplib` + DB Config JSON Parsing)
-- [ ] 2. Backend: `send_email` Tool 추가 (`sse_server.py`)
-- [ ] 3. 기능 검증 (테스트 메일 발송)
+## 32. Gmail 메일 발송 기능 구현 (Completed in Section 35)
+- [x] 1. Utils: `src/utils/mailer.py` 구현 (`smtplib` + DB Config JSON Parsing)
+- [x] 2. Backend: `send_email` Tool 추가 (`sse_server.py`)
+- [x] 3. 기능 검증 (테스트 메일 발송)
 
 
 ## 33. 프론트엔드 메뉴 구조 개편 (New)
@@ -366,3 +366,28 @@
 - [x] 6. 보안 토큰 관리 (`AccessTokenManager.tsx`) 레이아웃 및 헤더 적용
 - [x] 7. 시스템 설정 (`SystemConfig.tsx`) 스타일 개선
 - [x] 8. 사용자 관리 (`Users.tsx`) 헤더 적용
+
+## 46. 페이지네이션 UI/UX 통일 (Completed)
+- [x] 0. 공통 페이지네이션 컴포넌트 (`Pagination.tsx`) 구현
+    - [x] 페이지당 목록 수 선택 박스 (10, 50, 100, 기본값 10)
+    - [x] 페이지 이동 버튼 (이전, 페이지 번호, 다음)
+- [x] 1. 메일 발송 (`EmailSender.tsx`) 페이지네이션 추가
+- [x] 2. 도구 사용 이력 (`UsageHistory.tsx`) 선택 박스 추가 및 스타일 통일
+- [x] 3. 사용 제한 관리 (`LimitManagement.tsx`) 페이지네이션 추가
+- [x] 4. DB 관리 (`SchemaManager.tsx`) 데이터 영역 페이지네이션 및 선택 박스 UI 변경
+- [x] 5. 도구 생성 (`CustomTools.tsx`) 페이지네이션 추가
+- [x] 6. 보안 토큰 관리 (`AccessTokenManager.tsx`) 페이지네이션 추가
+- [x] 7. 시스템 설정 (`SystemConfig.tsx`) 페이지네이션 추가
+- [x] 8. 사용자 관리 (`Users.tsx`) 선택 박스 추가 및 스타일 통일
+
+## 47. UI/UX 디자인 고도화 (Glassmorphism)
+- [x] 1. 모달 배경 디자인 개선 (`backdrop-blur-sm`, `bg-black/40` 적용)
+    - [x] `SystemConfig.tsx`, `Users.tsx`, `CustomTools.tsx`, `LimitManagement.tsx` 적용
+- [x] 2. Backend API 및 DB 모듈 Docstring 업데이트 (Paging 지원 내용 명시)
+    - [x] `db/access_token.py`, `db/custom_tool.py`, `db/email_manager.py`, `db/mcp_tool_limit.py`, `db/schema.py`
+- [x] 3. `CustomTools.tsx` 린트 오류 수정 및 `useCallback` 최적화
+
+## 48. 도구 사용 이력 JSON 상세 뷰어 구현
+- [x] 1. `UsageHistory.tsx` 내 상세 조회 모달 구현
+- [x] 2. 파라미터/결과 셀에 눈(`Eye`) 아이콘 버튼 추가
+- [x] 3. JSON 포맷팅 및 예외 처리 로직 적용

@@ -85,10 +85,14 @@ class LimitUpsertRequest(BaseModel):
 
 # 제한 정책 목록 조회 (관리자 전용)
 @router.get("/mcp/limits")
-async def api_get_limits(current_user: dict = Depends(get_current_user_jwt)):
-    """제한 정책 목록 조회 (관리자 전용)."""
+async def api_get_limits(
+    page: int = 1,
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """제한 정책 목록 조회 (관리자 전용, 페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return {"limits": get_limit_list()}
+    return get_limit_list(page, size)
 
 # 제한 정책 추가/수정 (관리자 전용)
 @router.post("/mcp/limits")
@@ -113,11 +117,15 @@ class AccessTokenCreateRequest(BaseModel):
 
 # 외부 접속용 토큰 목록 조회
 @router.get("/access-tokens")
-async def api_get_access_tokens(current_user: dict = Depends(get_current_user_jwt)):
-    """외부 접속용 토큰 목록 조회."""
+async def api_get_access_tokens(
+    page: int = 1,
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """외부 접속용 토큰 목록 조회 (페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN':
          raise HTTPException(status_code=403, detail="Admin access required")
-    return {"tokens": get_all_access_tokens()}
+    return get_all_access_tokens(page, size)
 
 # 외부 접속용 토큰 생성
 @router.post("/access-tokens")
@@ -169,10 +177,14 @@ class ToolTestRequest(BaseModel):
 
 # 동적 Tool 목록 조회 (관리자 전용)
 @router.get("/mcp/custom-tools")
-async def api_get_custom_tools(current_user: dict = Depends(get_current_user_jwt)):
-    """동적 Tool 목록 조회 (관리자 전용)."""
+async def api_get_custom_tools(
+    page: int = 1, 
+    size: int = 20,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """동적 Tool 목록 조회 (관리자 전용, 페이징 적용)."""
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    return get_all_tools()
+    return get_all_tools(page, size)
 
 # 동적 Tool 상세 조회 (파라미터 포함)
 @router.get("/mcp/custom-tools/{tool_id}")
