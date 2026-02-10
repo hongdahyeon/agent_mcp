@@ -119,197 +119,207 @@ export const EmailSender: React.FC = () => {
     };
 
     return (
-        <div className="p-6 max-w-7xl mx-auto space-y-8">
-            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <Send className="w-8 h-8 text-blue-600" />
-                메일 발송
-            </h1>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <Send className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            메일 발송
+                        </h2>
+                    </div>
+                </div>
+            </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left: Email Form */}
-                <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
-                        <Send className="w-5 h-5" /> 메일 작성
-                    </h2>
-                    
-                    <form onSubmit={handleSend} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">수신자 이메일</label>
-                            <input 
-                                type="email" 
-                                value={recipient}
-                                onChange={(e) => setRecipient(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                placeholder="example@email.com"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-                            <input 
-                                type="text" 
-                                value={subject}
-                                onChange={(e) => setSubject(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                placeholder="메일 제목"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
-                            <textarea 
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                className="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                                placeholder="메일 내용을 입력하세요..."
-                                required
-                            />
-                        </div>
-
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={isScheduled} 
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            setIsScheduled(checked);
-                                            if (checked && !scheduledDt) {
-                                                // 현재 시간(Local)으로 설정 (YYYY-MM-DDThh:mm)
-                                                const now = new Date();
-                                                const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                                                setScheduledDt(localIso);
-                                            }
-                                        }}
-                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                    />
-                                    예약 발송
-                                </label>
-                                {isScheduled && <Calendar className="w-4 h-4 text-gray-500" />}
-                            </div>
-                            
-                            {isScheduled && (
+            <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left: Email Form */}
+                    <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                            <Send className="w-5 h-5" /> 메일 작성
+                        </h2>
+                        
+                        <form onSubmit={handleSend} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">수신자 이메일</label>
                                 <input 
-                                    type="datetime-local" 
-                                    value={scheduledDt}
-                                    onChange={(e) => setScheduledDt(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                    type="email" 
+                                    value={recipient}
+                                    onChange={(e) => setRecipient(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="example@email.com"
                                     required
                                 />
-                            )}
-                        </div>
+                            </div>
 
-                        <button 
-                            type="submit" 
-                            disabled={apiLoading}
-                            className={`w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors ${
-                                apiLoading 
-                                ? 'bg-gray-400 cursor-not-allowed' 
-                                : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
-                            }`}
-                        >
-                             {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                             {isScheduled ? '예약 발송' : '즉시 발송'}
-                        </button>
-                    </form>
-                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                                <input 
+                                    type="text" 
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    placeholder="메일 제목"
+                                    required
+                                />
+                            </div>
 
-                {/* Right: History Table */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                            <Clock className="w-5 h-5" /> 발송 이력
-                        </h2>
-                        <button 
-                            onClick={fetchLogs} 
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                            title="새로고침"
-                        >
-                            <RefreshCw className={`w-5 h-5 ${loadingLogs ? 'animate-spin' : ''}`} />
-                        </button>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
+                                <textarea 
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    className="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                                    placeholder="메일 내용을 입력하세요..."
+                                    required
+                                />
+                            </div>
+
+                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={isScheduled} 
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setIsScheduled(checked);
+                                                if (checked && !scheduledDt) {
+                                                    // 현재 시간(Local)으로 설정 (YYYY-MM-DDThh:mm)
+                                                    const now = new Date();
+                                                    const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                                                    setScheduledDt(localIso);
+                                                }
+                                            }}
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        />
+                                        예약 발송
+                                    </label>
+                                    {isScheduled && <Calendar className="w-4 h-4 text-gray-500" />}
+                                </div>
+                                
+                                {isScheduled && (
+                                    <input 
+                                        type="datetime-local" 
+                                        value={scheduledDt}
+                                        onChange={(e) => setScheduledDt(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        required
+                                    />
+                                )}
+                            </div>
+
+                            <button 
+                                type="submit" 
+                                disabled={apiLoading}
+                                className={`w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors ${
+                                    apiLoading 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+                                }`}
+                            >
+                                 {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                                 {isScheduled ? '예약 발송' : '즉시 발송'}
+                            </button>
+                        </form>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
-                                <tr>
-                                    <th className="px-4 py-3">상태</th>
-                                    <th className="px-4 py-3">수신자</th>
-                                    <th className="px-4 py-3">제목</th>
-                                    <th className="px-4 py-3">등록일시 / 예약일시</th>
-                                    <th className="px-4 py-3">발송자</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {logs.length === 0 ? (
+                    {/* Right: History Table */}
+                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                                <Clock className="w-5 h-5" /> 발송 이력
+                            </h2>
+                            <button 
+                                onClick={fetchLogs} 
+                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                                title="새로고침"
+                            >
+                                <RefreshCw className={`w-5 h-5 ${loadingLogs ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                                            발송 이력이 없습니다.
-                                        </td>
+                                        <th className="px-4 py-3">상태</th>
+                                        <th className="px-4 py-3">수신자</th>
+                                        <th className="px-4 py-3">제목</th>
+                                        <th className="px-4 py-3">등록일시 / 예약일시</th>
+                                        <th className="px-4 py-3">발송자</th>
                                     </tr>
-                                ) : (
-                                    logs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">
-                                                        {log.status === 'SENT' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                                        {log.status === 'FAILED' && <XCircle className="w-4 h-4 text-red-500" />}
-                                                        {log.status === 'CANCELLED' && <XCircle className="w-4 h-4 text-gray-400" />}
-                                                        {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500" />}
-                                                        
-                                                        <span className={`font-medium ${
-                                                            log.status === 'SENT' ? 'text-green-700' :
-                                                            log.status === 'FAILED' ? 'text-red-700' :
-                                                            log.status === 'CANCELLED' ? 'text-gray-500' :
-                                                            'text-amber-600'
-                                                        }`}>
-                                                            {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
-                                                        </span>
-                                                    </div>
-                                                    
-                                                    {/* Cancel Button for PENDING */}
-                                                    {log.status.startsWith('PENDING') && (
-                                                        <button
-                                                            onClick={() => handleCancel(log.id)}
-                                                            className="text-xs px-2 py-1 bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 transition-colors"
-                                                            title="발송 취소"
-                                                        >
-                                                            취소
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                {log.error_msg && (
-                                                    <div className="text-xs text-red-500 mt-1 flex items-start gap-1">
-                                                        <AlertCircle className="w-3 h-3 mt-0.5" />
-                                                        {log.error_msg}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-900">{log.recipient}</td>
-                                            <td className="px-4 py-3 text-gray-600 truncate max-w-xs" title={log.subject}>
-                                                {log.subject}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-500 text-xs">
-                                                <div>등록: {log.reg_dt}</div>
-                                                {log.is_scheduled === 1 && (
-                                                    <div className="text-blue-600 font-medium">예약: {log.scheduled_dt}</div>
-                                                )}
-                                                {log.sent_dt && (
-                                                    <div className="text-green-600">발송: {log.sent_dt}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-500">
-                                                {log.user_nm || log.user_id}
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {logs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                                발송 이력이 없습니다.
                                             </td>
                                         </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
+                                    ) : (
+                                        logs.map((log) => (
+                                            <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            {log.status === 'SENT' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                                            {log.status === 'FAILED' && <XCircle className="w-4 h-4 text-red-500" />}
+                                                            {log.status === 'CANCELLED' && <XCircle className="w-4 h-4 text-gray-400" />}
+                                                            {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500" />}
+                                                            
+                                                            <span className={`font-medium ${
+                                                                log.status === 'SENT' ? 'text-green-700' :
+                                                                log.status === 'FAILED' ? 'text-red-700' :
+                                                                log.status === 'CANCELLED' ? 'text-gray-500' :
+                                                                'text-amber-600'
+                                                            }`}>
+                                                                {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        {/* Cancel Button for PENDING */}
+                                                        {log.status.startsWith('PENDING') && (
+                                                            <button
+                                                                onClick={() => handleCancel(log.id)}
+                                                                className="text-xs px-2 py-1 bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 transition-colors"
+                                                                title="발송 취소"
+                                                            >
+                                                                취소
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    {log.error_msg && (
+                                                        <div className="text-xs text-red-500 mt-1 flex items-start gap-1">
+                                                            <AlertCircle className="w-3 h-3 mt-0.5" />
+                                                            {log.error_msg}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-900">{log.recipient}</td>
+                                                <td className="px-4 py-3 text-gray-600 truncate max-w-xs" title={log.subject}>
+                                                    {log.subject}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-500 text-xs">
+                                                    <div>등록: {log.reg_dt}</div>
+                                                    {log.is_scheduled === 1 && (
+                                                        <div className="text-blue-600 font-medium">예약: {log.scheduled_dt}</div>
+                                                    )}
+                                                    {log.sent_dt && (
+                                                        <div className="text-green-600">발송: {log.sent_dt}</div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-500">
+                                                    {log.user_nm || log.user_id}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

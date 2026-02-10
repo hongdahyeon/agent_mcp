@@ -344,3 +344,25 @@
     - **비동기 함수(예: 동적 도구)**일 경우: `await func(*args, **kwargs)`를 호출하여 비동기 작업이 완료될 때까지 기다린 후 결과를 로그에 담습니다.
     - **동기 함수(예: add)**일 경우: 일반 함수 호출처럼 즉시 실행하여 결과를 로그에 담습니다.
     - 이 방식을 통해 동적 도구처럼 나중에 실행이 완료되는 도구들도 누락 없이 이력을 저장할 수 있습니다.
+
+## 43. 대시보드 콘텐츠 교체 (로그 -> 사용자별 요청 통계) (New)
+- [x] 상세 접근 제어 및 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: `get_user_tool_stats` 함수 구현 (`src/db/mcp_tool_usage.py`)
+- [x] 2. Backend: `/api/mcp/stats` API 수정 (사용자별 통계 포함)
+- [x] 3. Frontend: `UsageStats` 타입 정의 수정 (users 필드 추가)
+- [x] 4. Frontend: `Dashboard.tsx` 수정 (로그 영역 제거 및 사용자별 통계 차트 추가)
+- [x] 5. 기능 검증
+
+## 44. 대시보드 UI 레이아웃 및 차트 개선 (Refinement)
+- [x] 1. Frontend: '사용자별 요청 횟수' 차트 타입을 도넛(Donut)으로 변경
+- [x] 2. Frontend: '요청 처리 결과'와 '사용자별 요청 횟수' 위치 교체 (상단 <-> 하단)
+
+## 45. UI 통일화 작업 (LogViewer 스타일 적용)
+- [x] 1. 도구 테스터 (`Tester.tsx`) 헤더 적용
+- [x] 2. 메일 발송 (`EmailSender.tsx`) 레이아웃 및 헤더 적용
+- [x] 3. 도구 사용 이력 (`UsageHistory.tsx`) 헤더 적용
+- [x] 4. 사용 제한 관리 (`LimitManagement.tsx`) 헤더 적용
+- [x] 5. DB 관리 (`SchemaManager.tsx`) 헤더 적용
+- [x] 6. 보안 토큰 관리 (`AccessTokenManager.tsx`) 레이아웃 및 헤더 적용
+- [x] 7. 시스템 설정 (`SystemConfig.tsx`) 스타일 개선
+- [x] 8. 사용자 관리 (`Users.tsx`) 헤더 적용

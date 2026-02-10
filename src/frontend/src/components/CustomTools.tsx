@@ -295,15 +295,17 @@ export function CustomTools() {
     return (
         <div className="space-y-6 h-full flex flex-col">
             {/* Header 섹션 */}
-            <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                        <Database className="w-6 h-6 mr-2 text-blue-500" />
-                        사용자 정의 도구 (Custom Tools)
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.
-                    </p>
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                       <Database className="w-6 h-6 text-blue-500" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용자 정의 도구 (Custom Tools)
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.</p>
+                    </div>
                 </div>
                 <button
                     onClick={handleOpenModal}
@@ -312,7 +314,8 @@ export function CustomTools() {
                     <Plus className="w-4 h-4 mr-2" />
                     새 도구 만들기
                 </button>
-            </div>
+            </header>
+
 
             {/* 글로벌 에러 메시지 (API 에러 등) */}
             {globalError && (

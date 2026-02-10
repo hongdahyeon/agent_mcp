@@ -26,6 +26,7 @@ export interface ToolStats {
 // 도구 실행 결과의 통계 정보
 export interface UsageStats {
     tools: Record<string, ToolStats>;
+    users?: Record<string, number>;
 }
 
 // 서버와 통신시 사용하는 JSON-RPC 프로토콜 메시지 규격

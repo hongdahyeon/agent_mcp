@@ -84,7 +84,7 @@ function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
 
   // 로그인 상태와 상관없이 useMcp는 항상 호출되지만, authToken이 변경되면 재연결됨
-  const { connected, statusText, stats, availableTools, sendRpc, logs, lastResult, refreshTools } = useMcp('/sse', authToken);
+  const { connected, statusText, stats, availableTools, sendRpc, lastResult, refreshTools } = useMcp('/sse', authToken);
 
   // Phase 3: 사용량 데이터 상태 관리
   const [usageData, setUsageData] = useState<UsageData | null>(null);
@@ -222,7 +222,7 @@ function App() {
       label: '이력',
       items: [
         { id: 'history', label: '접속 이력', icon: History },
-        { id: 'usage-history', label: '사용자 이력', icon: BarChart4, adminOnly: true }
+        { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true }
       ]
     },
     {
@@ -275,19 +275,19 @@ function App() {
         </div>
 
         <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {menuStructure.map((group, gIdx) => (
-            <div key={gIdx} className="space-y-2">
-              {group.label && (
-                <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                  {group.label}
-                </h3>
-              )}
-              <div className="space-y-1">
-                {group.items.map((item) => {
-                  // Admin check
-                  if (item.adminOnly && user.role !== 'ROLE_ADMIN') return null;
+          {menuStructure.map((group, gIdx) => {
+            const visibleItems = group.items.filter(item => !item.adminOnly || user.role === 'ROLE_ADMIN');
+            if (visibleItems.length === 0) return null;
 
-                  return (
+            return (
+              <div key={gIdx} className="space-y-2">
+                {group.label && (
+                  <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    {group.label}
+                  </h3>
+                )}
+                <div className="space-y-1">
+                  {visibleItems.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => setActiveView(item.id as any)}
@@ -301,11 +301,11 @@ function App() {
                       <item.icon className={clsx("w-4 h-4 mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
                       {item.label}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-gray-200">
@@ -335,7 +335,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {activeView === 'dashboard' && <Dashboard stats={stats} logs={logs} />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}

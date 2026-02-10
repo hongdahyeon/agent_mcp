@@ -133,13 +133,17 @@ export function LimitManagement() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">사용 제한 관리</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                        사용자 및 역할별 도구 실행 횟수 제한을 관리합니다.
-                    </p>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <Shield className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용 제한 관리
+                        </h2>
+                    </div>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
@@ -148,14 +152,15 @@ export function LimitManagement() {
                     <Plus className="w-4 h-4 mr-2" />
                     정책 추가
                 </button>
-            </div>
+            </header>
 
-            {error && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center">
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    {error}
-                </div>
-            )}
+            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+                {error && (
+                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center">
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        {error}
+                    </div>
+                )}
 
             <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -374,6 +379,7 @@ export function LimitManagement() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

@@ -28,7 +28,7 @@ interface UseMcpResult {
     - MCP BE 서버에서 사용자 정보를 가져와서 Tool 사용 기록을 남김
 */
 export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = null): UseMcpResult {
-    const [stats, setStats] = useState<UsageStats>({ tools: {} });
+    const [stats, setStats] = useState<UsageStats>({ tools: {}, users: {} });
     const [availableTools, setAvailableTools] = useState<Tool[]>([]);
     const [initialized, setInitialized] = useState(false);
     const [lastResult, setLastResult] = useState<any>(null);
@@ -104,7 +104,7 @@ export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = 
             const res = await fetch('/api/mcp/stats');
             if (res.ok) {
                 const data = await res.json();
-                setStats({ tools: data });
+                setStats(data);
             }
         } catch (e) {
             console.error("Failed to fetch stats:", e);

@@ -176,14 +176,18 @@ export function Users() {
     if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
 
     return (
-        <div className="space-y-6">
-            <header className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <UsersIcon className="w-8 h-8 text-blue-600" />
-                        사용자 관리
-                    </h1>
-                    <p className="text-gray-500 mt-1">시스템 사용자를 조회하고 관리합니다.</p>
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
+            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-blue-50">
+                        <UsersIcon className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            사용자 관리
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">시스템 사용자를 조회하고 관리합니다.</p>
+                    </div>
                 </div>
                 <button
                     onClick={handleOpenCreate}
@@ -201,10 +205,11 @@ export function Users() {
                 </div>
             )}
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-y-auto">
                 <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-sm">
+                    <thead className="sticky top-0 bg-gray-50 z-10">
+                        <tr className="border-b border-gray-200 text-gray-500 text-sm">
                             <th className="py-4 px-6 font-medium">ID / 이름</th>
                             <th className="py-4 px-6 font-medium">권한</th>
                             <th className="py-4 px-6 font-medium">상태</th>
@@ -265,9 +270,10 @@ export function Users() {
                         ))}
                     </tbody>
                 </table>
+                </div>
                 
                  {/* Pagination */}
-                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                 <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 shrink-0">
                  {/* Mobile Pagination */}
                   <div className="flex flex-1 justify-between sm:hidden">
                     <button
@@ -310,8 +316,9 @@ export function Users() {
                         </nav>
                     </div>
                 </div>
+                </div>
             </div>
-            </div>
+
 
             {/* Modal */}
             {isModalOpen && (

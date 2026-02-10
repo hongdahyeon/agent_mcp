@@ -130,4 +130,15 @@ Phase 1: 사용자 토큰 관리 (완료)
 
 - 예약 발송 스케줄러 도입
 -> 예약 발송스케줄러 모아둔 화면/로직 구현
-/
+
+## UI 통일화 작업 (LogViewer 스타일 적용)
+1. 도구 테스터 (`Tester.tsx`): 헤더 붙이기
+2. 메일 발송 (`EmailSender.tsx`): 전체 영역 키우기, 헤더 배경 붙이기
+3. 접속 이력 (`LoginHistViewer.tsx`): OK (완료됨)
+4. 도구 사용 이력 (`UsageHistory.tsx`): 헤더 아이콘 + 배경 붙이기
+5. 사용 제한 관리 (`LimitManagement.tsx`): 헤더 아이콘 + 배경 붙이기
+6. DB 관리 (`SchemaManager.tsx`): 헤더 배경 붙이기
+7. 도구 생성 (`CustomTools.tsx`): OK (완료됨)
+8. 보안 토큰 관리 (`AccessTokenManager.tsx`): 전체 영역 키우기, 헤더 배경 붙이기
+9. 시스템 설정 (`SystemConfig.tsx`): 헤더 배경 붙이기, 검색 영역 배경 붙이기
+10. 사용자 관리 (`Users.tsx`): 헤더 배경 붙이기
