@@ -1,8 +1,8 @@
 # React Migration Report
 
 ## 1. Overview
-HTML/JS 기반의 프론트엔드를 **Vite + React + TypeScript** 환경으로 성공적으로 이관했습니다.
-이제 더 안정적이고 확장 가능한 구조에서 개발할 수 있습니다.
+- **HTML/JS 기반**의 프론트엔드를 **Vite + React + - TypeScript** 환경으로 성공적으로 이관했습니다.  
+- 이제 더 안정적이고 확장 가능한 구조에서 개발할 수 있습니다.
 
 ## 2. Project Structure (`src/frontend`)
 - **`src/App.tsx`**: 메인 레이아웃 및 라우팅 (Sidebar 포함)

@@ -5,7 +5,7 @@ import secrets
     h_access_token 테이블
     - [1] create_access_token: 토큰 생성
     - [2] get_access_token: 토큰 조회
-    - [3] get_all_access_tokens: 모든 토큰 목록 조회
+    - [3] get_all_access_tokens: 모든 토큰 목록 조회 (페이징 적용)
     - [4] delete_access_token: 토큰 삭제
     - [5] get_user_by_active_token: 토큰으로 사용자 조회 (SSE/Stdio 통합용)
 """
@@ -41,17 +41,28 @@ def get_access_token(token: str):
     finally:
         conn.close()
 
-# [3] get_all_access_tokens: 모든 토큰 목록 조회
-def get_all_access_tokens():
-    """모든 토큰 목록을 조회합니다 (삭제된 것 제외)."""
+# [3] get_all_access_tokens: 모든 토큰 목록 조회 (페이징 적용)
+def get_all_access_tokens(page: int = 1, size: int = 10) -> dict:
+    """모든 토큰 목록을 조회합니다 (삭제된 것 제외, 페이징 적용)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
+    
     try:
+        total = conn.execute("SELECT COUNT(*) FROM h_access_token WHERE is_delete = 'N'").fetchone()[0]
+        
         rows = conn.execute('''
             SELECT * FROM h_access_token 
             WHERE is_delete = 'N'
             ORDER BY id DESC
-        ''').fetchall()
-        return [dict(row) for row in rows]
+            LIMIT ? OFFSET ?
+        ''', (size, offset)).fetchall()
+        
+        return {
+            "items": [dict(row) for row in rows],
+            "total": total,
+            "page": page,
+            "size": size
+        }
     finally:
         conn.close()
 

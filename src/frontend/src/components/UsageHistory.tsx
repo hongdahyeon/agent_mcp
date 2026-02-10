@@ -3,6 +3,7 @@ import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History } from '
 import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 
 export function UsageHistory() {
@@ -12,8 +13,8 @@ export function UsageHistory() {
 
   // 페이징 (Pagination)
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const PAGE_SIZE = 20;
 
   // 검색 필터 (Filters)
   const [searchUserId, setSearchUserId] = useState('');
@@ -57,7 +58,7 @@ export function UsageHistory() {
       // Query String 구성
       const params = new URLSearchParams({
         page: pageNum.toString(),
-        size: PAGE_SIZE.toString()
+        size: pageSize.toString()
       });
       if (searchUserId) params.append('user_id', searchUserId);
       if (searchToolNm) params.append('tool_nm', searchToolNm);
@@ -76,18 +77,19 @@ export function UsageHistory() {
       setLogs(data.items);
       setTotal(data.total);
       setPage(data.page);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message);
     } finally {
       setLoading(false);
     }
-  }, [searchUserId, searchToolNm, searchSuccess]);
+  }, [searchUserId, searchToolNm, searchSuccess, pageSize]);
 
   // 초기 로딩 및 성공여부 필터 변경 시 자동 검색
   useEffect(() => {
     fetchLogs(1);
     fetchStats(); // 초기 로딩 시 통계도 조회
-  }, [searchSuccess]);
+  }, [searchSuccess, fetchLogs, fetchStats]);
 
   const handleSearch = () => {
     fetchLogs(1);
@@ -99,7 +101,7 @@ export function UsageHistory() {
     }
   };
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
@@ -123,9 +125,9 @@ export function UsageHistory() {
                 </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+            <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 {/* 사용 통계 테이블 (Usage Stats Table) */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-none">
                     <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                         <h3 className="text-sm font-semibold text-gray-700">금일 사용자별 사용 통계</h3>
                     </div>
@@ -171,8 +173,8 @@ export function UsageHistory() {
                     </div>
                 </div>
 
-                {/* 필터 바 (Filter Bar) */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end">
+                {/* 필터 바 (Filter Bar) - flex-none */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap gap-4 items-end flex-none">
                     <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">사용자 ID</label>
                         <input
@@ -246,10 +248,10 @@ export function UsageHistory() {
                     </div>
                 )}
 
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
+                <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                    <div className="overflow-x-auto flex-1">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 sticky top-0 z-10">
                                 <tr>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">시간</th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자</th>
@@ -318,32 +320,22 @@ export function UsageHistory() {
                     </div>
 
                     {/* 페이징 (Pagination) */}
-                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages || 1}</span> (Total <span className="font-medium">{total}</span>)
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button
-                                        onClick={() => fetchLogs(Math.max(1, page - 1))}
-                                        disabled={page === 1}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                    >
-                                        이전
-                                    </button>
-                                    <button
-                                        onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-                                        disabled={page >= totalPages}
-                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                    >
-                                        다음
-                                    </button>
-                                </nav>
-                            </div>
-                        </div>
+                    <div className="bg-white border-t border-gray-200">
+                        <Pagination
+                             currentPage={page}
+                             totalPages={Math.ceil(total / pageSize)}
+                             pageSize={pageSize}
+                             totalItems={total}
+                             onPageChange={(p) => {
+                                 setPage(p);
+                                 fetchLogs(p);
+                             }}
+                             onPageSizeChange={(s) => {
+                                 setPageSize(s);
+                                 setPage(1);
+                                 // fetchLogs will be triggered by useEffect depending on pageSize
+                             }}
+                        />
                     </div>
                 </div>
             </div>

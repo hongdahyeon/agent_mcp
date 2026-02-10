@@ -347,7 +347,7 @@ function App() {
           {activeView === 'custom-tools' && user.role === 'ROLE_ADMIN' && <CustomTools />}
           {activeView === 'access-tokens' && user.role === 'ROLE_ADMIN' && <AccessTokenManager />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
-          {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig token={authToken} />}
+          {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
         </div>
       </main>
     </div>

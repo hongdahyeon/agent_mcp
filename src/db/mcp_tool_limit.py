@@ -6,7 +6,7 @@ from .mcp_tool_usage import get_user_daily_usage
     h_mcp_tool_limit 테이블 관련
     - [1] get_user_limit: 사용자에게 적용될 일일 제한 횟수 조회 (User 설정 > Role 설정 > 기본값)
     - [2] get_admin_usage_stats: 관리자용: 모든 사용자의 금일 사용량 및 제한 정보 통계
-    - [3] get_limit_list: 제한 정책 전체 목록 조회
+    - [3] get_limit_list: 제한 정책 전체 목록 조회 (페이징 적용)
     - [4] upsert_limit: 제한 정책 생성/수정
     - [5] delete_limit: 제한 정책 삭제
 """
@@ -76,12 +76,21 @@ def get_admin_usage_stats() -> list[dict]:
     return stats
 
 
-# [3] get_limit_list: 제한 정책 전체 목록 조회
-def get_limit_list() -> list[dict]:
-    """제한 정책 전체 목록 조회."""
+# [3] get_limit_list: 제한 정책 전체 목록 조회 (페이징 적용)
+def get_limit_list(page: int = 1, size: int = 10) -> dict:
+    """제한 정책 전체 목록 조회 (페이징 적용)."""
     conn = get_db_connection()
+    offset = (page - 1) * size
     
-    rows = conn.execute("SELECT id, target_type, target_id, limit_type, max_count, description FROM h_mcp_tool_limit ORDER BY target_type DESC, target_id ASC").fetchall()
+    # Total count
+    total = conn.execute("SELECT COUNT(*) FROM h_mcp_tool_limit").fetchone()[0]
+    
+    rows = conn.execute("""
+        SELECT id, target_type, target_id, limit_type, max_count, description 
+        FROM h_mcp_tool_limit 
+        ORDER BY target_type DESC, target_id ASC
+        LIMIT ? OFFSET ?
+    """, (size, offset)).fetchall()
     
     limits = []
     for row in rows:
@@ -95,7 +104,12 @@ def get_limit_list() -> list[dict]:
         })
         
     conn.close()
-    return limits
+    return {
+        "items": limits,
+        "total": total,
+        "page": page,
+        "size": size
+    }
 
 
 # [4] upsert_limit: 제한 정책 생성/수정

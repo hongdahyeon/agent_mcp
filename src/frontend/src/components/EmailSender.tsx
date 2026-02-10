@@ -2,6 +2,7 @@ import { AlertCircle, Calendar, CheckCircle, Clock, RefreshCw, RotateCw, Send, X
 import React, { useEffect, useState } from 'react';
 import type { EmailLog } from '../types/emailSend';
 import { getAuthHeaders } from '../utils/auth';
+import { Pagination } from './common/Pagination';
 
 
 export const EmailSender: React.FC = () => {
@@ -19,20 +20,22 @@ export const EmailSender: React.FC = () => {
     const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
 
-    useEffect(() => {
-        fetchLogs();
-    }, []);
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [total, setTotal] = useState(0);
 
-    const fetchLogs = async () => {
+    const fetchLogs = React.useCallback(async (pageNum: number = page, size: number = pageSize) => {
         setLoadingLogs(true);
         try {
-            const res = await fetch('/api/email/logs?limit=50', {
+            const res = await fetch(`/api/email/logs?page=${pageNum}&size=${size}`, {
                 headers: getAuthHeaders()
             });
             if (res.ok) {
                 const data = await res.json();
                 if (data && data.logs) {
                     setLogs(data.logs);
+                    setTotal(data.total || 0);
                 }
             }
         } catch (e) {
@@ -40,7 +43,11 @@ export const EmailSender: React.FC = () => {
         } finally {
             setLoadingLogs(false);
         }
-    };
+    }, [page, pageSize]);
+
+    useEffect(() => {
+        fetchLogs(page, pageSize);
+    }, [fetchLogs, page, pageSize]);
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,8 +97,9 @@ export const EmailSender: React.FC = () => {
                 alert(`발송 실패: ${data.error || '알 수 없는 오류'}`);
                 fetchLogs();
             }
-        } catch (err: any) {
-            alert(`오류 발생: ${err.message}`);
+        } catch (err) {
+            const error = err as Error;
+            alert(`오류 발생: ${error.message}`);
         } finally {
             setApiLoading(false);
         }
@@ -113,8 +121,9 @@ export const EmailSender: React.FC = () => {
             } else {
                 alert(`취소 실패: ${data.detail || data.message || '알 수 없는 오류'}`);
             }
-        } catch (e: any) {
-            alert(`오류 발생: ${e.message}`);
+        } catch (e) {
+            const error = e as Error;
+            alert(`오류 발생: ${error.message}`);
         }
     };
 
@@ -227,13 +236,13 @@ export const EmailSender: React.FC = () => {
                     </div>
 
                     {/* Right: History Table */}
-                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
+                        <div className="flex items-center justify-between mb-4 shrink-0">
                             <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
                                 <Clock className="w-5 h-5" /> 발송 이력
                             </h2>
                             <button 
-                                onClick={fetchLogs} 
+                                onClick={() => fetchLogs(page, pageSize)} 
                                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                                 title="새로고침"
                             >
@@ -241,9 +250,9 @@ export const EmailSender: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="flex-1 overflow-auto min-h-0">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
+                                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200 sticky top-0 z-10">
                                     <tr>
                                         <th className="px-4 py-3">상태</th>
                                         <th className="px-4 py-3">수신자</th>
@@ -319,6 +328,21 @@ export const EmailSender: React.FC = () => {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="mt-4 pt-4 border-t border-gray-100 shrink-0">
+                            <Pagination
+                                currentPage={page}
+                                totalPages={Math.ceil(total / pageSize)}
+                                pageSize={pageSize}
+                                totalItems={total}
+                                onPageChange={(p) => setPage(p)}
+                                onPageSizeChange={(s) => {
+                                    setPageSize(s);
+                                    setPage(1);
+                                }}
+                            />
                         </div>
                     </div>
                 </div>
