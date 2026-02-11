@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from datetime import timedelta
 import logging
 
 try:
-    from src.db import get_user, verify_password, log_login_attempt, get_login_history
+    from src.db import get_user, verify_password, log_login_attempt, get_login_history, check_user_id, create_user
     from src.utils.auth import create_access_token as create_jwt_token
 except ImportError:
-    from db import get_user, verify_password, log_login_attempt, get_login_history
+    from db import get_user, verify_password, log_login_attempt, get_login_history, check_user_id, create_user
     from utils.auth import create_access_token as create_jwt_token
 
 
@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 
 class LoginRequest(BaseModel):
     user_id: str
+    password: str
+
+class SignupRequest(BaseModel):
+    user_id: str
+    user_nm: str
     password: str
 
 # 유저 로그인
@@ -75,3 +80,32 @@ async def login_history(page: int = 1, size: int = 20):
         return get_login_history(page, size)
     except Exception as e:
         return {"error": str(e)}
+
+# 아이디 중복 체크
+@router.get("/check-id")
+async def api_check_id(user_id: str = Query(...)):
+    is_exists = check_user_id(user_id)
+    return {"exists": is_exists}
+
+# 회원가입
+@router.post("/signup")
+async def api_signup(req: SignupRequest):
+    if len(req.password) < 4:
+        raise HTTPException(status_code=400, detail="비밀번호는 4자리 이상이어야 합니다.")
+    
+    if check_user_id(req.user_id):
+        raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
+    
+    try:
+        user_data = {
+            "user_id": req.user_id,
+            "user_nm": req.user_nm,
+            "password": req.password,
+            "role": "ROLE_USER",
+            "is_enable": "N"
+        }
+        create_user(user_data)
+        return {"success": True, "message": "회원가입이 완료되었습니다. 관리자 승인 후 로그인 가능합니다."}
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        raise HTTPException(status_code=500, detail=f"회원가입 처리 중 오류가 발생했습니다: {str(e)}")

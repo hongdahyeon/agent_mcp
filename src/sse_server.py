@@ -132,8 +132,9 @@ async def handle_sse(request: Request, token: str = Query(None)):
             set_current_user(dict(user))
             logger.info(f"SSE Connected: {user['user_id']}")
         else:
-            print("*** Guest Mode ***")
-            clear_current_user()
+            # TODO: 토큰이 유효하지 않은 경우, 프론트엔드에서 적절한 처리를 할 수 있도록 응답을 반환해야 함
+            logger.warning("Connection attempt without valid token - Access Denied")
+            raise HTTPException(status_code=401, detail="Authentication required. Please provide a valid token.")
 
         async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
             await mcp.run(streams[0], streams[1], mcp.create_initialization_options())

@@ -143,7 +143,6 @@ def get_pending_scheduled_emails():
     조건: status='PENDING' AND is_scheduled=1 AND scheduled_dt <= NOW
     """
     conn = get_db_connection()
-    conn.row_factory = None  # 딕셔너리가 아닌 튜플로 받기 위해 (또는 dict_factory 사용 시 주의)
     # 여기서는 dict factory를 사용하는 connection.py의 설정을 따르므로, 
     # connection.py가 row_factory를 sqlite3.Row로 설정한다면 dict처럼 접근 가능.
     

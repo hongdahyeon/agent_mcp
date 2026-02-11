@@ -15,6 +15,7 @@ import { CustomTools } from './components/CustomTools';
 import { MyPage } from './components/MyPage';
 import { SystemConfig } from './components/SystemConfig';
 import { EmailSender } from './components/EmailSender';
+import { EmailHistory } from './components/EmailHistory';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
@@ -78,7 +79,7 @@ function App() {
   // 화면 상태 (View State)
   const [activeView, setActiveView]
     = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email'>('dashboard');
+      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -222,7 +223,8 @@ function App() {
       label: '이력',
       items: [
         { id: 'history', label: '접속 이력', icon: History },
-        { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true }
+        { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true },
+        { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true }
       ]
     },
     {
@@ -339,6 +341,7 @@ function App() {
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
+          {activeView === 'email-history' && user.role === 'ROLE_ADMIN' && <EmailHistory />}
           {activeView === 'history' && <LoginHistViewer />}
           {activeView === 'mypage' && <MyPage />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}

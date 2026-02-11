@@ -61,11 +61,18 @@ async def api_send_email(req: EmailSendRequest, current_user: dict = Depends(get
 async def api_get_email_logs(
     page: int = Query(1, ge=1), 
     size: int = Query(10, ge=1, le=100), 
+    all_logs: bool = Query(False),
     current_user: dict = Depends(get_current_user_jwt)
 ):
     user = current_user
-    target_uid = None
-    if user['role'] != 'ROLE_ADMIN':
+    is_admin = user['role'] == 'ROLE_ADMIN'
+    
+    # target_uid 결정:
+    # 1. 관리자가 아니고 all_logs를 요청하더라도 본인 것만 보여줌
+    # 2. 관리자가 all_logs=True를 요청했을 때만 전체(None) 조회
+    if is_admin and all_logs:
+        target_uid = None
+    else:
         target_uid = user['uid']
         
     offset = (page - 1) * size
