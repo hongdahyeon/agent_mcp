@@ -170,28 +170,27 @@ export function SystemConfig() {
             </header>
 
             {/* Search Bar & Action */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-end gap-4">
-                <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 className="text-lg font-semibold mb-4 text-gray-800">검색 및 관리</h2>
+                <div className="flex gap-4">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                             type="text"
                             placeholder="이름 또는 설명으로 검색..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
                         />
                     </div>
+                    <button
+                        onClick={handleOpenAdd}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shrink-0 font-medium"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        추가
+                    </button>
                 </div>
-                <button
-                    onClick={handleOpenAdd}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                    style={{ height: '42px' }} // Match input height roughly
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    추가
-                </button>
             </div>
 
             {/* Table */}
