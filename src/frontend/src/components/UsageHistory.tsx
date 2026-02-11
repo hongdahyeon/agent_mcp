@@ -195,8 +195,8 @@ export function UsageHistory() {
                             value={searchUserId}
                             onChange={(e) => setSearchUserId(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Search User ID..."
-                            className="px-3 py-2 border rounded-lg text-sm w-40"
+                            placeholder="사용자 ID 검색..."
+                            className="px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-64"
                         />
                     </div>
                     <div>
@@ -206,8 +206,8 @@ export function UsageHistory() {
                             value={searchToolNm}
                             onChange={(e) => setSearchToolNm(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Search Tool Name..."
-                            className="px-3 py-2 border rounded-lg text-sm w-40"
+                            placeholder="도구명 검색..."
+                            className="px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-64"
                         />
                     </div>
                     <div>
@@ -215,7 +215,7 @@ export function UsageHistory() {
                         <select
                             value={searchSuccess}
                             onChange={(e) => setSearchSuccess(e.target.value)}
-                            className="px-3 py-2 border rounded-lg text-sm w-32 bg-white"
+                            className="px-3 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-48 bg-white"
                         >
                             <option value="ALL">전체</option>
                             <option value="SUCCESS">In Progress / Success</option>
