@@ -19,7 +19,7 @@ from src.utils.auth import verify_token
 from src.db import get_user, get_access_token
 from src.utils.context import set_current_user, clear_current_user
 # Include Routers
-from src.routers import auth, users, mcp as mcp_router, system, email
+from src.routers import auth, users, mcp as mcp_router, system, email, files
 
 """
     - routers/*.py
@@ -90,6 +90,7 @@ app.include_router(users.router)
 app.include_router(mcp_router.router)
 app.include_router(system.router)
 app.include_router(email.router)
+app.include_router(files.router)
 
 # ==========================================
 # 4. SSE Handler (Integrated)

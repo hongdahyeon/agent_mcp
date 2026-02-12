@@ -1,4 +1,12 @@
-# 🔐 Authentication System Transition Memo (2026-01-30)
+# About MCP Admin System
+
+## 1. 개요 (Overview)
+
+
+## 2. 주요 기능
+
+
+
 
 ## 1. 개요 (Overview)
 기존의 복잡했던 인증 체계(`h_user_token` 기반의 온디맨드 토큰)를 제거하고, 표준화된 **JWT (JSON Web Token)** 기반 인증으로 통합했습니다. 또한, 외부 시스템 연동을 위해 별도의 **Access Token (`h_access_token`)** 시스템을 도입했습니다.

@@ -16,11 +16,12 @@ import { MyPage } from './components/MyPage';
 import { SystemConfig } from './components/SystemConfig';
 import { EmailSender } from './components/EmailSender';
 import { EmailHistory } from './components/EmailHistory';
+import { FileManager } from './components/FileManager';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -79,7 +80,7 @@ function App() {
   // 화면 상태 (View State)
   const [activeView, setActiveView]
     = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history'>('dashboard');
+      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history' | 'file-manager'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -97,14 +98,14 @@ function App() {
       return;
     }
     try {
-      console.log("[App] Fetching usage stats for user:", userId);
+      // console.log("[App] Fetching usage stats for user:", userId);
       const res = await fetch('/api/mcp/my-usage', {
         headers: getAuthHeaders()
       });
 
       if (res.ok) {
         const data = await res.json();
-        console.log("[App] Usage stats fetched:", data);
+        // console.log("[App] Usage stats fetched:", data);
         setUsageData({
           usage: data.usage,
           limit: data.limit,
@@ -216,7 +217,8 @@ function App() {
       items: [
         { id: 'tester', label: '도구 테스터', icon: Terminal },
         { id: 'logs', label: '로그 뷰어', icon: FileText },
-        { id: 'email', label: '메일 발송', icon: Send }
+        { id: 'email', label: '메일 발송', icon: Send },
+        { id: 'file-manager', label: '파일 관리', icon: File }
       ]
     },
     {
@@ -351,6 +353,7 @@ function App() {
           {activeView === 'access-tokens' && user.role === 'ROLE_ADMIN' && <AccessTokenManager />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
+          {activeView === 'file-manager' && <FileManager />}
         </div>
       </main>
     </div>

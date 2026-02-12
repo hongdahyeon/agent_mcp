@@ -125,7 +125,7 @@ export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = 
         // [Phase 2] 토큰 인증 (Token Authentication)
         // authToken prop이 있으면 우선 사용, 없으면 localStorage 확인 (하위 호환)
         const token = authToken || localStorage.getItem('mcp_api_token');
-        console.log(">>>> token:: ", token)
+        //console.log(">>>> token:: ", token)
         const url = token ? `${sseEndpoint}?token=${token}` : sseEndpoint;
         const source = new EventSource(url);
 
