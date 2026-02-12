@@ -111,6 +111,49 @@ def init_db():
     ''')
     
     
+    
+    
+    # 파일 테이블 (File Table) - New
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_file (
+        file_uid INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_id VARCHAR(1000) NOT NULL UNIQUE,
+        file_nm VARCHAR(1000),
+        org_file_nm VARCHAR(1000) NOT NULL,
+        file_path VARCHAR(2000) NOT NULL,
+        file_url VARCHAR(2000) NOT NULL,
+        file_size BIGINT NOT NULL,
+        file_type VARCHAR(100) NOT NULL,
+        extension VARCHAR(20) NOT NULL,
+        down_cnt INT DEFAULT 0,
+        storage_tp VARCHAR(32) NOT NULL, -- S3, LOCAL
+        use_at CHAR(1) DEFAULT 'Y' NOT NULL,
+        delete_at CHAR(1) DEFAULT 'N' NOT NULL,
+        reg_dt TIMESTAMP NOT NULL,
+        reg_uid VARCHAR(100) NOT NULL, -- Upload User ID
+        batch_id VARCHAR(100) -- Upload Batch ID
+    )
+    ''')
+    
+    # h_file 테이블에 batch_id 컬럼 추가 (Migration)
+    cursor.execute("PRAGMA table_info(h_file)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'batch_id' not in columns:
+        cursor.execute("ALTER TABLE h_file ADD COLUMN batch_id VARCHAR(100)")
+
+    # 파일 로그 테이블 (File Log Table) - New
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_file_log (
+        uid INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_uid INTEGER NOT NULL,
+        file_id VARCHAR(1000) NOT NULL,
+        reg_uid VARCHAR(100) NOT NULL,
+        reg_dt TIMESTAMP NOT NULL,
+        FOREIGN KEY (file_uid) REFERENCES h_file (file_uid)
+    )
+    ''')
+
+
     # 시스템 설정 테이블 (System Config Table) - Refactored to JSON based
     # 기존 테이블이 Key-Value 구조라면 Drop하고 재생성 (Migration logic simplified for dev)
     cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='h_system_config'")

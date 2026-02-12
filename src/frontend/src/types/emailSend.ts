@@ -2,6 +2,7 @@
 
 export interface EmailLog {
     id: number;
+    user_uid: number | null;
     user_id: string;
     user_nm: string;
     recipient: string;
