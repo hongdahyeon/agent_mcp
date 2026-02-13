@@ -191,6 +191,25 @@ def init_db():
     )
     ''')
     
+    # OpenAPI Proxy 관리 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tool_id TEXT UNIQUE NOT NULL,    -- URL 경로로 쓰일 영문 ID
+        name_ko TEXT NOT NULL,           -- 표시용 이름
+        org_name TEXT,                   -- 기관명
+        method TEXT NOT NULL,            -- GET, POST_JSON, POST_FORM
+        api_url TEXT NOT NULL,           -- 실제 호출할 OpenAPI URL
+        auth_type TEXT NOT NULL,         -- SERVICE_KEY, BEARER, NONE
+        auth_param_nm TEXT,              -- 인증 파라미터명 (예: serviceKey)
+        auth_key_val TEXT,               -- 인증 키값
+        params_schema TEXT,              -- 파라미터 JSON 스키마
+        description_agent TEXT,          -- Agent용 설명
+        batch_id TEXT,                   -- h_file 연동용 batch_id
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+
     # 기본 시스템 설정 시딩 (완료 후 주석 처리됨)
     """
     gmail_config = {

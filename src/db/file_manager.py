@@ -89,7 +89,7 @@ def get_file(file_uid: int):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM h_file WHERE file_uid = ? AND use_at = 'Y'", (file_uid,))
+    cursor.execute("SELECT * FROM h_file WHERE file_uid = ? AND use_at = 'Y' AND delete_at = 'N'", (file_uid,))
     row = cursor.fetchone()
     conn.close()
     
@@ -104,7 +104,7 @@ def get_file_by_id(file_id: str):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM h_file WHERE file_id = ? AND use_at = 'Y'", (file_id,))
+    cursor.execute("SELECT * FROM h_file WHERE file_id = ? AND use_at = 'Y' AND delete_at = 'N'", (file_id,))
     row = cursor.fetchone()
     conn.close()
     
@@ -145,7 +145,7 @@ def get_all_files(limit: int = 100):
     
     cursor.execute('''
         SELECT * FROM h_file 
-        WHERE use_at = 'Y' 
+        WHERE use_at = 'Y' AND delete_at = 'N' 
         ORDER BY reg_dt DESC 
         LIMIT ?
     ''', (limit,))
@@ -171,3 +171,39 @@ def increase_download_count(file_uid: int):
         print(f"Failed to increase download count: {e}")
     finally:
         conn.close()
+
+# [7] delete_file_metadata: 파일 메타데이터 삭제
+def delete_file_metadata(file_id: str):
+    """
+    file_id로 파일 메타데이터를 영구(delete_at to 'Y') 삭제합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("UPDATE h_file SET delete_at = 'Y' WHERE file_id = ?", (file_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+# [8] get_files_by_batch: 배치 ID로 파일 목록 조회
+def get_files_by_batch(batch_id: str):
+    """
+    batch_id로 파일 목록을 조회합니다.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM h_file 
+        WHERE batch_id = ? AND use_at = 'Y' AND delete_at = 'N'
+        ORDER BY reg_dt ASC
+    ''', (batch_id,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]

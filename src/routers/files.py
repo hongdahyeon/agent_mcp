@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from fastapi.responses import FileResponse
-from typing import List
+from typing import List, Optional
 import os
 import uuid
 from datetime import datetime
@@ -18,9 +18,11 @@ router = APIRouter(
 # 기본 저장 경로 설정
 BASE_UPLOAD_DIR = "d:/files/agent_mcp"
 
+# [1] 파일 업로드
 @router.post("/upload")
 async def upload_files(
     files: List[UploadFile] = File(...),
+    batch_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user_jwt)
 ):
     """
@@ -29,8 +31,9 @@ async def upload_files(
     """
     uploaded_files = []
     
-    # 0. 배치 ID 생성 (한 요청에 포함된 파일들은 동일한 batch_id를 가짐)
-    batch_id = str(uuid.uuid4())
+    # 0. 배치 ID 처리 (전달받았으면 그대로 쓰고, 없으면 신규 생성)
+    if not batch_id:
+        batch_id = str(uuid.uuid4())
     
     # 1. 저장 경로 생성 (yyyy/mm/dd)
     today = datetime.now()
@@ -99,9 +102,12 @@ async def upload_files(
             # 개별 파일 실패 시 전체 실패로 할지, 성공한 것만 리턴할지 결정 필요
             # 일단 에러 로그만 남기고 계속 진행하도록 함
             continue
-            
-    return {"uploaded": uploaded_files}
 
+    # 6. 결과 반환 > 업로드된 파일, batch_id
+    return {"uploaded": uploaded_files, "batch_id": batch_id}
+
+
+# [2] 파일 다운로드
 @router.get("/download/{file_id}")
 async def download_file(
     file_id: str,
@@ -141,6 +147,7 @@ async def download_file(
         }
     )
 
+# [3] 파일 이력 조회
 @router.get("/{file_uid}/logs")
 async def get_file_history(
     file_uid: int,
@@ -154,6 +161,7 @@ async def get_file_history(
     logs = get_file_logs(file_uid)
     return {"logs": logs}
 
+# [4] 파일 목록 조회
 @router.get("/list")
 async def get_file_list(
     limit: int = 100,
@@ -166,3 +174,47 @@ async def get_file_list(
     
     files = get_all_files(limit)
     return {"files": files}
+
+# [5] 배치 ID로 파일 목록 조회
+@router.get("/batch/{batch_id}")
+async def get_batch_files(
+    batch_id: str,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """
+    배치 ID로 파일 목록 조회
+    """
+    from src.db.file_manager import get_files_by_batch
+    
+    files = get_files_by_batch(batch_id)
+    return {"files": files}
+
+# [6] 파일 삭제
+@router.delete("/{file_id}")
+async def delete_file(
+    file_id: str,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """
+    물리 파일 및 DB 메타데이터 삭제
+    """
+    # 1. 파일 정보 조회
+    file_info = get_file_by_id(file_id)
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    # 2. 물리 파일 삭제
+    file_path = file_info['file_path']
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        print(f"Failed to delete physical file {file_path}: {e}")
+        # 물리 파일 삭제 실패 시에도 DB 삭제를 진행할지 결정 가능
+        
+    # 3. DB 메타데이터 삭제
+    # => (delete_at to 'Y') 삭제
+    from src.db.file_manager import delete_file_metadata
+    delete_file_metadata(file_id)
+    
+    return {"status": "success", "message": f"File {file_id} deleted"}

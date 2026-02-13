@@ -65,6 +65,12 @@ from .access_token import (
     delete_access_token,
     get_user_by_active_token
 )
+from .openapi import (
+    get_openapi_list,
+    get_openapi_by_tool_id,
+    upsert_openapi,
+    delete_openapi
+)
 
 
 
@@ -138,5 +144,9 @@ __all__ = [
     'get_access_token',
     'get_all_access_tokens',
     'delete_access_token',
-    'get_user_by_active_token'
+    'get_user_by_active_token',
+    'get_openapi_list',
+    'get_openapi_by_tool_id',
+    'upsert_openapi',
+    'delete_openapi'
 ]
