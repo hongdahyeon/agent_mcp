@@ -7,7 +7,7 @@ from typing import List, Optional
 from src.db import (
     get_openapi_list, get_openapi_by_tool_id, upsert_openapi, delete_openapi
 )
-from src.dependencies import get_current_user_jwt
+from src.dependencies import get_current_user_jwt, get_current_active_user
 
 router = APIRouter(tags=["openapi"])
 logger = logging.getLogger(__name__)
@@ -56,6 +56,7 @@ async def api_delete_openapi(openapi_id: int, current_user: dict = Depends(get_c
 async def api_execute_openapi(
     tool_id: str,
     request: Request,
+    current_user: dict = Depends(get_current_active_user) # API 본문 실행 전에 토큰 검증
 ):
     # 1. OpenAPI 정의 조회
     config = get_openapi_by_tool_id(tool_id)

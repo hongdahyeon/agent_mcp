@@ -409,3 +409,9 @@
 - [x] 4. Documentation
     - [x] 사용 가이드 (`docs/open_api.md`) 작성
     - [x] `requirements.txt` 업데이트 (`xmltodict` 추가)
+
+## 50. OpenAPI Proxy 실행 보안 강화 (Authentication)
+- [x] 1. 통합 인증 의존성 구현 (`src/dependencies.py`: `get_current_active_user`)
+    - [x] JWT (`Authorization: Bearer`) 및 외부 토큰 (`token` query param) 동시 지원
+- [x] 2. OpenAPI 프록시 엔드포인트에 인증 적용 (`src/routers/openapi.py`)
+- [x] 3. 기능 검증 및 테스트 완료
