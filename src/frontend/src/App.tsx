@@ -15,11 +15,14 @@ import { CustomTools } from './components/CustomTools';
 import { MyPage } from './components/MyPage';
 import { SystemConfig } from './components/SystemConfig';
 import { EmailSender } from './components/EmailSender';
+import { EmailHistory } from './components/EmailHistory';
+import { FileManager } from './components/FileManager';
+import { OpenApiManager } from './components/OpenApiManager';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -78,7 +81,7 @@ function App() {
   // 화면 상태 (View State)
   const [activeView, setActiveView]
     = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email'>('dashboard');
+      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history' | 'file-manager' | 'openapi'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -96,14 +99,14 @@ function App() {
       return;
     }
     try {
-      console.log("[App] Fetching usage stats for user:", userId);
+      // console.log("[App] Fetching usage stats for user:", userId);
       const res = await fetch('/api/mcp/my-usage', {
         headers: getAuthHeaders()
       });
 
       if (res.ok) {
         const data = await res.json();
-        console.log("[App] Usage stats fetched:", data);
+        // console.log("[App] Usage stats fetched:", data);
         setUsageData({
           usage: data.usage,
           limit: data.limit,
@@ -215,14 +218,16 @@ function App() {
       items: [
         { id: 'tester', label: '도구 테스터', icon: Terminal },
         { id: 'logs', label: '로그 뷰어', icon: FileText },
-        { id: 'email', label: '메일 발송', icon: Send }
+        { id: 'email', label: '메일 발송', icon: Send },
+        { id: 'file-manager', label: '파일 관리', icon: File }
       ]
     },
     {
       label: '이력',
       items: [
         { id: 'history', label: '접속 이력', icon: History },
-        { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true }
+        { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true },
+        { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true }
       ]
     },
     {
@@ -232,6 +237,7 @@ function App() {
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
+        { id: 'openapi', label: 'OpenAPI 관리', icon: Globe, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
         { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
       ]
@@ -339,6 +345,7 @@ function App() {
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
+          {activeView === 'email-history' && user.role === 'ROLE_ADMIN' && <EmailHistory />}
           {activeView === 'history' && <LoginHistViewer />}
           {activeView === 'mypage' && <MyPage />}
           {activeView === 'users' && user.role === 'ROLE_ADMIN' && <Users />}
@@ -348,6 +355,8 @@ function App() {
           {activeView === 'access-tokens' && user.role === 'ROLE_ADMIN' && <AccessTokenManager />}
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
+          {activeView === 'file-manager' && <FileManager />}
+          {activeView === 'openapi' && user.role === 'ROLE_ADMIN' && <OpenApiManager />}
         </div>
       </main>
     </div>

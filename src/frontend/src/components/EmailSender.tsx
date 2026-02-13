@@ -1,4 +1,4 @@
-import { AlertCircle, Calendar, CheckCircle, Clock, RefreshCw, RotateCw, Send, XCircle } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle, Clock, Eye, RefreshCw, RotateCw, Send, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import type { EmailLog } from '../types/emailSend';
 import { getAuthHeaders } from '../utils/auth';
@@ -20,6 +20,9 @@ export const EmailSender: React.FC = () => {
     const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
 
+    // Detail Modal State
+    const [detailLog, setDetailLog] = useState<EmailLog | null>(null);
+
     // Pagination State
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -28,7 +31,8 @@ export const EmailSender: React.FC = () => {
     const fetchLogs = React.useCallback(async (pageNum: number = page, size: number = pageSize) => {
         setLoadingLogs(true);
         try {
-            const res = await fetch(`/api/email/logs?page=${pageNum}&size=${size}`, {
+            // all_logs=false(기본값)로 호출하여 내 이력만 조회
+            const res = await fetch(`/api/email/logs?page=${pageNum}&size=${size}&all_logs=false`, {
                 headers: getAuthHeaders()
             });
             if (res.ok) {
@@ -239,7 +243,7 @@ export const EmailSender: React.FC = () => {
                     <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
                         <div className="flex items-center justify-between mb-4 shrink-0">
                             <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                <Clock className="w-5 h-5" /> 발송 이력
+                                <Clock className="w-5 h-5" /> 내 발송 이력
                             </h2>
                             <button 
                                 onClick={() => fetchLogs(page, pageSize)} 
@@ -257,8 +261,8 @@ export const EmailSender: React.FC = () => {
                                         <th className="px-4 py-3">상태</th>
                                         <th className="px-4 py-3">수신자</th>
                                         <th className="px-4 py-3">제목</th>
-                                        <th className="px-4 py-3">등록일시 / 예약일시</th>
-                                        <th className="px-4 py-3">발송자</th>
+                                        <th className="px-4 py-3">등록/예약 시각</th>
+                                        <th className="px-4 py-3 text-center">상세</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -316,12 +320,15 @@ export const EmailSender: React.FC = () => {
                                                     {log.is_scheduled === 1 && (
                                                         <div className="text-blue-600 font-medium">예약: {log.scheduled_dt}</div>
                                                     )}
-                                                    {log.sent_dt && (
-                                                        <div className="text-green-600">발송: {log.sent_dt}</div>
-                                                    )}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-500">
-                                                    {log.user_nm || log.user_id}
+                                                <td className="px-4 py-3 text-center">
+                                                    <button 
+                                                        onClick={() => setDetailLog(log)}
+                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="내용 보기"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))
@@ -347,6 +354,49 @@ export const EmailSender: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            {detailLog && (
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDetailLog(null)}>
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-bold text-gray-800">메일 상세 내용</h3>
+                            <button onClick={() => setDetailLog(null)} className="text-gray-400 hover:text-gray-600">
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                            <div className="grid grid-cols-4 gap-2 text-sm">
+                                <span className="text-gray-500 font-medium">수신자:</span>
+                                <span className="col-span-3 text-gray-900">{detailLog.recipient}</span>
+                                <span className="text-gray-500 font-medium">제목:</span>
+                                <span className="col-span-3 text-gray-900 font-bold">{detailLog.subject}</span>
+                                <span className="text-gray-500 font-medium">발신자:</span>
+                                <span className="col-span-3">
+                                    {detailLog.user_uid === null ? 'AI 에이전트' : `${detailLog.user_nm} (${detailLog.user_id})`}
+                                </span>
+                            </div>
+                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] whitespace-pre-wrap text-gray-800 text-sm leading-relaxed">
+                                {detailLog.content}
+                            </div>
+                            {detailLog.error_msg && (
+                                <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-100 text-xs flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {detailLog.error_msg}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 border-t border-gray-100 flex justify-end">
+                            <button 
+                                onClick={() => setDetailLog(null)}
+                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

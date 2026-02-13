@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../types/auth';
-import { Lock, User as UserIcon, LogIn, AlertCircle } from 'lucide-react';
+import { Lock, User as UserIcon, LogIn, AlertCircle, UserPlus } from 'lucide-react';
+import { SignupModal } from './SignupModal';
 
 /* 
 * 로그인 화면에 대한 컴포넌트
@@ -16,6 +17,7 @@ export function Login({ onLogin }: Props) {
     const [rememberMe, setRememberMe] = useState(false);    // 아이디 기억하기
     const [error, setError] = useState('');                 // 에러 메시지
     const [loading, setLoading] = useState(false);          // 로딩 상태
+    const [isSignupOpen, setIsSignupOpen] = useState(false); // 회원가입 모달 상태
 
     // 컴포넌트 마운트 시 저장된 아이디 불러오기
     useEffect(() => {
@@ -27,6 +29,7 @@ export function Login({ onLogin }: Props) {
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
+        // ... existing handleSubmit logic ...
         e.preventDefault();
         setError('');
 
@@ -156,11 +159,23 @@ export function Login({ onLogin }: Props) {
                         </button>
                     </form>
 
-                    <div className="mt-6 text-center text-xs text-gray-400">
-                        초기 계정: admin / 1234
+                    <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs text-gray-400">초기 계정: admin / 1234</span>
+                        <button
+                            onClick={() => setIsSignupOpen(true)}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center gap-1 transition-colors"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            회원가입
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <SignupModal 
+                isOpen={isSignupOpen} 
+                onClose={() => setIsSignupOpen(false)} 
+            />
         </div>
     );
 }

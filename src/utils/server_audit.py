@@ -43,6 +43,9 @@ def audit_log(func):
                     if user: user_uid = user['uid']
                 except: pass
             
+            if not user_uid:
+                raise Exception("Authentication required. Please set the 'token' environment variable in your Claude Desktop configuration.")
+
             is_success = False
             result_val = ""
             try:
@@ -80,6 +83,9 @@ def audit_log(func):
                     if user: user_uid = user['uid']
                 except: pass
             
+            if not user_uid:
+                raise Exception("Authentication required. Please set the 'token' environment variable in your Claude Desktop configuration.")
+
             is_success = False
             result_val = ""
             try:

@@ -5,17 +5,23 @@ import json
 try:
     from src.db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
-        get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens # Using alias for compatibility or update function name
+        get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens,
+        log_email, update_email_status
     )
     from src.tool_executor import execute_sql_tool, execute_python_tool
     from src.utils.context import get_current_user
+    from src.utils.mailer import EmailSender
+    from src.scheduler import add_scheduled_job
 except ImportError:
     from db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
-        get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens
+        get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens,
+        log_email, update_email_status
     )
     from tool_executor import execute_sql_tool, execute_python_tool
     from utils.context import get_current_user
+    from utils.mailer import EmailSender
+    from scheduler import add_scheduled_job
 
 """
     MCP 서버 인스턴스 및 Tool 정의
@@ -83,11 +89,37 @@ async def list_tools():
                 "required": ["user_id"]
             }
         ),
+        Tool(
+            name="get_current_time",
+            description="현재 시스템의 날짜와 시간을 조회합니다. 예약 이메일 설정 시 현재 시간을 기준으로 계산하기 위해 사용합니다.",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        ),
+        Tool(
+            name="send_email",
+            description="""
+                사용자에게 이메일을 즉시 발송하거나 특정 시간에 예약 발송합니다.
+                '오늘 오후 2시'처럼 예약할 경우, 먼저 get_current_time을 호출하여 현재 시간을 확인한 뒤 'YYYY-MM-DD HH:mm' 형식으로 입력해야 합니다.
+                AI 에이전트 이름으로 발송됩니다.
+            """,
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "recipient": {"type": "string", "description": "수신자 이메일 주소 (필수)"},
+                    "subject": {"type": "string", "description": "이메일 제목 (선택, 미입력 시 'AI Assistant Message')"},
+                    "content": {"type": "string", "description": "이메일 본문 내용 (필수)"},
+                    "scheduled_at": {"type": "string", "description": "예약 발송 시간 (선택, YYYY-MM-DD HH:mm 형식)"}
+                },
+                "required": ["recipient", "content"]
+            }
+        ),
         # get_user_tokens removed
     ]
     
     for t in static_tools:
-        t.description = f"[System] {t.description.strip()}"
+        t.description = t.description.strip()
 
     # 2. 동적 도구 목록 로드 (DB)
     dynamic_tools = []
@@ -187,6 +219,71 @@ async def call_tool(name: str, arguments: dict):
                         if 'password' in user_dict: del user_dict['password']
                         result_val = json.dumps(user_dict, default=str, ensure_ascii=False)
                         is_success = True
+            
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "get_current_time":
+            from datetime import datetime
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            result_val = f"현재 서버 시간: {now_str}"
+            if user_uid:
+                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "send_email":
+            recipient = tool_args.get("recipient")
+            subject = tool_args.get("subject") or "AI Assistant Message"
+            content = tool_args.get("content")
+            scheduled_at = tool_args.get("scheduled_at") # YYYY-MM-DD HH:mm
+            
+            # 예약 시간 형식 보정 (YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm:00)
+            formatted_scheduled_dt = None
+            if scheduled_at:
+                if len(scheduled_at) == 16: # YYYY-MM-DD HH:mm
+                    formatted_scheduled_dt = f"{scheduled_at}:00"
+                else:
+                    formatted_scheduled_dt = scheduled_at
+            
+            is_scheduled = bool(formatted_scheduled_dt)
+            
+            try:
+                # user_uid=None 전달 (AI 발신임을 표시)
+                log_id = log_email(
+                    user_uid=None, 
+                    recipient=recipient, 
+                    subject=subject, 
+                    content=content, 
+                    is_scheduled=is_scheduled, 
+                    scheduled_dt=formatted_scheduled_dt
+                )
+                
+                if not is_scheduled:
+                    # 즉시 발송 처리
+                    sender = EmailSender()
+                    success, error_msg = sender.send_immediate(recipient, subject, content)
+                    new_status = 'SENT' if success else 'FAILED'
+                    update_email_status(log_id, new_status, error_msg)
+                    
+                    if success:
+                        result_val = f"이메일 즉시 발송 완료 (Log ID: {log_id})"
+                        is_success = True
+                    else:
+                        result_val = f"이메일 발송 실패: {error_msg} (Log ID: {log_id})"
+                        is_success = False
+                else:
+                    # 스케줄러 등록
+                    try:
+                        add_scheduled_job(log_id, formatted_scheduled_dt)
+                        result_val = f"이메일 발송 예약 완료 (Log ID: {log_id}, 시간: {formatted_scheduled_dt})"
+                        is_success = True
+                    except Exception as e_sched:
+                        result_val = f"이메일 예약 기록 완료했으나 스케줄러 등록 실패: {str(e_sched)} (Log ID: {log_id})"
+                        is_success = True
+            except Exception as e:
+                result_val = f"이메일 처리 중 오류 발생: {str(e)}"
+                is_success = False
             
             if user_uid:
                 log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)

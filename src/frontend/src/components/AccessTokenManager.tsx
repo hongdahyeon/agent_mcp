@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Key, Plus, Trash2, Copy, Check } from 'lucide-react';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
@@ -27,11 +27,7 @@ export function AccessTokenManager() {
     // Server-side pagination
     const displayedTokens = Array.isArray(tokens) ? tokens : [];
 
-    useEffect(() => {
-        fetchTokens(page, pageSize);
-    }, [page, pageSize]);
-
-    const fetchTokens = async (pageNum = page, size = pageSize) => {
+    const fetchTokens = useCallback(async (pageNum = page, size = pageSize) => {
         try {
             setLoading(true);
             const res = await fetch(`/api/access-tokens?page=${pageNum}&size=${size}`, {
@@ -65,7 +61,11 @@ export function AccessTokenManager() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, pageSize]);
+
+    useEffect(() => {
+        fetchTokens(page, pageSize);
+    }, [page, pageSize, fetchTokens]);
 
     const handleCreate = async () => {
         if (!newName.trim()) return;
@@ -148,7 +148,7 @@ export function AccessTokenManager() {
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             placeholder="토큰 용도/이름 (예: CI/CD Pipeline, External App)"
-                            className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
                         />
                         <button
                             onClick={handleCreate}

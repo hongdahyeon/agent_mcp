@@ -53,21 +53,16 @@ export function Pagination({
             <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
                 {totalItems !== undefined && (
                     <p className="text-sm text-gray-700">
-                        Total <span className="font-medium">{totalItems}</span> items
+                        전체 <span className="font-medium">{totalItems}</span>개
                     </p>
                 )}
                 
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700">Show</span>
+                    <span className="text-sm text-gray-700 whitespace-nowrap">보기</span>
                     <select
                         value={pageSize}
                         onChange={(e) => {
                             onPageSizeChange(Number(e.target.value));
-                            // Optional: Reset to page 1 when size changes? 
-                            // Usually handled by parent or kept. 
-                            // Let's safe-guard by calling onPageChange(1) if logic demands, 
-                            // but here we just notify size change.
-                            // The parent component should handle resetting page if needed.
                         }}
                         className="block w-full rounded-md border-gray-300 py-1.5 pl-3 pr-8 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm border"
                     >
@@ -88,7 +83,7 @@ export function Pagination({
                     className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <ChevronLeft className="h-4 w-4" />
-                    <span className="sr-only">Previous</span>
+                    <span className="sr-only">이전</span>
                 </button>
 
                 <div className="hidden sm:flex gap-1">
@@ -119,7 +114,7 @@ export function Pagination({
                     className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <ChevronRight className="h-4 w-4" />
-                    <span className="sr-only">Next</span>
+                    <span className="sr-only">다음</span>
                 </button>
             </div>
         </div>
