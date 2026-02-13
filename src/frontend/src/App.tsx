@@ -17,11 +17,12 @@ import { SystemConfig } from './components/SystemConfig';
 import { EmailSender } from './components/EmailSender';
 import { EmailHistory } from './components/EmailHistory';
 import { FileManager } from './components/FileManager';
+import { OpenApiManager } from './components/OpenApiManager';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -80,7 +81,7 @@ function App() {
   // 화면 상태 (View State)
   const [activeView, setActiveView]
     = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history' | 'file-manager'>('dashboard');
+      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history' | 'file-manager' | 'openapi'>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -236,6 +237,7 @@ function App() {
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
+        { id: 'openapi', label: 'OpenAPI 관리', icon: Globe, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
         { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
       ]
@@ -354,6 +356,7 @@ function App() {
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
           {activeView === 'file-manager' && <FileManager />}
+          {activeView === 'openapi' && user.role === 'ROLE_ADMIN' && <OpenApiManager />}
         </div>
       </main>
     </div>

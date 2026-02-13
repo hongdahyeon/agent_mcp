@@ -1,4 +1,4 @@
-import { Download, File as FileIcon, Trash2, Upload, X, History, FolderOpen } from 'lucide-react';
+import { Download, File as FileIcon, FolderOpen, History, Upload, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { getAuthHeaders } from '../utils/auth';
 

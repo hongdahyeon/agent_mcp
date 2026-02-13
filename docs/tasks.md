@@ -391,3 +391,21 @@
 - [x] 1. `UsageHistory.tsx` 내 상세 조회 모달 구현
 - [x] 2. 파라미터/결과 셀에 눈(`Eye`) 아이콘 버튼 추가
 - [x] 3. JSON 포맷팅 및 예외 처리 로직 적용
+
+## 49. OpenAPI Proxy Management 구현
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Database Implementation
+    - [x] `h_openapi` 테이블 생성 및 CRUD 로직 구현
+- [x] 2. Backend Implementation
+    - [x] OpenAPI 관리 API (`/api/openapi`) 구현
+    - [x] Proxy 실행 엔드포인트 (`/api/execute/{tool_id}`) 구현
+    - [x] XML 응답 JSON 자동 변환 기능 추가 (`xmltodict`) (requirements.txt 추가 완료)
+    - [x] ServiceKey 이중 인코딩 방지 로직 적용
+- [x] 3. Frontend Implementation
+    - [x] OpenAPI 관리 UI (`OpenApiManager.tsx`) 구축
+    - [x] 파일 업로드 및 `batch_id` 유지 로직 구현
+    - [x] 실행 테스트 모달 (동적 파라미터 입력, 결과 JSON 뷰어) 구현
+    - [x] 결과값 및 실행 URL 클립보드 복사 기능 추가
+- [x] 4. Documentation
+    - [x] 사용 가이드 (`docs/open_api.md`) 작성
+    - [x] `requirements.txt` 업데이트 (`xmltodict` 추가)
