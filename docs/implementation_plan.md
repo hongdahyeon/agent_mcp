@@ -612,45 +612,34 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
     -   Use a textarea for `configuration`.
     -   Add "Beautify JSON" or simple validation before submit.
 
-# Phase 20: Gmail Service Integration [Planned]
+## Phase 20: Gmail 연동 및 메일 발송 기능 (Items 32, 34-37) [Completed]
 
-## Goal
-`h_system_config`의 `gmail_config` (JSON)를 파싱하여 메일 발송.
+### 1. 개요
+시스템 설정을 통해 SMTP 정보를 관리하고, 사용자가 웹 UI에서 즉시 또는 예약 메일을 발송할 수 있는 기능을 구현했습니다.
 
-### 1. Mailer Utility
--   Get config by name `gmail_config`.
--   Parse JSON -> extract host, port, user, password.
+### 2. 구현 내용
+- **Mailer Utility (`src/utils/mailer.py`)**: `smtplib`와 `email.mime`을 사용하여 실제 메일 발송 로직을 구현했습니다. `h_system_config`의 Gmail 설정을 동적으로 불러옵니다.
+- **Database Layer (`src/db/email_manager.py`)**: 메일 발송 이력 저장(`h_email_log`), 상태 업데이트(SENT, FAILED, PENDING), 발송 취소 기능을 구현했습니다.
+- **Backend API (`src/sse_server.py`)**: 
+    - `POST /api/email/send`: 메일 발송 요청 접수 (즉시/예약 분기)
+    - `GET /api/email/logs`: 발송 이력 조회
+    - `POST /api/email/cancel/{log_id}`: 예약된 메일 발송 취소
+- **Frontend UI (`EmailSender.tsx`)**: 
+    - 수신자, 제목, 내용 입력 폼
+    - 예약 발송 설정 (현재 시간 기준 미래 시간 선택)
+    - 발송 이력 테이블 및 '취소' 버튼 (PENDING 상태 전용)
 
 ---
 
-# Phase 21: Email Scheduler Implementation [Completed]
+## Phase 21: 자동 예약 발송 스케줄러 (Item 38) [Completed]
 
-## Goal
-예약된 이메일(`is_scheduled=1`, `status='PENDING'`, `scheduled_dt <= now`)을 주기적으로 확인하여 자동으로 발송하는 스케줄러를 구현합니다.
+### 1. 개요
+사용자가 설정한 예약 시간에 맞춰 PENDING 상태인 메일을 자동으로 발송하는 백그라운드 스케줄러를 구현했습니다.
 
-## Requirements
-1.  **Scheduler Library**: `APScheduler` (Advanced Python Scheduler) 사용.
-2.  **Job**: 1분 주기로 DB를 조회하여 발송 대상 이메일을 찾음.
-3.  **Process**:
-    -   DB에서 `PENDING` 상태이면서 `scheduled_dt`가 현재 시간보다 과거/현재인 건 조회.
-    -   SMTP를 통해 메일 발송.
-    -   성공 시 `status='SENT'`, `sent_dt=now`.
-    -   실패 시 `status='FAILED'`, `error_msg` 기록.
-
-## Proposed Changes
-
-### 1. Dependencies
--   `requirements.txt`: `apscheduler` 추가.
-
-### 2. Database Logic (`src/db/email_manager.py`)
--   `get_pending_scheduled_emails()`: 발송 대상 이메일 조회 함수 추가.
-
-### 3. Scheduler Logic (`src/scheduler.py`) [New]
--   `setup_scheduler(app)`: FastAPI 앱 시작 시 스케줄러 구동.
--   `process_scheduled_emails()`: 실제 발송 로직 (DB 조회 -> Mailer 전송 -> DB 업데이트).
-
-###- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
-- [x] 5. 기능 검증
+### 2. 구현 내용
+- **Scheduler (`src/scheduler.py`)**: `APScheduler` 라이브러리를 사용하여 1분마다 `process_scheduled_emails`를 실행합니다.
+- **발송 로직**: 현재 시간(`now`)보다 이전에 예약된 `PENDING` 건을 조회하여 순차적으로 발송하고 결과를 DB에 업데이트합니다.
+- **통합**: `sse_server.py`의 Lifespan 핸들러에 스케줄러 시작/종료 로직을 포함하여 서버 생명주기와 동기화했습니다.
 
 ---
 
@@ -691,7 +680,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ---
 
-## 작업 결과 및 워크스루 (Walkthrough)
+## Phase 23 작업 결과 및 워크스루 (Walkthrough)
 
 ### 1. Database Layer 수정
 - **`src/db/access_token.py`**: `get_user_by_active_token(token)` 함수를 구현했습니다.
@@ -713,10 +702,24 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 - **`src/utils/server_audit.py`**: `audit_log` 데코레이터가 `async` 함수(Coroutine)를 지원하도록 수정했습니다.
 - **`src/dynamic_loader.py`**: 동적으로 생성된 도구 핸들러에 `@audit_log`를 적용하여, Claude Desktop 등 Stdio 방식을 사용할 때도 동적 도구 실행 이력이 DB에 정상적으로 기록되도록 했습니다.
 
-## Verification Plan
-1. [x] **Dependency Install**: `pip install apscheduler`
-2. [x] **Schedule Test**:
-    - [x] 이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
-    - [x] DB `h_email_log`에 `PENDING` 상태 확인.
-    - [x] 2분 후 자동으로 `SENT`로 변경되는지 확인.
-    - [x] 실제 메일 수신 확인.
+## Phase 24: UI/UX 고도화 및 편의 기능 (Items 33-37, 43-48) [Completed]
+- **메뉴 구조 개편**: 기능별 그룹화 및 사이드바 레이아웃 개선 (Item 33)
+- **메일 발송 관리**: 발송 이력 기록, 취소 기능 및 UI 보강 (Items 34-37)
+- **대시보드 개선**: 사용자별 통계 차트(Donut) 및 결과 통계 레이아웃 최적화 (Items 43-44)
+- **디자인 통일**: 전반적인 UI에 Glassmorphism 스타일 및 동일한 헤더/페이지네이션 적용 (Items 45-47)
+- **데이터 뷰어**: 사용 이력 상세(JSON) 조회를 위한 모달 뷰어 구현 (Item 48)
+
+---
+
+## Phase 25: OpenAPI Proxy Management (Item 49) [Completed]
+- **데이터베이스 연동**: `h_openapi` 테이블 구축 및 CRUD 로직 구현
+- **프록시 서버**: 외부 API를 호출하고 결과를 JSON으로 변환하여 반환하는 엔드포인트 구현
+- **XML 변환**: `xmltodict`를 사용하여 공공데이터 등의 XML 응답을 자동 JSON 변환 처리
+- **관리 UI**: OpenAPI 등록, 수정, 삭제 및 즉석 실행 테스트 UI 구축
+
+---
+
+## Phase 26: OpenAPI Proxy 보안 강화 (Item 50) [Completed]
+- **통합 인증 도입**: JWT와 외부 액세스 토큰(`sk_...`)을 모두 지원하는 `get_current_active_user` 의존성 구현
+- **보안 적용**: 프록시 실행 엔드포인트에 인증 체크를 추가하여 무분별한 외부 호출 차단
+- **인증 유연성**: `Authorization: Bearer` 헤더 및 `token` 쿼리 파라미터 방식 지원

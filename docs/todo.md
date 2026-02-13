@@ -142,3 +142,9 @@ Phase 1: 사용자 토큰 관리 (완료)
 8. 보안 토큰 관리 (`AccessTokenManager.tsx`): 전체 영역 키우기, 헤더 배경 붙이기
 9. 시스템 설정 (`SystemConfig.tsx`): 헤더 배경 붙이기, 검색 영역 배경 붙이기
 10. 사용자 관리 (`Users.tsx`): 헤더 배경 붙이기
+
+## open api 사용 통계 저장 (todo)
+1. open api usage 테이블 추가
+2. open api 사용시 사용량 저장
+3. open api 사용량 통계 조회 (화면)
+4. open api 사용량 제한
