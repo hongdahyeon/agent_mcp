@@ -143,8 +143,14 @@ Phase 1: 사용자 토큰 관리 (완료)
 9. 시스템 설정 (`SystemConfig.tsx`): 헤더 배경 붙이기, 검색 영역 배경 붙이기
 10. 사용자 관리 (`Users.tsx`): 헤더 배경 붙이기
 
-## open api 사용 통계 저장 (todo)
+## open api 사용 통계 저장 (todo) (v)
 1. open api usage 테이블 추가
 2. open api 사용시 사용량 저장
 3. open api 사용량 통계 조회 (화면)
 4. open api 사용량 제한
+
+
+## 유저 로그인 비번 틀림 -> 막기 -> admin권한에서 해제 가능 (todo)
+1. 로그인시 비번 틀리면 횟수 증가
+2. 5회 이상 틀리면 계정 잠김
+3. admin권한에서 계정 잠김 해제 가능

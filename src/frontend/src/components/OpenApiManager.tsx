@@ -4,6 +4,7 @@ import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
 import type { OpenApiConfig, UploadedFile } from '../types/openApiConfig';
 
+// 파일 다운로드
 const handleDownload = async (fileId: string, fileName: string) => {
     try {
         const res = await fetch(`/api/files/download/${fileId}`, {
@@ -33,7 +34,7 @@ export function OpenApiManager() {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentApi, setCurrentApi] = useState<Partial<OpenApiConfig>>({});
-    
+
     // File Upload State
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
@@ -45,7 +46,7 @@ export function OpenApiManager() {
     const [fileListModal, setFileListModal] = useState<{ open: boolean; batchId?: string; apiName?: string }>({ open: false });
     const [testModal, setTestModal] = useState<{ open: boolean; api?: OpenApiConfig; testParams: Record<string, string>; result?: unknown; loading?: boolean }>({ open: false, testParams: {} });
     const [showAuthKey, setShowAuthKey] = useState(false);
-    
+
     // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -53,6 +54,14 @@ export function OpenApiManager() {
     const [resultCopied, setResultCopied] = useState(false);
     const [urlCopied, setUrlCopied] = useState(false);
 
+    // 현재 세션 유저 정보
+    const [currentUser] = useState(() => {
+        const userStr = localStorage.getItem('user_session');
+        return userStr ? JSON.parse(userStr) : null;
+    });
+    const isAdmin = currentUser?.role === 'ROLE_ADMIN';
+
+    // OpenAPI 목록 조회
     const fetchApis = useCallback(async (pageNum = page, size = pageSize) => {
         try {
             setLoading(true);
@@ -74,6 +83,7 @@ export function OpenApiManager() {
         fetchApis(page, pageSize);
     }, [page, pageSize, fetchApis]);
 
+    // OpenAPI 저장
     const handleSave = async () => {
         if (!currentApi.tool_id || !currentApi.name_ko || !currentApi.api_url) {
             alert('필수 정보를 입력해주세요 (도구 ID, 한글명, URL)');
@@ -85,7 +95,7 @@ export function OpenApiManager() {
         // 1. 기존 파일 삭제 처리
         if (removedFileIds.length > 0) {
             try {
-                await Promise.all(removedFileIds.map(fileId => 
+                await Promise.all(removedFileIds.map(fileId =>
                     fetch(`/api/files/${fileId}`, { method: 'DELETE', headers: getAuthHeaders() })
                 ));
             } catch (err) {
@@ -139,7 +149,7 @@ export function OpenApiManager() {
             });
 
             if (!res.ok) throw new Error('Failed to save OpenAPI');
-            
+
             setIsModalOpen(false);
             setCurrentApi({});
             setSelectedFiles([]);
@@ -151,6 +161,7 @@ export function OpenApiManager() {
         }
     };
 
+    // 등록된 OpenAPI 삭제
     const handleDelete = async (id: number) => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
         try {
@@ -166,16 +177,18 @@ export function OpenApiManager() {
         }
     };
 
+    // 선택 파일 삭제
     const removeSelectedFile = (index: number) => {
         setSelectedFiles(prev => prev.filter((_, i) => i !== index));
     };
 
+    // 파일 삭제
     const removeAttachedFile = (fileId: string) => {
         setAttachedFiles(prev => prev.filter(f => f.file_id !== fileId));
         setRemovedFileIds(prev => [...prev, fileId]);
     };
 
-
+    // 파일 목록 조회
     const fetchAttachedFiles = async (batchId: string) => {
         try {
             const res = await fetch(`/api/files/batch/${batchId}`, {
@@ -190,6 +203,7 @@ export function OpenApiManager() {
         }
     };
 
+    // 수정 모달
     const openEditModal = (api: OpenApiConfig) => {
         setCurrentApi({ ...api });
         setRemovedFileIds([]);
@@ -203,11 +217,12 @@ export function OpenApiManager() {
         setIsModalOpen(true);
     };
 
+    // 테스트 실행
     const handleRunTest = async () => {
         if (!testModal.api) return;
         setTestModal(prev => ({ ...prev, loading: true, result: null }));
         try {
-            // Build query string from testParams
+            // testParams를 쿼리 문자열로 변환
             const qs = new URLSearchParams(testModal.testParams).toString();
             const url = `/api/execute/${testModal.api.tool_id}${qs ? `?${qs}` : ''}`;
 
@@ -235,17 +250,25 @@ export function OpenApiManager() {
                         <Globe className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">OpenAPI Proxy 관리</h2>
-                        <p className="text-sm text-gray-500 mt-1">외부 Public OpenAPI를 등록하고 내부 URL로 실행할 수 있도록 중계(Proxy)합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800">
+                            {isAdmin ? 'OpenAPI Proxy 관리' : 'OpenAPI 목록 및 테스트'}
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                            {isAdmin
+                                ? '외부 Public OpenAPI를 등록하고 내부 URL로 실행할 수 있도록 중계(Proxy)합니다.'
+                                : '사용 가능한 OpenAPI 목록을 확인하고 직접 테스트해볼 수 있습니다.'}
+                        </p>
                     </div>
                 </div>
-                <button
-                    onClick={() => { setCurrentApi({}); setIsModalOpen(true); setSelectedFiles([]); setAttachedFiles([]); setRemovedFileIds([]); }}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
-                >
-                    <Plus className="w-4 h-4" />
-                    신규 API 등록
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => { setCurrentApi({}); setIsModalOpen(true); setSelectedFiles([]); setAttachedFiles([]); setRemovedFileIds([]); }}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        신규 API 등록
+                    </button>
+                )}
             </header>
 
             <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-0 overflow-hidden">
@@ -258,7 +281,7 @@ export function OpenApiManager() {
                                 <th className="px-6 py-4 text-left font-medium">메서드 / URL</th>
                                 <th className="px-6 py-4 text-center font-medium">첨부파일</th>
                                 <th className="px-6 py-4 text-center font-medium">인증</th>
-                                <th className="px-6 py-4 text-center font-medium">등록일</th>
+                                {isAdmin && <th className="px-6 py-4 text-center font-medium">등록일</th>}
                                 <th className="px-6 py-4 text-center font-medium">작업</th>
                             </tr>
                         </thead>
@@ -271,9 +294,10 @@ export function OpenApiManager() {
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-600">{api.org_name || '-'}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mr-2 ${
-                                            api.method === 'GET' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                                        }`}>
+                                        <span className={
+                                            `inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mr-2 ${api.method === 'GET' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                            }`
+                                        }>
                                             {api.method}
                                         </span>
                                         <span className="text-sm text-gray-500 truncate inline-block max-w-[200px]" title={api.api_url}>
@@ -282,7 +306,7 @@ export function OpenApiManager() {
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         {api.batch_id ? (
-                                            <button 
+                                            <button
                                                 onClick={() => setFileListModal({ open: true, batchId: api.batch_id, apiName: api.name_ko })}
                                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors"
                                             >
@@ -294,39 +318,48 @@ export function OpenApiManager() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                            api.auth_type === 'NONE' ? 'bg-gray-100 text-gray-500' : 'bg-purple-100 text-purple-700'
-                                        }`}>
+                                        <span className={
+                                            `text-xs px-2 py-0.5 rounded-full ${api.auth_type === 'NONE' ? 'bg-gray-100 text-gray-500' : 'bg-purple-100 text-purple-700'
+                                            }`
+                                        }>
                                             {api.auth_type}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center text-xs text-gray-400">
-                                        {api.reg_dt}
-                                    </td>
+                                    {/* isAdmin: 등록일 */}
+                                    {isAdmin && (
+                                        <td className="px-6 py-4 text-center text-xs text-gray-400">
+                                            {api.reg_dt}
+                                        </td>
+                                    )}
                                     <td className="px-6 py-4 text-center">
                                         <div className="flex justify-center items-center space-x-2">
-                                            <button 
-                                                onClick={() => openEditModal(api)}
-                                                className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                title="수정"
-                                            >
-                                                <Edit2 className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDelete(api.id!)}
-                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                title="삭제"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                            <button 
+                                            {/* 관리자만 수정, 삭제 버튼 표시 */}
+                                            {isAdmin && (
+                                                <>
+                                                    <button
+                                                        onClick={() => openEditModal(api)}
+                                                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                        title="수정"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(api.id!)}
+                                                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                        title="삭제"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button
                                                 onClick={() => {
                                                     let params = {};
                                                     try {
                                                         if (api.params_schema) {
                                                             params = JSON.parse(api.params_schema);
                                                         }
-                                                    } catch(e) { console.error("Params parse error:", e); }
+                                                    } catch (e) { console.error("Params parse error:", e); }
                                                     setTestModal({ open: true, api: api, testParams: params });
                                                 }}
                                                 className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
@@ -340,7 +373,7 @@ export function OpenApiManager() {
                             ))}
                             {apis.length === 0 && !loading && (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-20 text-center text-gray-500">
+                                    <td colSpan={isAdmin ? 7 : 6} className="px-6 py-20 text-center text-gray-500">
                                         등록된 OpenAPI가 없습니다.
                                     </td>
                                 </tr>
@@ -353,7 +386,7 @@ export function OpenApiManager() {
                         currentPage={page}
                         pageSize={pageSize}
                         totalItems={totalItems}
-                        totalPages={Math.ceil(totalItems/pageSize)}
+                        totalPages={Math.ceil(totalItems / pageSize)}
                         onPageChange={setPage}
                         onPageSizeChange={setPageSize}
                     />
@@ -508,10 +541,12 @@ export function OpenApiManager() {
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-xs font-medium text-gray-500">연합 파일 (h_file 연동)</label>
-                                        <div 
-                                            className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                                                selectedFiles.length > 0 ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
-                                            }`}
+                                        <div
+                                            className={
+                                                `border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors 
+                                                    ${selectedFiles.length > 0 ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
+                                                }`
+                                            }
                                             onClick={() => {
                                                 console.log("Uploader clicked, ref:", fileInputRef.current);
                                                 fileInputRef.current?.click();
@@ -523,10 +558,10 @@ export function OpenApiManager() {
                                             </p>
                                         </div>
                                         {/* Hidden input moved outside for stability */}
-                                        <input 
-                                            type="file" 
-                                            multiple 
-                                            className="hidden" 
+                                        <input
+                                            type="file"
+                                            multiple
+                                            className="hidden"
                                             ref={fileInputRef}
                                             onChange={(e) => {
                                                 const files = e.target.files ? Array.from(e.target.files) : [];
@@ -542,14 +577,14 @@ export function OpenApiManager() {
                                                 e.target.value = '';
                                             }}
                                         />
-                                        
+
                                         {/* 통합 파일 목록 (기존 + 신규) */}
                                         <div className="mt-2 space-y-1 border-2 border-indigo-100 rounded-lg p-2 bg-white shadow-inner">
                                             <p className="text-[10px] font-bold text-indigo-500 mb-2 px-1 uppercase flex justify-between">
                                                 <span>📎 첨부 파일 ({selectedFiles.length + attachedFiles.length})</span>
                                                 {selectedFiles.length > 0 && <span className="text-indigo-600 animate-pulse">새 파일 대기 중...</span>}
                                             </p>
-                                            
+
                                             {/* 신규 파일 목록 - 최상단 고정 */}
                                             {selectedFiles.length > 0 && selectedFiles.map((file, idx) => (
                                                 <div key={`new-file-${idx}`} className="flex items-center justify-between bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-300 mb-1 last:mb-0 shadow-sm">
@@ -558,7 +593,7 @@ export function OpenApiManager() {
                                                         <span className="text-sm text-indigo-900 truncate font-semibold">{file.name}</span>
                                                         <span className="text-[10px] bg-white text-indigo-600 px-1.5 py-0.5 rounded-full border border-indigo-200 font-bold shrink-0">신규</span>
                                                     </div>
-                                                    <button 
+                                                    <button
                                                         onClick={(e) => { e.stopPropagation(); removeSelectedFile(idx); }}
                                                         className="ml-2 p-1.5 text-indigo-400 hover:text-red-500 hover:bg-white rounded-full transition-all"
                                                         title="취소"
@@ -577,14 +612,14 @@ export function OpenApiManager() {
                                                         <span className="text-[10px] text-gray-400 font-mono">({(file.file_size / 1024).toFixed(1)}KB)</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => { e.stopPropagation(); handleDownload(file.file_id, file.org_file_nm); }}
                                                             className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white rounded transition-all"
                                                             title="다운로드"
                                                         >
                                                             <Upload className="w-4 h-4 rotate-180" />
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             onClick={(e) => { e.stopPropagation(); removeAttachedFile(file.file_id); }}
                                                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-white rounded transition-all"
                                                             title="삭제"
@@ -594,7 +629,7 @@ export function OpenApiManager() {
                                                     </div>
                                                 </div>
                                             ))}
-                                            
+
                                             {selectedFiles.length === 0 && attachedFiles.length === 0 && (
                                                 <div className="py-6 text-center">
                                                     <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
@@ -698,11 +733,11 @@ export function OpenApiManager() {
                                         </p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="mt-1 pt-3 border-t border-indigo-200/50">
                                     <div className="flex justify-between items-center mb-1.5">
                                         <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">외부 실행용 엔드포인트</label>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 const url = `${window.location.origin}/api/execute/${testModal.api?.tool_id}`;
                                                 navigator.clipboard.writeText(url);
@@ -732,7 +767,7 @@ export function OpenApiManager() {
                                         {Object.keys(testModal.testParams).map(key => (
                                             <div key={key} className="space-y-1">
                                                 <span className="text-[10px] text-gray-500 font-mono ml-1 uppercase">{key}</span>
-                                                <input 
+                                                <input
                                                     type="text"
                                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                                                     value={testModal.testParams[key] || ''}
@@ -747,13 +782,13 @@ export function OpenApiManager() {
                                     <p className="text-[10px] text-gray-400">설정된 Params Schema를 기반으로 동적 입력 필드가 생성되었습니다.</p>
                                 </div>
                             )}
-                            
+
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
                                     <label className="text-sm font-semibold text-gray-700">실행 결과</label>
                                     <div className="flex items-center gap-2">
                                         {!!testModal.result && (
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     navigator.clipboard.writeText(JSON.stringify(testModal.result, null, 2));
                                                     setResultCopied(true);
@@ -777,7 +812,7 @@ export function OpenApiManager() {
                         </div>
                         <footer className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                             <button onClick={() => setTestModal(prev => ({ ...prev, open: false }))} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">닫기</button>
-                            <button 
+                            <button
                                 onClick={handleRunTest}
                                 disabled={testModal.loading}
                                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md flex items-center gap-2 disabled:opacity-50"
@@ -793,7 +828,7 @@ export function OpenApiManager() {
     );
 }
 
-// Sub-component for File List in Modal
+// 모달 내 파일 목록
 function BatchFileList({ batchId }: { batchId: string }) {
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [loading, setLoading] = useState(true);
@@ -831,7 +866,7 @@ function BatchFileList({ batchId }: { batchId: string }) {
                             <p className="text-[10px] text-gray-400">{(file.file_size / 1024).toFixed(1)} KB • {new Date(file.reg_dt).toLocaleDateString()}</p>
                         </div>
                     </div>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); handleDownload(file.file_id, file.org_file_nm); }}
                         className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                         title="다운로드"

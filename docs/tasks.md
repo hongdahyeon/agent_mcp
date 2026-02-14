@@ -185,7 +185,7 @@
     - [x] bcrypt 라이브러리 버전 고정 (4.0.1)으로 Passlib 호환성 문제 해결
     - [x] Frontend(Tester.tsx)에서 파라미터 타입 변환 로직 추가 (string -> int/bool)
     - [x] Stdio (Claude Desktop) 연동을 위한 stdout 출력 제거 및 sys.path 보강
-근본적인 토큰 전송 로직 수정
+- [x] 1. 근본적인 토큰 전송 로직 수정
 - [x] 2. DB Layer 리팩토링 마무리
     - [x] `db_init_manager.py` -> `src/db/init_manager.py` 이동
     - [x] `src/db/__init__.py`에 `init_db` 노출 및 Import 경로 수정
@@ -415,3 +415,28 @@
     - [x] JWT (`Authorization: Bearer`) 및 외부 토큰 (`token` query param) 동시 지원
 - [x] 2. OpenAPI 프록시 엔드포인트에 인증 적용 (`src/routers/openapi.py`)
 - [x] 3. 기능 검증 및 테스트 완료
+
+
+## 51. OpenAPI 사용 통계 및 사용량 제한 구현 (Phase 27)
+- [x] 1. DB: `h_openapi_usage`, `h_openapi_limit` 테이블 생성 (`init_manager.py`)
+- [x] 2. DB: `openapi_usage.py` 구현 (로깅 및 ECharts용 통계 조회)
+- [x] 3. DB: `openapi_limit.py` 구현 (TOKEN > USER > ROLE 순위 제한 조회)
+- [x] 4. Backend: `api_execute_openapi` 핸들러 수정 (제한 체크 및 상세 로깅)
+- [x] 5. Backend: 신규 관리 API 구현 (`stats`, `limits`, `my-usage`)
+- [x] 6. Frontend: 관련 Type 정의 (`types/openapi.ts`)
+- [x] 7. Frontend: `OpenApiStats.tsx` 구현 (ECharts 시각화 대시보드)
+- [x] 8. Frontend: `OpenApiLimit.tsx` 구현 (토큰 연동 제한 관리 UI)
+- [x] 9. Frontend: 라우팅 및 메뉴 구성 (`App.tsx`)
+- [x] 10. 전체 기능 검증 및 테스트 완료
+- [x] 11. DB: `h_openapi_usage`에 `error_msg` 컬럼 추가
+- [x] 12. Backend: 에러 발생 시(429 포함) `error_msg` 로깅 로직 보완
+- [x] 13. Frontend: 상세 이력 테이블에 실패 사유(눈 아이콘) 뷰어 추가
+- [x] 14. 최종 검증 및 테스트 완료
+- [x] 15. DB: 오늘 사용량을 도구별로 집계하는 `get_user_openapi_tool_usage` 구현
+- [x] 16. Backend: `/api/openapi/my-usage` 업데이트 (도구별 상세 포함)
+- [x] 17. Frontend: `MyPage.tsx`에 '오늘의 OpenAPI 사용 현황' 섹션 추가
+- [x] 18. 최종 마무리 및 검토 완료
+- [x] 19. Backend: `GET /api/openapi` 목록 조회 권한을 모든 유저로 확대 (일반 유저도 목록 조회 및 사용 가능)
+- [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
+- [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
+- [x] 22. 유저 권한으로 기능 동작 확인 및 `App.tsx` 렌더링 버그 수정 완료

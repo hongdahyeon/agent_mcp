@@ -210,6 +210,44 @@ def init_db():
     )
     ''')
 
+    # OpenAPI 사용 이력 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi_usage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_uid INTEGER,                -- 사용자 UID (JWT 로그인인 경우)
+        token_id INTEGER,                 -- 외부 접속 토큰 ID (sk_... 사용 시)
+        tool_id TEXT NOT NULL,           -- 호출된 도구 ID
+        method TEXT,                     -- GET, POST 등
+        url TEXT,                        -- 상세 호출 URL
+        status_code INTEGER,              -- HTTP 상태 코드
+        success TEXT,                    -- SUCCESS / FAIL
+        error_msg TEXT,                  -- 실패 사유 (상세 에러 메시지)
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime')),
+        ip_addr TEXT,                    -- 요청자 IP
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid),
+        FOREIGN KEY (token_id) REFERENCES h_access_token (id)
+    )
+    ''')
+
+    # 기존 테이블이 있을 경우 error_msg 컬럼 추가 (마이그레이션)
+    try:
+        cursor.execute("ALTER TABLE h_openapi_usage ADD COLUMN error_msg TEXT")
+    except sqlite3.OperationalError:
+        # 이미 컬럼이 존재하는 경우 발생하므로 무시
+        pass
+
+    # OpenAPI 사용 제한 정책 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi_limit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target_type TEXT NOT NULL,       -- ROLE, USER, TOKEN
+        target_id TEXT NOT NULL,         -- ROLE_USER, user_id, token_id(string) 등
+        max_count INTEGER NOT NULL,      -- 일일 최대 호출 횟수 (-1: 무제한)
+        description TEXT,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+
     # 기본 시스템 설정 시딩 (완료 후 주석 처리됨)
     """
     gmail_config = {

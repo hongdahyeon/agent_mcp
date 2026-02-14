@@ -723,3 +723,37 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 - **통합 인증 도입**: JWT와 외부 액세스 토큰(`sk_...`)을 모두 지원하는 `get_current_active_user` 의존성 구현
 - **보안 적용**: 프록시 실행 엔드포인트에 인증 체크를 추가하여 무분별한 외부 호출 차단
 - **인증 유연성**: `Authorization: Bearer` 헤더 및 `token` 쿼리 파라미터 방식 지원
+
+---
+
+## Phase 27: OpenAPI 사용 통계 및 사용량 제한 구현 (Todo)
+
+### 목표
+OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용자, 권한, 그리고 **외부 접속 토큰별**로 일일리 사용량을 제한하는 기능을 구현합니다. 사용 이력은 **차트와 그래프**를 통해 시각화하여 관리 편의성을 높입니다.
+
+### Proposed Changes
+
+#### 1. Database Layer
+*   **[MODIFY] `src/db/init_manager.py`**: 
+    *   `h_openapi_usage`: `user_uid` (Nullable), `token_id` (Nullable, 외부 토큰 식별용) 포함하여 생성.
+    *   `h_openapi_limit`: `target_type`에 `TOKEN` 추가.
+*   **[NEW] `src/db/openapi_usage.py`**: 사용 이력 저장 및 **ECharts 연동용 통계 데이터** 반환 함수 구현.
+*   **[NEW] `src/db/openapi_limit.py`**: TOKEN > USER > ROLE 순으로 적용되는 사용량 제한 조회 로직 구현.
+*   **[MODIFY] `src/db/__init__.py`**: 신규 함수들 Expose.
+
+#### 2. Backend API Layer
+*   **[MODIFY] `src/routers/openapi.py`**:
+    *   `api_execute_openapi` 핸들러 수정: 호출 전 토큰/유저별 제한 체크 및 호출 후 결과(성공/실패/IP 등) 로깅.
+    *   신규 API 추가: `/api/openapi/stats` (차트용 데이터), `/api/openapi/limits` (토큰 포함 관리), `/api/openapi/my-usage`.
+
+#### 3. Frontend Layer
+*   **[NEW] `types/openapi.ts`**: 관련 타입 정의.
+*   **[NEW] `OpenApiStats.tsx`**: 사용 통계 대시보드 (ECharts를 활용한 시각화).
+*   **[NEW] `OpenApiLimit.tsx`**: 사용 제한 관리 UI (토큰 선택 기능 포함).
+*   **[MODIFY] `App.tsx`**: 라우팅 및 메뉴 추가.
+
+### Verification Plan
+1.  **DB Migration**: 테이블 생성 및 `TOKEN` 타입 지원 확인.
+2.  **Usage Logging**: JWT 및 외부 토큰 호출 시 각각 알맞은 ID로 기록되는지 확인.
+3.  **Usage Limiting**: 특정 토큰에 대해 설정된 제한 횟수가 정상 작동하는지 확인.
+4.  **UI Verification**: 차트 렌더링 및 토큰별 제한 설정 UI 확인.

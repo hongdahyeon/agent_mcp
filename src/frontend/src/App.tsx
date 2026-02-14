@@ -18,6 +18,8 @@ import { EmailSender } from './components/EmailSender';
 import { EmailHistory } from './components/EmailHistory';
 import { FileManager } from './components/FileManager';
 import { OpenApiManager } from './components/OpenApiManager';
+import OpenApiStats from './components/OpenApiStats';
+import OpenApiLimit from './components/OpenApiLimit';
 import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
@@ -58,6 +60,7 @@ function UsageBadge({ usageData }: { usageData: UsageData | null }) {
   );
 }
 
+
 function App() {
   // 인증 상태 (Auth State): 세션 저장
   const [user, setUser] = useState<User | null>(() => {
@@ -78,10 +81,14 @@ function App() {
     return null;
   });
 
+  // 화면 상태 타입
+  type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
+    | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
+    | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
+    | 'openapi' | 'openapi-stats' | 'openapi-limits';
+
   // 화면 상태 (View State)
-  const [activeView, setActiveView]
-    = useState<'dashboard' | 'tester' | 'logs' | 'history' | 'users'
-      | 'usage-history' | 'schema' | 'limits' | 'mypage' | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'email-history' | 'file-manager' | 'openapi'>('dashboard');
+  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
 
   // API Token 상태 관리 (SSE 재연결 트리거용)
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
@@ -231,13 +238,20 @@ function App() {
       ]
     },
     {
+      label: 'OpenAPI 관리',
+      items: [
+        { id: 'openapi', label: 'OpenAPI 목록/테스트', icon: Globe }, // 일반 유저도 접근 가능, OpenAPI 사용 가능(수정/등록/삭제 불가능)
+        { id: 'openapi-stats', label: 'OpenAPI 사용 통계', icon: BarChart4, adminOnly: true },
+        { id: 'openapi-limits', label: 'OpenAPI 사용 제한', icon: Shield, adminOnly: true }
+      ]
+    },
+    {
       label: '설정 및 관리',
       items: [
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
-        { id: 'openapi', label: 'OpenAPI 관리', icon: Globe, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
         { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
       ]
@@ -296,7 +310,7 @@ function App() {
                   {visibleItems.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => setActiveView(item.id as any)}
+                      onClick={() => setActiveView(item.id as ActiveView)}
                       className={clsx(
                         "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 ease-in-out text-sm",
                         activeView === item.id
@@ -356,7 +370,9 @@ function App() {
           {activeView === 'schema' && user.role === 'ROLE_ADMIN' && <SchemaManager />}
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
           {activeView === 'file-manager' && <FileManager />}
-          {activeView === 'openapi' && user.role === 'ROLE_ADMIN' && <OpenApiManager />}
+          {activeView === 'openapi' && <OpenApiManager />}
+          {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats />}
+          {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
         </div>
       </main>
     </div>
