@@ -440,3 +440,6 @@
 - [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
 - [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
 - [x] 22. 유저 권한으로 기능 동작 확인 및 `App.tsx` 렌더링 버그 수정 완료
+- [x] 23. Backend: `/api/execute/{tool_id}` 라우터를 `execution.py`로 분리
+- [x] 24. Backend: `src/sse_server.py`에 신규 라우터 등록
+- [x] 25. 기능 동작 테스트 (기존 기능 유지 확인)
