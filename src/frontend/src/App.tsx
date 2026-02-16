@@ -24,7 +24,8 @@ import type { User } from './types/auth';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe,
+  Menu
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -98,6 +99,26 @@ function App() {
 
   // Phase 3: 사용량 데이터 상태 관리
   const [usageData, setUsageData] = useState<UsageData | null>(null);
+
+  // 사이드바 접힘 상태
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    // 1024px 미만이면 기본적으로 접힘
+    return window.innerWidth < 1024;
+  });
+
+  // 화면 크기에 따른 사이드바 상태 자동 조절
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarCollapsed(true);
+      } else {
+        setIsSidebarCollapsed(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 사용량 조회 함수
   const fetchMyUsage = async (userId: string) => {
@@ -262,46 +283,64 @@ function App() {
   const allMenuItems = menuStructure.flatMap(g => g.items);
 
   return (
-    <div className="flex h-full bg-gray-50">
+    <div className="flex h-full bg-gray-50 overflow-hidden">
       {/* 사이드바 (Sidebar) */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-center">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg mr-3">
+      <aside className={clsx(
+        "bg-white border-r border-gray-200 flex flex-col shadow-sm transition-all duration-300 ease-in-out z-20",
+        isSidebarCollapsed ? "w-20" : "w-64"
+      )}>
+        <div className={clsx(
+          "p-6 border-b border-gray-100 flex items-center",
+          isSidebarCollapsed ? "justify-center px-0" : "justify-center"
+        )}>
+          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
             A
           </div>
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-            Agent MCP
-          </h1>
+          {!isSidebarCollapsed && (
+            <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 truncate">
+              Agent MCP
+            </h1>
+          )}
         </div>
 
         {/* 사용자 프로필 요약 (User Profile Summary) */}
-        <div className="px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <div className={clsx(
+          "px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center",
+          isSidebarCollapsed ? "justify-center" : "justify-between"
+        )}>
           <button
             onClick={() => setActiveView('mypage')}
-            className="flex items-center flex-1 hover:bg-gray-200/50 p-1.5 -ml-1.5 rounded-lg transition-colors text-left group cursor-pointer"
+            className={clsx(
+              "flex items-center hover:bg-gray-200/50 rounded-lg transition-colors text-left group cursor-pointer overflow-hidden",
+              isSidebarCollapsed ? "p-1" : "flex-1 p-1.5 -ml-1.5"
+            )}
             title="내 정보 관리"
           >
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2 group-hover:bg-blue-200 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 group-hover:bg-blue-200 transition-colors">
               <UserIcon className="w-4 h-4" />
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
-              <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="ml-2 overflow-hidden">
+                <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
+                <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
+              </div>
+            )}
           </button>
-          <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-1" title="로그아웃">
-            <LogOut className="w-4 h-4" />
-          </button>
+          {!isSidebarCollapsed && (
+            <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-1" title="로그아웃">
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto no-scrollbar">
           {menuStructure.map((group, gIdx) => {
             const visibleItems = group.items.filter(item => !item.adminOnly || user.role === 'ROLE_ADMIN');
             if (visibleItems.length === 0) return null;
 
             return (
               <div key={gIdx} className="space-y-2">
-                {group.label && (
+                {!isSidebarCollapsed && group.label && (
                   <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     {group.label}
                   </h3>
@@ -312,14 +351,16 @@ function App() {
                       key={item.id}
                       onClick={() => setActiveView(item.id as ActiveView)}
                       className={clsx(
-                        "w-full flex items-center px-4 py-2.5 rounded-lg transition-all duration-200 ease-in-out text-sm",
+                        "w-full flex items-center transition-all duration-200 ease-in-out text-sm rounded-lg",
+                        isSidebarCollapsed ? "justify-center py-3" : "px-4 py-2.5",
                         activeView === item.id
-                          ? "bg-blue-50 text-blue-600 font-semibold shadow-sm translate-x-1"
+                          ? "bg-blue-50 text-blue-600 font-semibold shadow-sm" + (isSidebarCollapsed ? "" : " translate-x-1")
                           : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       )}
+                      title={isSidebarCollapsed ? item.label : undefined}
                     >
-                      <item.icon className={clsx("w-4 h-4 mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
-                      {item.label}
+                      <item.icon className={clsx("w-4 h-4 flex-shrink-0", isSidebarCollapsed ? "" : "mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
+                      {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
                     </button>
                   ))}
                 </div>
@@ -330,25 +371,37 @@ function App() {
 
         <div className="p-4 border-t border-gray-200">
           <div className={clsx(
-            "flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+            "flex items-center justify-center text-sm font-medium rounded-lg transition-colors",
+            isSidebarCollapsed ? "py-3" : "px-3 py-2",
             connected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          )}>
-            {connected ? <CheckCircle2 className="w-4 h-4 mr-2" /> : <XCircle className="w-4 h-4 mr-2" />}
-            {statusText}
+          )} title={isSidebarCollapsed ? statusText : undefined}>
+            {connected ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+            {!isSidebarCollapsed && <span className="ml-2 truncate">{statusText}</span>}
           </div>
         </div>
       </aside>
 
       {/* 메인 콘텐츠 영역 (Main Content) */}
       <main className="flex-1 overflow-hidden flex flex-col">
-        <header className="bg-white border-b border-gray-200 px-8 py-4 shadow-sm flex justify-between items-center z-10">
-          <h2 className="text-xl font-semibold text-gray-800">
-            {allMenuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
-          </h2>
-          <div className="flex items-center space-x-4">
+        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm flex justify-between items-center z-10">
+          <div className="flex items-center overflow-hidden">
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-2 mr-4 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              title={isSidebarCollapsed ? "사이드바 확장" : "사이드바 접기"}
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-semibold text-gray-800 truncate">
+              {allMenuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
+            </h2>
+          </div>
+          <div className="flex items-center space-x-4 flex-shrink-0">
             {/* Phase 3 Badge */}
-            <UsageBadge usageData={usageData} />
-            <div className="text-xs text-gray-400 font-mono">
+            <div className="hidden sm:block">
+              <UsageBadge usageData={usageData} />
+            </div>
+            <div className="text-xs text-gray-400 font-mono hidden md:block">
               {statusText}
             </div>
           </div>

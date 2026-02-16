@@ -35,6 +35,7 @@ class OpenApiUpsertRequest(BaseModel):
     auth_key_val: Optional[str] = None       # 인증 키 값
     params_schema: Optional[str] = None      # 파라미터 스키마
     description_agent: Optional[str] = None  # 에이전트 설명
+    description_info: Optional[str] = None   # 사용자 설명 (추가)
     batch_id: Optional[str] = None           # 배치 id
 
 # [1] OpenAPI 목록 조회
