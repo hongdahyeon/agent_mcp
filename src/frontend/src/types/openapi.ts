@@ -19,6 +19,7 @@ export interface OpenApiLimit {
     id: number;
     target_type: 'ROLE' | 'USER' | 'TOKEN';
     target_id: string;
+    target_name?: string; // 추가됨
     max_count: number;
     description: string | null;
     reg_dt: string;

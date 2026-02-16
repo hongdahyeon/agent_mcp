@@ -301,7 +301,18 @@ export default function OpenApiLimitView() {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{limit.target_id}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {limit.target_name || limit.target_id}
+                                                </span>
+                                                {limit.target_name && (
+                                                    <span className="text-xs text-gray-500 font-normal">
+                                                        ({limit.target_id})
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-sm font-bold text-gray-700">
                                             {limit.max_count === -1 ? '무제한' : `${limit.max_count}회`}
                                         </td>

@@ -48,8 +48,17 @@ def get_openapi_limit_list(page: int = 1, size: int = 10):
     try:
         total = conn.execute("SELECT COUNT(*) FROM h_openapi_limit").fetchone()[0]
         rows = conn.execute('''
-            SELECT * FROM h_openapi_limit 
-            ORDER BY target_type DESC, target_id ASC
+            SELECT 
+                l.*,
+                CASE 
+                    WHEN l.target_type = 'USER' THEN u.user_nm
+                    WHEN l.target_type = 'TOKEN' THEN t.name
+                    ELSE NULL
+                END as target_name
+            FROM h_openapi_limit l
+            LEFT JOIN h_user u ON l.target_type = 'USER' AND l.target_id = u.user_id
+            LEFT JOIN h_access_token t ON l.target_type = 'TOKEN' AND CAST(l.target_id AS INTEGER) = t.id
+            ORDER BY l.target_type DESC, l.target_id ASC
             LIMIT ? OFFSET ?
         ''', (size, offset)).fetchall()
         
