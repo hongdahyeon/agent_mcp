@@ -205,10 +205,18 @@ def init_db():
         auth_key_val TEXT,               -- 인증 키값
         params_schema TEXT,              -- 파라미터 JSON 스키마
         description_agent TEXT,          -- Agent용 설명
+        description_info TEXT,           -- 사용자용 설명 (가이드) - New
         batch_id TEXT,                   -- h_file 연동용 batch_id
         reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
     )
     ''')
+
+    # h_openapi 테이블 마이그레이션 (description_info 컬럼 추가)
+    cursor.execute("PRAGMA table_info(h_openapi)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'description_info' not in columns:
+        cursor.execute("ALTER TABLE h_openapi ADD COLUMN description_info TEXT")
+        print("[DB] 마이그레이션: h_openapi 테이블에 description_info 컬럼 추가됨", file=sys.stderr)
 
     # OpenAPI 사용 이력 테이블
     cursor.execute('''

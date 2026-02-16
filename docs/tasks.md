@@ -443,3 +443,16 @@
 - [x] 23. Backend: `/api/execute/{tool_id}` 라우터를 `execution.py`로 분리
 - [x] 24. Backend: `src/sse_server.py`에 신규 라우터 등록
 - [x] 25. 기능 동작 테스트 (기존 기능 유지 확인)
+
+## 52. 사이드바 및 레이아웃 개선
+- [x] 1. 접이식 사이드바 상태 관리 및 토글 버튼 구현
+- [x] 2. 1024px 미만 화면 자동 접힘 반응형 로직 적용
+- [x] 3. 사이드바 접힘 시 UI 최적화 (라벨 숨김, 아이콘 정렬)
+
+## 53. OpenAPI 가이드 및 에디터 고도화
+- [x] 1. OpenAPI 사용 제한 목록 가독성 개선 (`target_name` 표시)
+- [x] 2. DB 마이그레이션: `h_openapi` 테이블 `description_info` 컬럼 추가
+- [x] 3. 백엔드 `OpenApiUpsertRequest` 모델 필드 추가 및 저장 오류 수정
+- [x] 4. 프론트엔드 탭 방식(편집/미리보기) 마크다운 에디터 UI 구현
+- [x] 5. HTML 태그(`rehype-raw`) 및 GFM(`remark-gfm`) 렌더링 지원 전면 적용
+- [x] 6. 일반 사용자용 가이드 보기 모달(`prose` 테마) 적용
