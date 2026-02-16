@@ -28,8 +28,8 @@ export function Login({ onLogin }: Props) {
         }
     }, []);
 
+    // 로그인 submit 핸들러
     const handleSubmit = async (e: React.FormEvent) => {
-        // ... existing handleSubmit logic ...
         e.preventDefault();
         setError('');
 
@@ -51,8 +51,18 @@ export function Login({ onLogin }: Props) {
             });
 
             if (!res.ok) {
-                if (res.status === 401) throw new Error('아이디 또는 비밀번호가 잘못되었습니다.');
-                if (res.status === 403) throw new Error('계정이 비활성화되었습니다.');
+                const data = await res.json();
+                if (res.status === 401) {
+                    throw new Error(data.detail || '아이디 또는 비밀번호가 잘못되었습니다.');
+                }
+                if (res.status === 403) {
+                    // detail 내용에 locked가 포함되어 있으면 계정 잠김
+                    if (data.detail && data.detail.includes('locked')) {
+                        throw new Error('계정이 잠겼습니다. 관리자에게 문의하세요.');
+                    }
+                    // detail 내용에 locked가 포함되어 있지 않으면 계정 비활성화
+                    throw new Error('계정이 비활성화되었습니다.');
+                }
                 throw new Error('로그인 중 오류가 발생했습니다.');
             }
 
@@ -172,9 +182,9 @@ export function Login({ onLogin }: Props) {
                 </div>
             </div>
 
-            <SignupModal 
-                isOpen={isSignupOpen} 
-                onClose={() => setIsSignupOpen(false)} 
+            <SignupModal
+                isOpen={isSignupOpen}
+                onClose={() => setIsSignupOpen(false)}
             />
         </div>
     );

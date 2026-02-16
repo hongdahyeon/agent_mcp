@@ -19,7 +19,10 @@ from .user import (
     get_all_users,
     check_user_id,
     create_user,
-    update_user
+    update_user,
+    increment_login_fail_count,
+    reset_login_fail_count,
+    set_user_locked
 )
 
 from .login_hist import (
@@ -121,6 +124,9 @@ __all__ = [
     'check_user_id',
     'create_user',
     'update_user',
+    'increment_login_fail_count',
+    'reset_login_fail_count',
+    'set_user_locked',
     'log_login_attempt',
     'get_login_history',
     'log_tool_usage',

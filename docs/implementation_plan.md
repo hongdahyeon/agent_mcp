@@ -774,3 +774,43 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
     - `remark-gfm` 적용으로 표, 링크 등 풍부한 서식 지원
 - **사용자 경험**: 목록의 '눈' 아이콘을 통해 깔끔한 `prose` 테마 모달로 가이드 제공
 
+
+---
+
+## Phase 30: Account Locking & Admin Unlocking Logic (New)
+
+### Goal
+보안 강화를 위해 5회 이상 로그인 실패 시 계정을 자동으로 잠금 처리하고, 관리자가 이를 확인하고 해제할 수 있는 기능을 구현합니다.
+
+### Proposed Changes
+
+#### 1. Database Layer
+- **[MODIFY] `src/db/init_manager.py`**:
+    - `h_user` 테이블에 `is_locked` (TEXT, 'N'/'Y'), `login_fail_count` (INTEGER, Default 0) 컬럼 추가.
+    - 기존 DB를 위한 ALTER TABLE 마이그레이션 로직 추가.
+- **[MODIFY] `src/db/user.py`**:
+    - `increment_login_fail_count(user_id)`: 실패 횟수 증가 및 현재 횟수 반환.
+    - `reset_login_fail_count(user_id)`: 실패 횟수 0으로 초기화 및 잠금 해제.
+    - `set_user_locked(user_id, is_locked)`: 잠금 상태 직접 변경.
+
+#### 2. Backend API
+- **[MODIFY] `src/routers/auth.py`**:
+    - 로그인 시도 시 `is_locked` 체크.
+    - 비밀번호 불일치 시 `login_fail_count` 증가, 5회 도달 시 `is_locked='Y'`.
+    - 로그인 성공 시 `login_fail_count` 초기화.
+- **[MODIFY] `src/routers/users.py`**:
+    - 사용자 정보 수정 API에서 `is_locked` 필드 처리 지원.
+
+#### 3. Frontend Layer
+- **[MODIFY] `src/frontend/src/components/Login.tsx`**:
+    - 403 에러 발생 시 'locked' 포함 여부에 따라 잠금 메시지 표시.
+- **[MODIFY] `src/frontend/src/components/Users.tsx`**:
+    - 사용자 목록에 '잠금 상태' 컬럼 추가.
+    - 모달 또는 목록에서 잠금 해제 기능 제공.
+
+### Verification Plan
+1. 잘못된 비번으로 5회 로그인 시도 -> 계정 잠금 메시지 확인.
+2. DB 상에서 `is_locked='Y'`, `login_fail_count=5` 확인.
+3. 관리자 계정으로 로그인하여 '사용자 관리' 메뉴 접속.
+4. 해당 유저의 잠금 상태 확인 및 '해제' 버튼 클릭.
+5. 유저가 다시 정상 로그인 가능한지 확인 (실패 횟수 초기화 여부 포함).

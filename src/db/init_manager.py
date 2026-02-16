@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime, timedelta
 import sys
 import json
+import sqlite3
 try:
     from .connection import get_db_connection
 except ImportError:
@@ -9,11 +10,11 @@ except ImportError:
 
 # db 초기화
 def init_db():
-    """데이터베이스 테이블 초기화 및 관리자 계정 시딩."""
+    """ #1. 데이터베이스 테이블 초기화 및 관리자 계정 시딩."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 사용자 테이블 (User Table)
+    ''' #2. 사용자 테이블 (User Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_user (
         uid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,11 +23,13 @@ def init_db():
         user_nm TEXT NOT NULL,
         role TEXT DEFAULT 'ROLE_USER',
         last_cnn_dt TEXT,
-        is_enable TEXT DEFAULT 'Y'
+        is_enable TEXT DEFAULT 'Y',
+        is_locked TEXT DEFAULT 'N',
+        login_fail_count INTEGER DEFAULT 0
     )
     ''')
     
-    # 로그인 이력 테이블 (Login History Table)
+    ''' #3. 로그인 이력 테이블 (Login History Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_login_hist (
         uid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +42,7 @@ def init_db():
     )
     ''')
     
-    # MCP Tool 사용 이력 테이블 (MCP Tool Usage Table)
+    ''' #4. MCP Tool 사용 이력 테이블 (MCP Tool Usage Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_usage (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,10 +57,10 @@ def init_db():
     ''')
     
     
-    # 사용자 토큰 테이블 (User Token Table) - 제거됨 (26.01.30)
+    ''' #5. 사용자 토큰 테이블 (User Token Table) - 제거됨 (26.01.30) '''
     cursor.execute("DROP TABLE IF EXISTS h_user_token")
 
-    # 외부 접속용 액세스 토큰 (Access Token Table) - New (26.01.30)
+    ''' #6. 외부 접속용 액세스 토큰 (Access Token Table) - New (26.01.30) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_access_token (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,10 +70,9 @@ def init_db():
         is_delete TEXT DEFAULT 'N', -- 삭제 여부 (Y/N, Soft Delete)
         created_at TEXT DEFAULT (datetime('now', 'localtime'))
     )
-    ''') 
+    ''')
 
-
-    # MCP Tool 제한 테이블 (MCP Tool Limit Table)
+    ''' #7. MCP Tool 제한 테이블 (MCP Tool Limit Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_limit (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,7 +84,7 @@ def init_db():
     )
     ''')
     
-    # 동적 Tool 정의 테이블 (Dynamic Tool Definition Table)
+    ''' #8. 동적 Tool 정의 테이블 (Dynamic Tool Definition Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_custom_tool (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,7 +99,7 @@ def init_db():
     )
     ''')
     
-    # 동적 Tool 파라미터 테이블 (Dynamic Tool Parameters Table)
+    ''' #9. 동적 Tool 파라미터 테이블 (Dynamic Tool Parameters Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_custom_tool_param (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,9 +113,7 @@ def init_db():
     ''')
     
     
-    
-    
-    # 파일 테이블 (File Table) - New
+    ''' #10. 파일 테이블 (File Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_file (
         file_uid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,13 +135,14 @@ def init_db():
     )
     ''')
     
-    # h_file 테이블에 batch_id 컬럼 추가 (Migration)
+    ''' #10-1. h_file 테이블에 batch_id 컬럼 추가 (Migration) '''
     cursor.execute("PRAGMA table_info(h_file)")
     columns = [info[1] for info in cursor.fetchall()]
     if 'batch_id' not in columns:
         cursor.execute("ALTER TABLE h_file ADD COLUMN batch_id VARCHAR(100)")
 
-    # 파일 로그 테이블 (File Log Table) - New
+
+    ''' #11. 파일 로그 테이블 (File Log Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_file_log (
         uid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,17 +154,19 @@ def init_db():
     )
     ''')
 
-
-    # 시스템 설정 테이블 (System Config Table) - Refactored to JSON based
-    # 기존 테이블이 Key-Value 구조라면 Drop하고 재생성 (Migration logic simplified for dev)
+    ''' 
+        #12-1. 시스템 설정 테이블 (System Config Table) - Refactored to JSON based
+        =>> 기존 테이블이 Key-Value 구조라면 Drop하고 재생성 (Migration logic simplified for dev)
+    '''
     cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='h_system_config'")
     row = cursor.fetchone()
     if row:
-        # Check if 'conf_key' exists in definition, if so, it's old schema
+        # 'conf_key'가 정의에 있으면 이전 스키마임
         if 'conf_key' in row[0]:
             print("[DB] 기존 h_system_config 테이블 삭제 후 재생성 (Schema Change)", file=sys.stderr)
             cursor.execute("DROP TABLE h_system_config")
 
+    ''' # 12-2. 시스템 설정 테이블 (System Config Table) - Refactored to JSON based'''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_system_config (
         name TEXT PRIMARY KEY,
@@ -173,7 +176,7 @@ def init_db():
     )
     ''')
     
-    # 메일 발송 이력 테이블 (Email History Table)
+    ''' #13. 메일 발송 이력 테이블 (Email History Table) '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_email_log (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -191,7 +194,7 @@ def init_db():
     )
     ''')
     
-    # OpenAPI Proxy 관리 테이블
+    ''' #14. OpenAPI Proxy 관리 테이블 '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_openapi (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,14 +214,14 @@ def init_db():
     )
     ''')
 
-    # h_openapi 테이블 마이그레이션 (description_info 컬럼 추가)
+    ''' #14-1. h_openapi 테이블 마이그레이션 (description_info 컬럼 추가) '''
     cursor.execute("PRAGMA table_info(h_openapi)")
     columns = [info[1] for info in cursor.fetchall()]
     if 'description_info' not in columns:
         cursor.execute("ALTER TABLE h_openapi ADD COLUMN description_info TEXT")
         print("[DB] 마이그레이션: h_openapi 테이블에 description_info 컬럼 추가됨", file=sys.stderr)
 
-    # OpenAPI 사용 이력 테이블
+    ''' #15. OpenAPI 사용 이력 테이블 '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_openapi_usage (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -237,14 +240,14 @@ def init_db():
     )
     ''')
 
-    # 기존 테이블이 있을 경우 error_msg 컬럼 추가 (마이그레이션)
+    ''' #15-1. h_openapi_usage 테이블 마이그레이션 (error_msg 컬럼 추가) '''
     try:
         cursor.execute("ALTER TABLE h_openapi_usage ADD COLUMN error_msg TEXT")
     except sqlite3.OperationalError:
         # 이미 컬럼이 존재하는 경우 발생하므로 무시
         pass
 
-    # OpenAPI 사용 제한 정책 테이블
+    ''' #16. OpenAPI 사용 제한 정책 테이블 '''
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_openapi_limit (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -256,7 +259,7 @@ def init_db():
     )
     ''')
 
-    # 기본 시스템 설정 시딩 (완료 후 주석 처리됨)
+    ''' #17. 기본 시스템 설정 시딩 (완료 후 주석 처리됨) '''
     """
     gmail_config = {
         "mail.host": "smtp.gmail.com",
@@ -264,11 +267,9 @@ def init_db():
         "mail.username": "",
         "mail.password": ""
     }
-    
     default_configs = [
         ('gmail_config', json.dumps(gmail_config, ensure_ascii=False), 'Gmail SMTP Settings'),
     ]
-    
     for name, config_json, desc in default_configs:
         cursor.execute("SELECT name FROM h_system_config WHERE name = ?", (name,))
         if not cursor.fetchone():
@@ -296,14 +297,31 @@ def init_db():
         print("[DB] 기본 제한 정책 생성됨 (ROLE_ADMIN: Unlimited)", file=sys.stderr)
     """
     
-    # - 4. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
+    '''
+        #18. h_user 테이블 테이블 마이그레이션 (is_enable 컬럼)
+        => 참고: h_user 테이블 자체 생성은 #2번
+        (1) is_enable 컬럼 추가
+        (2) is_locked 컬럼 추가
+        (3) login_fail_count 컬럼 추가
+    '''
     cursor.execute("PRAGMA table_info(h_user)")
     columns = [info[1] for info in cursor.fetchall()]
     if 'is_enable' not in columns:
         cursor.execute("ALTER TABLE h_user ADD COLUMN is_enable TEXT DEFAULT 'Y'")
 
-    # - 5. h_email_log 테이블 마이그레이션 (user_uid를 Nullable로 변경)
-    # SQLite는 ALTER COLUMN을 지원하지 않으므로 테이블 재성성이 필요합니다.
+    if 'is_locked' not in columns:
+        cursor.execute("ALTER TABLE h_user ADD COLUMN is_locked TEXT DEFAULT 'N'")
+        print("[DB] 마이그레이션: h_user 테이블에 is_locked 컬럼 추가됨", file=sys.stderr)
+
+    if 'login_fail_count' not in columns:
+        cursor.execute("ALTER TABLE h_user ADD COLUMN login_fail_count INTEGER DEFAULT 0")
+        print("[DB] 마이그레이션: h_user 테이블에 login_fail_count 컬럼 추가됨", file=sys.stderr)
+
+    '''
+        #19. h_email_log 테이블 마이그레이션 (user_uid를 Nullable로 변경)
+        => 참고: h_email_log 테이블 자체 생성은 #13번
+        (1) user_uid 컬럼을 Nullable로 변경
+    '''
     cursor.execute("PRAGMA table_info(h_email_log)")
     email_log_cols = cursor.fetchall()
     user_uid_info = next((info for info in email_log_cols if info[1] == 'user_uid'), None)
@@ -336,7 +354,9 @@ def init_db():
         cursor.execute("PRAGMA foreign_keys=ON")
         print("[DB] 마이그레이션 완료: h_email_log 테이블 구조 변경됨", file=sys.stderr)
 
-    # 사용자 계정 재설정 (Bcrypt 적용 - 초기 시딩 완료 후 주석 처리됨)
+    '''
+        #20. 사용자 계정 재설정 (Bcrypt 적용 - 초기 시딩 완료 후 주석 처리됨)
+    '''
     """
     try:
         try:
@@ -381,7 +401,9 @@ def init_db():
     """
     conn.commit()
 
-    # - 8. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션) - 주석 처리됨
+    '''
+        #21. ROLE_ADMIN 제한 무제한(-1)으로 업데이트 (마이그레이션) - 주석 처리됨
+    '''
     # cursor.execute("UPDATE h_mcp_tool_limit SET max_count = -1 WHERE target_type='ROLE' AND target_id='ROLE_ADMIN' AND max_count = 50")
     # if cursor.rowcount > 0:
     #     print("[DB] 마이그레이션: ROLE_ADMIN 일일 제한을 무제한(-1)으로 변경", file=sys.stderr)
