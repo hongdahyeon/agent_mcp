@@ -5,10 +5,18 @@ from datetime import timedelta
 import logging
 
 try:
-    from src.db import get_user, verify_password, log_login_attempt, get_login_history, check_user_id, create_user
+    from src.db import (
+        get_user, verify_password, log_login_attempt, get_login_history,
+        check_user_id, create_user, increment_login_fail_count,
+        reset_login_fail_count, set_user_locked
+    )
     from src.utils.auth import create_access_token as create_jwt_token
 except ImportError:
-    from db import get_user, verify_password, log_login_attempt, get_login_history, check_user_id, create_user
+    from db import (
+        get_user, verify_password, log_login_attempt, get_login_history,
+        check_user_id, create_user, increment_login_fail_count,
+        reset_login_fail_count, set_user_locked
+    )
     from utils.auth import create_access_token as create_jwt_token
 
 
@@ -39,11 +47,33 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
     user = get_user(form_data.username)
     ip_addr = request.client.host if request else "unknown"
     
-    if user and verify_password(form_data.password, user['password']):
-        if dict(user).get('is_enable', 'Y') == 'N':
-            log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
-            raise HTTPException(status_code=403, detail="Account is disabled")
-            
+    if not user:
+        # 사용자가 존재하지 않는 경우
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 1. 잠금 여부 확인 (403)
+    # => 가장 먼저 유저의 잠금 여부 체크
+    if dict(user).get('is_locked', 'N') == 'Y':
+        log_login_attempt(user['uid'], ip_addr, False, "Account Locked")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is locked due to multiple failed attempts. Please contact admin.",
+        )
+
+    # 2. 비활성화 여부 확인 (403)
+    if dict(user).get('is_enable', 'Y') == 'N':
+        log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
+        raise HTTPException(status_code=403, detail="Account is disabled")
+
+    # 3. 비밀번호 검증
+    if verify_password(form_data.password, user['password']):
+        # 로그인 성공 시 실패 횟수 초기화
+        reset_login_fail_count(user['user_id'])
+        
         # JWT 생성
         access_token_expires = timedelta(hours=12)
         access_token = create_jwt_token(
@@ -58,18 +88,29 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
             "access_token": access_token,
             "token_type": "bearer",
             "user": {
-                "uid": user['uid'], 
-                "user_id": user['user_id'], 
-                "user_nm": user['user_nm'], 
+                "uid": user['uid'],
+                "user_id": user['user_id'],
+                "user_nm": user['user_nm'],
                 "role": user['role']
             }
         }
     else:
-        user_uid = user['uid'] if user else None
-        log_login_attempt(user_uid, ip_addr, False, "Invalid Credentials")
+        # 로그인 실패 시 횟수 증가
+        fail_count = increment_login_fail_count(user['user_id'])
+        
+        # 5회 실패 시 잠금 처리
+        if fail_count >= 5:
+            set_user_locked(user['user_id'], 'Y')
+            log_login_attempt(user['uid'], ip_addr, False, "Account Locked (Auto)")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is locked due to 5 consecutive failed attempts. Please contact admin.",
+            )
+            
+        log_login_attempt(user['uid'], ip_addr, False, f"Invalid Credentials (Fail: {fail_count}/5)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail=f"Incorrect username or password. ({fail_count}/5 attempts)",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

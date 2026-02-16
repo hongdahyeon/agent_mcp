@@ -4,9 +4,10 @@ import {
     AlertTriangle,
     CheckCircle2,
     Edit2,
+    Lock,
     RefreshCw,
     Shield,
-    ToggleLeft, ToggleRight, UserIcon, UserPlus,
+    ToggleLeft, ToggleRight, Unlock, UserIcon, UserPlus,
     Users as UsersIcon,
     X
 } from 'lucide-react';
@@ -15,7 +16,7 @@ import type { User as UserType } from '../types/auth';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
 
-/* 
+/*
 * 사용자 관리 화면에 대한 컴포넌트
 */
 
@@ -37,12 +38,12 @@ export function Users() {
         password: '',
         user_nm: '',
         role: 'ROLE_USER',
-        is_enable: 'Y'
+        is_enable: 'Y',
+        is_locked: 'N',
+        login_fail_count: 0
     });
 
     const [idCheckStatus, setIdCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-
-
 
     const fetchUsers = useCallback(async (pageNum: number = 1) => {
         setLoading(true);
@@ -52,19 +53,15 @@ export function Users() {
             });
 
             if (!res.ok) {
-
                 throw new Error(`Failed to fetch users: ${res.status}`);
             }
 
             const data = await res.json();
-            
-            // API response structure changed to { total, page, size, items }
             if (data.items) {
                 setUsers(data.items);
                 setTotal(data.total);
                 setPage(data.page);
             } else if (data.users) {
-                 // Fallback
                 setUsers(data.users);
             }
 
@@ -81,6 +78,7 @@ export function Users() {
         fetchUsers(1);
     }, [fetchUsers]);
 
+    // 사용자 생성 모달 열기
     const handleOpenCreate = () => {
         setModalMode('create');
         setFormData({
@@ -88,12 +86,15 @@ export function Users() {
             password: '',
             user_nm: '',
             role: 'ROLE_USER',
-            is_enable: 'Y'
+            is_enable: 'Y',
+            is_locked: 'N',
+            login_fail_count: 0
         });
         setIdCheckStatus('idle');
         setIsModalOpen(true);
     };
 
+    // 사용자 수정 모달 열기
     const handleOpenUpdate = (user: UserType) => {
         setModalMode('update');
         setFormData({
@@ -101,11 +102,14 @@ export function Users() {
             password: '', // Not editable here
             user_nm: user.user_nm,
             role: user.role,
-            is_enable: user.is_enable || 'Y'
+            is_enable: user.is_enable || 'Y',
+            is_locked: user.is_locked || 'N',
+            login_fail_count: user.login_fail_count || 0
         });
         setIsModalOpen(true);
     };
 
+    // user_id 중복 체크
     const checkUserId = async () => {
         if (!formData.user_id) return;
         setIdCheckStatus('checking');
@@ -120,6 +124,7 @@ export function Users() {
         }
     };
 
+    // 사용자 저장, 수정
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -140,7 +145,7 @@ export function Users() {
 
             const res = await fetch(url, {
                 method,
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -153,7 +158,6 @@ export function Users() {
             }
 
             setIsModalOpen(false);
-            // 생성시 1페이지, 수정시 현재페이지 유지
             fetchUsers(modalMode === 'create' ? 1 : page);
             alert('저장되었습니다.');
         } catch (err) {
@@ -161,6 +165,7 @@ export function Users() {
         }
     };
 
+    // is_enable 토글 수정
     const toggleEnable = async (user: UserType) => {
         if (!confirm(`${user.user_nm} 님의 상태를 변경하시겠습니까?`)) return;
 
@@ -168,7 +173,7 @@ export function Users() {
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
                 method: 'PUT',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
@@ -181,7 +186,32 @@ export function Users() {
             alert('상태 변경 중 오류가 발생했습니다.');
         }
     };
-    
+
+    // is_locked 토글 수정
+    const toggleLock = async (user: UserType) => {
+        const newStatus = user.is_locked === 'Y' ? 'N' : 'Y';
+        const actionText = newStatus === 'Y' ? '잠금' : '해제';
+        if (!confirm(`${user.user_nm} 님을 계정 ${actionText} 하시겠습니까?`)) return;
+
+        try {
+            const res = await fetch(`/api/users/${user.user_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders()
+                },
+                body: JSON.stringify({
+                    is_locked: newStatus,
+                    login_fail_count: newStatus === 'N' ? 0 : user.login_fail_count
+                })
+            });
+            if (!res.ok) throw new Error(`${actionText} 실패`);
+
+            fetchUsers(page);
+        } catch {
+            alert(`${actionText} 중 오류가 발생했습니다.`);
+        }
+    };
 
 
     if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
@@ -224,6 +254,7 @@ export function Users() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID / 이름</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">권한</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">잠금</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">마지막 접속</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
                             </tr>
@@ -264,6 +295,28 @@ export function Users() {
                                                 </>
                                             )}
                                         </button>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-2">
+                                            {user.is_locked === 'Y' ? (
+                                                <>
+                                                    <span className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium border border-red-100">
+                                                        <Lock className="w-3 h-3" /> 잠금 ({user.login_fail_count})
+                                                    </span>
+                                                    <button
+                                                        onClick={() => toggleLock(user)}
+                                                        className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                                        title="잠금 해제"
+                                                    >
+                                                        <Unlock className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-gray-500 bg-gray-50 px-2 py-0.5 rounded text-xs border border-gray-100">
+                                                    <Unlock className="w-3 h-3" /> 정상
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {user.last_cnn_dt || '-'}
@@ -307,8 +360,8 @@ export function Users() {
                             <h2 className="text-lg font-bold text-gray-800">
                                 {modalMode === 'create' ? '사용자 추가' : '사용자 정보 수정'}
                             </h2>
-                            <button 
-                                onClick={() => setIsModalOpen(false)} 
+                            <button
+                                onClick={() => setIsModalOpen(false)}
                                 className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
                             >
                                 <X className="w-6 h-6" />
@@ -406,20 +459,50 @@ export function Users() {
                                     </select>
                                 </div>
 
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                        <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400" />
+                                        상태
+                                    </label>
+                                    <select
+                                        value={formData.is_enable}
+                                        onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
+                                    >
+                                        <option value="Y">활성 (Y)</option>
+                                        <option value="N">비활성 (N)</option>
+                                    </select>
+                                </div>
+
                                 {modalMode === 'update' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
-                                            <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400" />
-                                            상태
-                                        </label>
-                                        <select
-                                            value={formData.is_enable}
-                                            onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                                        >
-                                            <option value="Y">활성 (Y)</option>
-                                            <option value="N">비활성 (N)</option>
-                                        </select>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                <Lock className="w-4 h-4 mr-1.5 text-gray-400" />
+                                                계정 잠금
+                                            </label>
+                                            <select
+                                                value={formData.is_locked}
+                                                onChange={(e) => setFormData({ ...formData, is_locked: e.target.value })}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
+                                            >
+                                                <option value="N">정상 (N)</option>
+                                                <option value="Y">잠금 (Y)</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                                                <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400" />
+                                                실패 횟수
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={formData.login_fail_count}
+                                                onChange={(e) => setFormData({ ...formData, login_fail_count: parseInt(e.target.value) || 0 })}
+                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                min="0"
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>

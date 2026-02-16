@@ -456,3 +456,12 @@
 - [x] 4. 프론트엔드 탭 방식(편집/미리보기) 마크다운 에디터 UI 구현
 - [x] 5. HTML 태그(`rehype-raw`) 및 GFM(`remark-gfm`) 렌더링 지원 전면 적용
 - [x] 6. 일반 사용자용 가이드 보기 모달(`prose` 테마) 적용
+
+## 54. 계정 잠금 기능 및 관리자 해제 기능 구현 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_user` 테이블 `is_locked`, `login_fail_count` 컬럼 추가 및 마이그레이션 (`sqlite3` 임포트 오류 수정 포함)
+- [x] 2. Backend: `auth.py` 로그인 로직 수정 (5회 실패 시 잠금, 성공 시 초기화)
+- [x] 3. Backend: `user.py` 및 `users.py` 수정 (관리자용 잠금 해제 기능 및 계정 생성 로직 고도화)
+- [x] 4. Frontend: `Login.tsx` 잠금 메시지 처리 및 오류 수정
+- [x] 5. Frontend: `Users.tsx` 계정 잠금 상태 표시 및 해제 기능 추가
+- [x] 6. 기능 검증 완료

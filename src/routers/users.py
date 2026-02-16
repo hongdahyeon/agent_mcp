@@ -19,11 +19,15 @@ class UserCreateRequest(BaseModel):
     user_nm: str
     role: str = "ROLE_USER"
     is_enable: str = "Y"
+    is_locked: str = "N"
+    login_fail_count: int = 0
 
 class UserUpdateRequest(BaseModel):
     user_nm: str | None = None
     role: str | None = None
     is_enable: str | None = None
+    is_locked: str | None = None
+    login_fail_count: int | None = None
 
 # 모든 사용자 조회
 @router.get("")
