@@ -130,3 +130,38 @@ async def api_get_my_openapi_usage(current_user: dict = Depends(get_current_acti
         "remaining": -1 if limit == -1 else max(0, limit - usage),
         "tool_usage": tool_usage
     }
+
+# [11] OpenAPI 상세 정보 PDF 내보내기
+@router.get("/api/openapi/{tool_id}/export")
+async def api_export_openapi_pdf(
+    tool_id: str, current_user:
+    dict = Depends(get_current_active_user)
+):
+    from src.utils.pdf_generator import generate_openapi_pdf
+    
+    api_data = get_openapi_by_tool_id(tool_id)
+    if not api_data:
+        raise HTTPException(status_code=404, detail="OpenAPI not found")
+    
+    # ROLE_ADMIN 여부 확인
+    is_admin = current_user.get('role') == 'ROLE_ADMIN'
+    
+    try:
+        pdf_bytes = generate_openapi_pdf(api_data, is_admin=is_admin)
+        from fastapi.responses import Response
+        
+        # 파일명 인코딩 (한글 대응)
+        import urllib.parse
+        filename = f"{api_data['name_ko']}_specification.pdf"
+        encoded_filename = urllib.parse.quote(filename)
+        
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"
+            }
+        )
+    except Exception as e:
+        logger.error(f"PDF generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"PDF 생성 중 오류가 발생했습니다: {str(e)}")

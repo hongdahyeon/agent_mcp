@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Globe, Plus, Trash2, Edit2, Play, Save, X, Link as LinkIcon, FileText, Upload, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Globe, Plus, Trash2, Edit2, Play, Save, X, Link as LinkIcon, FileText, Upload, Eye, EyeOff, Copy, Check, FileDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
@@ -245,6 +245,31 @@ export function OpenApiManager() {
         }
     };
 
+    // PDF 내보내기 (Export)
+    const handleExportPdf = async (toolId: string, fileName: string) => {
+        try {
+            const res = await fetch(`/api/openapi/${toolId}/export`, {
+                headers: getAuthHeaders()
+            });
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${fileName}_spec.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                alert('PDF 생성 실패');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('PDF 다운로드 중 오류 발생');
+        }
+    };
+
     if (loading && apis.length === 0) return <div className="p-8 text-center text-gray-500">Loading OpenAPI configurations...</div>;
 
     return (
@@ -385,6 +410,13 @@ export function OpenApiManager() {
                                                 title="테스트 실행"
                                             >
                                                 <Play className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleExportPdf(api.tool_id, api.name_ko)}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                title="PDF 다운로드"
+                                            >
+                                                <FileDown className="w-4 h-4" />
                                             </button>
                                         </div>
                                     </td>

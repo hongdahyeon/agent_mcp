@@ -465,3 +465,11 @@
 - [x] 4. Frontend: `Login.tsx` 잠금 메시지 처리 및 오류 수정
 - [x] 5. Frontend: `Users.tsx` 계정 잠금 상태 표시 및 해제 기능 추가
 - [x] 6. 기능 검증 완료
+ 
+ ## 55. OpenAPI 상세 정보 PDF 내보내기 (New)
+ - [x] 상세 구현 계획 수립 (implementation_plan.md)
+ - [x] 1. Dependency: `requirements.txt`에 `fpdf2` 추가
+ - [x] 2. Backend: `src/utils/pdf_generator.py` 구현 (한글 폰트, HTML 태그 제거, 동적 테이블)
+ - [x] 3. Backend: `src/routers/openapi.py` 내 PDF 내보내기 API (`/api/openapi/{tool_id}/export`) 구현 (Admin 전용 서비스 키 포함)
+ - [x] 4. Frontend: `OpenApiManager.tsx`에 PDF 다운로드 버튼 추가 및 연동
+ - [x] 5. 기능 검증 및 UI 최적화 완료
