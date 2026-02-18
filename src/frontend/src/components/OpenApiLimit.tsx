@@ -127,19 +127,19 @@ export default function OpenApiLimitView() {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
-            <header className="flex justify-between items-center">
+            <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-orange-50">
-                        <ShieldAlert className="w-6 h-6 text-orange-600" />
+                    <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-900/30">
+                        <ShieldAlert className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">API 사용 제한 관리</h2>
-                        <p className="text-sm text-gray-500">사용자, 권한, 외부 토큰별 일일 호출 한도를 설정합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">API 사용 제한 관리</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 font-pretendard">사용자, 권한, 외부 토큰별 일일 호출 한도를 설정합니다.</p>
                     </div>
                 </div>
                 <button
                     onClick={() => openEdit()}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm font-pretendard"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     정책 추가
@@ -148,14 +148,14 @@ export default function OpenApiLimitView() {
 
             {isEditing && (
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                            <h3 className="text-lg font-bold text-gray-800">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-colors duration-300">
+                        <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 font-pretendard">
                                 {currentLimit.id ? '제한 정책 수정' : '새 제한 정책 추가'}
                             </h3>
                             <button
                                 onClick={() => setIsEditing(false)}
-                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-lg transition-colors"
+                                className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -185,12 +185,12 @@ export default function OpenApiLimitView() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">대상 식별자 (Target ID)</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">대상 식별자 (Target ID)</label>
                                         {currentLimit.target_type === 'TOKEN' ? (
                                             <select
                                                 value={currentLimit.target_id}
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             >
                                                 <option value="">토큰 선택...</option>
                                                 {tokens.map(t => (
@@ -201,7 +201,7 @@ export default function OpenApiLimitView() {
                                             <select
                                                 value={currentLimit.target_id}
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             >
                                                 <option value="ROLE_USER">일반 사용자 (ROLE_USER)</option>
                                                 <option value="ROLE_ADMIN">관리자 (ROLE_ADMIN)</option>
@@ -212,7 +212,7 @@ export default function OpenApiLimitView() {
                                                 value={currentLimit.target_id}
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
                                                 placeholder="사용자 ID (예: admin, user1)"
-                                                className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                                className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             />
                                         )}
                                     </div>
@@ -220,39 +220,39 @@ export default function OpenApiLimitView() {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">일일 최대 호출 횟수 (-1: 무제한)</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">일일 최대 호출 횟수 (-1: 무제한)</label>
                                         <input
                                             type="number"
                                             value={currentLimit.max_count}
                                             onChange={(e) => setCurrentLimit({ ...currentLimit, max_count: parseInt(e.target.value) })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-mono"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">설명</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">설명</label>
                                         <input
                                             type="text"
                                             value={currentLimit.description || ''}
                                             onChange={(e) => setCurrentLimit({ ...currentLimit, description: e.target.value })}
                                             placeholder="설명을 입력하세요"
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                         />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+                        <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end space-x-3">
                             <button
                                 onClick={() => setIsEditing(false)}
-                                className="px-6 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors bg-white"
+                                className="px-6 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors bg-white dark:bg-slate-800 font-pretendard"
                             >
                                 취소
                             </button>
                             <button
                                 onClick={handleSave}
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center shadow-sm"
+                                className="px-6 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors flex items-center shadow-sm font-pretendard"
                             >
                                 <Save className="w-4 h-4 mr-2" />
                                 저장하기
@@ -262,23 +262,23 @@ export default function OpenApiLimitView() {
                 </div>
             )}
             {/* Limits List Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                    <h3 className="text-sm font-semibold text-gray-700">등록된 정책 목록</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 font-pretendard">등록된 정책 목록</h3>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-gray-50 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유형</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">대상 ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">일일 한도</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">유형</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">대상 ID</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">일일 한도</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">설명</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">작업</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {loading && limits.length === 0 ? (
                                 <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">로딩 중...</td></tr>
                             ) : limits.length === 0 ? (
@@ -303,20 +303,20 @@ export default function OpenApiLimitView() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-medium text-gray-900">
+                                                <span className="text-sm font-medium text-gray-900 dark:text-slate-100 font-pretendard">
                                                     {limit.target_name || limit.target_id}
                                                 </span>
                                                 {limit.target_name && (
-                                                    <span className="text-xs text-gray-500 font-normal">
+                                                    <span className="text-xs text-gray-500 dark:text-slate-500 font-normal font-mono">
                                                         ({limit.target_id})
                                                     </span>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-bold text-gray-700">
+                                        <td className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-slate-200 font-pretendard">
                                             {limit.max_count === -1 ? '무제한' : `${limit.max_count}회`}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">{limit.description}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 font-pretendard">{limit.description}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end space-x-2">
                                                 <button
@@ -342,7 +342,7 @@ export default function OpenApiLimitView() {
                     </table>
                 </div>
 
-                <div className="bg-white border-t border-gray-200">
+                <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 transition-colors duration-300">
                     <Pagination
                         currentPage={page}
                         totalPages={Math.ceil(total / pageSize)}
@@ -354,18 +354,18 @@ export default function OpenApiLimitView() {
                 </div>
             </div>
 
-            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-                <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-900/30 transition-colors duration-300">
+                <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center font-pretendard">
                     <ShieldAlert className="w-4 h-4 mr-2" /> 제한 적용 우선순위
                 </h3>
-                <p className="text-sm text-blue-700 leading-relaxed">
+                <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed font-pretendard">
                     동일한 요청에 대해 여러 정책이 겹치는 경우, 다음과 같은 순서로 가장 먼저 발견된 정책이 적용됩니다:
                     <br />
-                    <strong className="text-blue-900">1. 토큰 (TOKEN)</strong> &gt;
-                    <strong className="text-blue-900">2. 사용자 (USER)</strong> &gt;
-                    <strong className="text-blue-900">3. 권한 (ROLE)</strong>
+                    <strong className="text-blue-900 dark:text-blue-200">1. 토큰 (TOKEN)</strong> &gt;
+                    <strong className="text-blue-900 dark:text-blue-200">2. 사용자 (USER)</strong> &gt;
+                    <strong className="text-blue-900 dark:text-blue-200">3. 권한 (ROLE)</strong>
                     <br />
-                    정책이 전혀 없는 경우 기본적으로 <strong className="text-blue-900">무제한(-1)</strong>으로 처리됩니다.
+                    정책이 전혀 없는 경우 기본적으로 <strong className="text-blue-900 dark:text-blue-200">무제한(-1)</strong>으로 처리됩니다.
                 </p>
             </div>
         </div>

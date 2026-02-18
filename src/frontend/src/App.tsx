@@ -21,11 +21,12 @@ import { OpenApiManager } from './components/OpenApiManager';
 import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
 import type { User } from './types/auth';
+import { useTheme } from './hooks/useTheme';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe,
-  Menu
+  Menu, Sun, Moon
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -63,6 +64,7 @@ function UsageBadge({ usageData }: { usageData: UsageData | null }) {
 
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
   // 인증 상태 (Auth State): 세션 저장
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user_session');
@@ -283,21 +285,21 @@ function App() {
   const allMenuItems = menuStructure.flatMap(g => g.items);
 
   return (
-    <div className="flex h-full bg-gray-50 overflow-hidden">
+    <div className="flex h-full bg-gray-50 dark:bg-slate-950 overflow-hidden transition-colors duration-300">
       {/* 사이드바 (Sidebar) */}
       <aside className={clsx(
-        "bg-white border-r border-gray-200 flex flex-col shadow-sm transition-all duration-300 ease-in-out z-20",
+        "bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-800 flex flex-col shadow-sm transition-all duration-300 ease-in-out z-20",
         isSidebarCollapsed ? "w-20" : "w-64"
       )}>
         <div className={clsx(
-          "p-6 border-b border-gray-100 flex items-center",
+          "p-6 border-b border-gray-100 dark:border-slate-800 flex items-center",
           isSidebarCollapsed ? "justify-center px-0" : "justify-center"
         )}>
           <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg flex-shrink-0">
             A
           </div>
           {!isSidebarCollapsed && (
-            <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 truncate">
+            <h1 className="ml-3 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-400 dark:from-blue-400 dark:to-purple-300 truncate">
               Agent MCP
             </h1>
           )}
@@ -305,24 +307,24 @@ function App() {
 
         {/* 사용자 프로필 요약 (User Profile Summary) */}
         <div className={clsx(
-          "px-4 py-4 bg-gray-50 border-b border-gray-100 flex items-center",
+          "px-4 py-4 bg-gray-50 dark:bg-slate-900/50 border-b border-gray-100 dark:border-slate-800 flex items-center",
           isSidebarCollapsed ? "justify-center" : "justify-between"
         )}>
           <button
             onClick={() => setActiveView('mypage')}
             className={clsx(
-              "flex items-center hover:bg-gray-200/50 rounded-lg transition-colors text-left group cursor-pointer overflow-hidden",
+              "flex items-center hover:bg-gray-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors text-left group cursor-pointer overflow-hidden",
               isSidebarCollapsed ? "p-1" : "flex-1 p-1.5 -ml-1.5"
             )}
             title="내 정보 관리"
           >
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
               <UserIcon className="w-4 h-4" />
             </div>
             {!isSidebarCollapsed && (
               <div className="ml-2 overflow-hidden">
-                <p className="text-sm font-semibold text-gray-700 truncate">{user.user_nm}</p>
-                <p className="text-xs text-gray-500 truncate">{user.user_id}</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-slate-200 truncate">{user.user_nm}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{user.user_id}</p>
               </div>
             )}
           </button>
@@ -354,12 +356,12 @@ function App() {
                         "w-full flex items-center transition-all duration-200 ease-in-out text-sm rounded-lg",
                         isSidebarCollapsed ? "justify-center py-3" : "px-4 py-2.5",
                         activeView === item.id
-                          ? "bg-blue-50 text-blue-600 font-semibold shadow-sm" + (isSidebarCollapsed ? "" : " translate-x-1")
-                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold shadow-sm" + (isSidebarCollapsed ? "" : " translate-x-1")
+                          : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
                       )}
                       title={isSidebarCollapsed ? item.label : undefined}
                     >
-                      <item.icon className={clsx("w-4 h-4 flex-shrink-0", isSidebarCollapsed ? "" : "mr-3", activeView === item.id ? "text-blue-600" : "text-gray-400")} />
+                      <item.icon className={clsx("w-4 h-4 flex-shrink-0", isSidebarCollapsed ? "" : "mr-3", activeView === item.id ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-slate-500")} />
                       {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
                     </button>
                   ))}
@@ -369,11 +371,11 @@ function App() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 border-t border-gray-200 dark:border-slate-800">
           <div className={clsx(
             "flex items-center justify-center text-sm font-medium rounded-lg transition-colors",
             isSidebarCollapsed ? "py-3" : "px-3 py-2",
-            connected ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            connected ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
           )} title={isSidebarCollapsed ? statusText : undefined}>
             {connected ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
             {!isSidebarCollapsed && <span className="ml-2 truncate">{statusText}</span>}
@@ -383,20 +385,29 @@ function App() {
 
       {/* 메인 콘텐츠 영역 (Main Content) */}
       <main className="flex-1 overflow-hidden flex flex-col">
-        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm flex justify-between items-center z-10">
+        <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4 shadow-sm flex justify-between items-center z-10 transition-colors duration-300">
           <div className="flex items-center overflow-hidden">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-2 mr-4 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+              className="p-2 mr-4 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
               title={isSidebarCollapsed ? "사이드바 확장" : "사이드바 접기"}
             >
               <Menu className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-semibold text-gray-800 truncate">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 truncate">
               {allMenuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
             </h2>
           </div>
           <div className="flex items-center space-x-4 flex-shrink-0">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-300"
+              title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+
             {/* Phase 3 Badge */}
             <div className="hidden sm:block">
               <UsageBadge usageData={usageData} />
@@ -408,7 +419,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {activeView === 'dashboard' && <Dashboard stats={stats} />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
@@ -424,7 +435,7 @@ function App() {
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
           {activeView === 'file-manager' && <FileManager />}
           {activeView === 'openapi' && <OpenApiManager />}
-          {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats />}
+          {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats theme={theme} />}
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
         </div>
       </main>

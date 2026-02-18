@@ -837,3 +837,47 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
  2. 관리자 계정으로 다운로드 시 서비스 키 포함 확인.
  3. 일반 사용자 계정으로 다운로드 시 서비스 키 제외 확인.
  4. 긴 텍스트 및 한글 깨짐 없이 레이아웃이 깔끔하게 유지됨을 확인.
+ 
+ ---
+ 
+ ## Phase 32: Dark Mode Implementation [Planned]
+ 
+ ### Goal
+ 사용자 경험(UX) 개선을 위해 시스템 전반에 다크 모드(Dark Mode)를 지원합니다. 사용자는 헤더의 버튼을 통해 테마를 전환할 수 있으며, 설정은 브라우저에 저장되어 유지됩니다.
+ 
+ ### Proposed Changes
+ - **Styles**: Tailwind CSS의 `darkMode: 'class'` 설정을 활성화하고 전역 테마 변수를 정의합니다.
+ - **State Logic**: `localStorage`와 연동되는 `useTheme` 커스텀 훅을 통해 테마 상태를 관리합니다.
+ - **UI Components**:
+     - **Header**: 테마 전환(Sun/Moon) 버튼 추가.
+     - **Common**: `dark:` 클래스 접두사를 사용하여 배경, 텍스트, 보더 색상을 어두운 톤으로 조정합니다.
+     - **ECharts**: 테마 변경 시 차트 테마(Dark/Light)도 동적으로 전환되도록 처리합니다.
+ 
+ ### Verification Plan
+ 1. 테마 토글 버튼 작동 여부 및 즉각적인 UI 반영 확인.
+ 2. 새로고침 시 테마 유지 확인.
+ 3. 전반적인 UI 컴포넌트(모달, 테이블, 차트) 시인성 검토.
+---
+
+## Phase 32: Dark Mode Implementation [Completed]
+
+### Goal
+사용자가 라이트 모드와 다크 모드를 자유롭게 전환할 수 있도록 시스템 전반에 테마 기능을 도입합니다. 사용자 설정은 저장되어 새로고침 후에도 유지되어야 합니다.
+
+### Implemented Changes
+
+#### 1. Configuration & Utilities
+- **Tailwind CSS**: `darkMode: 'class'` 설정을 통해 클래스 기반 다크 모드 활성화.
+- **useTheme Hook**: 테마 상태 (`light` / `dark`) 관리, `localStorage` 연동, DOM 클래스 조작 로직 구현.
+- **Global Styles**: `index.css`에 기본 배경/글자색 및 매끄러운 전환을 위한 `transition` 효과 추가.
+
+#### 2. Frontend Components
+- **App Layout**: 헤더에 테마 전환 버튼 (Sun/Moon 아이콘) 추가, 사이드바 및 레이아웃에 다크 모드 스타일 적용.
+- **Dashboard**: ECharts 차트 테마를 현재 모드에 맞게 동적으로 변경하도록 구현 (`backgroundColor: 'transparent'`).
+- **Tester / LogViewer**: 입력 필드, 코드 블록, 결과 표시창 등 주요 컴포넌트에 통일된 다크 모드 스타일 적용.
+- **OpenApiManager**: 복잡한 모달, 탭, 에디터 및 미리보기 영역까지 모든 UI 요소에 다크 모드 적용 완료.
+
+### Verification Results
+1. **Persistence**: 테마 변경 후 새로고침 시 설정이 유지됨을 확인.
+2. **Component Unity**: 모든 메뉴 및 모달에서 일관된 다크 테마가 적용됨을 확인.
+3. **Chart Integration**: 대시보드 진입 시 및 테마 전환 시 차트 색상이 즉시 반응함을 확인.
