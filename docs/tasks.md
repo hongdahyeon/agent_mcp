@@ -473,3 +473,11 @@
  - [x] 3. Backend: `src/routers/openapi.py` 내 PDF 내보내기 API (`/api/openapi/{tool_id}/export`) 구현 (Admin 전용 서비스 키 포함)
  - [x] 4. Frontend: `OpenApiManager.tsx`에 PDF 다운로드 버튼 추가 및 연동
  - [x] 5. 기능 검증 및 UI 최적화 완료
+ 
+ ## 56. 다크 모드(Dark Mode) 구현 (New)
+ - [x] 상세 구현 계획 수립 (implementation_plan.md)
+ - [x] 1. Tailwind CSS 다크 모드 설정 (class strategy)
+ - [x] 2. 테마 상태 관리 훅(useTheme) 및 localStorage 연동
+ - [x] 3. 헤더 내 테마 전환 토클 버튼 추가
+ - [x] 4. 전역 컴포넌트(Sidebar, Dashboard, Modal 등) 다크 모드 스타일 적용
+ - [x] 5. 기능 검증 완료

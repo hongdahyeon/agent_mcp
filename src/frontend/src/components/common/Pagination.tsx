@@ -48,23 +48,23 @@ export function Pagination({
     };
 
     return (
-        <div className={clsx("flex flex-col sm:flex-row items-center justify-between gap-4 bg-white px-4 py-3 border-t border-gray-200 sm:px-6", className)}>
+        <div className={clsx("flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 px-4 py-3 border-t border-gray-200 dark:border-slate-800 sm:px-6 transition-colors duration-300", className)}>
             {/* Left: Total Count & Page Size (Mobile friendly: stacked or wrapped) */}
-            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-start font-pretendard">
                 {totalItems !== undefined && (
-                    <p className="text-sm text-gray-700">
-                        전체 <span className="font-medium">{totalItems}</span>개
+                    <p className="text-sm text-gray-700 dark:text-slate-400">
+                        전체 <span className="font-medium text-gray-900 dark:text-slate-200">{totalItems}</span>개
                     </p>
                 )}
-                
+
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700 whitespace-nowrap">보기</span>
+                    <span className="text-sm text-gray-700 dark:text-slate-400 whitespace-nowrap">보기</span>
                     <select
                         value={pageSize}
                         onChange={(e) => {
                             onPageSizeChange(Number(e.target.value));
                         }}
-                        className="block w-full rounded-md border-gray-300 py-1.5 pl-3 pr-8 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm border"
+                        className="block w-full rounded-md border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-1.5 pl-3 pr-8 text-base text-gray-900 dark:text-slate-200 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm border transition-colors"
                     >
                         {pageSizeOptions.map(option => (
                             <option key={option} value={option}>
@@ -76,11 +76,11 @@ export function Pagination({
             </div>
 
             {/* Right: Navigation */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 font-pretendard">
                 <button
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     <ChevronLeft className="h-4 w-4" />
                     <span className="sr-only">이전</span>
@@ -92,26 +92,26 @@ export function Pagination({
                             key={pageNum}
                             onClick={() => onPageChange(pageNum)}
                             className={clsx(
-                                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border",
+                                "relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border transition-colors",
                                 currentPage === pageNum
-                                    ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                                    : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                                    ? "z-10 bg-blue-50 dark:bg-blue-600/20 border-blue-500 text-blue-600 dark:text-blue-400"
+                                    : "bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700"
                             )}
                         >
                             {pageNum}
                         </button>
                     ))}
                 </div>
-                
+
                 {/* Mobile Page Indicator (Simpler) */}
-                <span className="sm:hidden text-sm text-gray-700">
+                <span className="sm:hidden text-sm text-gray-700 dark:text-slate-400">
                     {currentPage} / {Math.max(1, totalPages)}
                 </span>
 
                 <button
                     onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage >= totalPages}
-                    className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative inline-flex items-center rounded-md border border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     <ChevronRight className="h-4 w-4" />
                     <span className="sr-only">다음</span>

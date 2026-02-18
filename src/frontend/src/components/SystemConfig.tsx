@@ -21,13 +21,12 @@ export function SystemConfig() {
     });
 
     const [totalItems, setTotalItems] = useState(0);
-    
+
     // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
     // Server-side pagination
-    const displayedConfigs = Array.isArray(configs) ? configs : [];
 
     // Reset page when search term changes
     useEffect(() => {
@@ -89,9 +88,9 @@ export function SystemConfig() {
                 method: 'DELETE',
                 headers: getAuthHeaders()
             });
-            
+
             if (!res.ok) throw new Error('Failed to delete config');
-            
+
             setConfigs(prev => prev.filter(c => c.name !== name));
         } catch (err) {
             alert(err instanceof Error ? err.message : 'Delete failed');
@@ -100,7 +99,7 @@ export function SystemConfig() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Simple Validation
         if (!formData.name.trim() || !formData.configuration.trim() || !formData.description.trim()) {
             alert("입력값을 확인해주세요.");
@@ -137,55 +136,48 @@ export function SystemConfig() {
         }
     };
 
-    const filteredConfigs = configs.filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredConfigs = configs.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-
-
-    // Reset page when search term changes
-    useEffect(() => {
-        setPage(1);
-    }, [searchTerm]);
-
-    if (loading) return <div className="p-8 text-center text-gray-500">로딩 중...</div>;
-    if (error) return <div className="p-8 text-center text-red-500">에러: {error}</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500 dark:text-slate-400">로딩 중...</div>;
+    if (error) return <div className="p-8 text-center text-red-500 dark:text-red-400">에러: {error}</div>;
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
-            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 font-pretendard">
+            <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                        <Settings className="w-6 h-6 text-blue-600" />
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                        <Settings className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
                             시스템 설정
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">시스템 설정 관리</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">시스템 설정 관리</p>
                     </div>
                 </div>
 
             </header>
 
             {/* Search Bar & Action */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800">검색 및 관리</h2>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+                <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-slate-100">검색 및 관리</h2>
                 <div className="flex gap-4">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="이름 또는 설명으로 검색..."
+                            placeholder="설정 명칭 또는 설명 검색..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
                         />
                     </div>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shrink-0 font-medium"
+                        className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm shrink-0 font-medium"
                     >
                         <Plus className="w-4 h-4 mr-2" />
                         추가
@@ -194,51 +186,51 @@ export function SystemConfig() {
             </div>
 
             {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex-1 flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden flex-1 flex flex-col transition-colors duration-300">
                 <div className="overflow-x-auto flex-1">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50 sticky top-0 z-10">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                        <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설정 (JSON)</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">마지막 수정일</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이름</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">설정 (JSON)</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">설명</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">마지막 수정일</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">액션</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800 transition-colors">
                             {filteredConfigs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
                                         No configurations found.
                                     </td>
                                 </tr>
                             ) : (
-                                displayedConfigs.map((config) => (
-                                    <tr key={config.name} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                filteredConfigs.map((config) => (
+                                    <tr key={config.name} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">
                                             {config.name}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title={config.configuration}>
-                                            {config.name.includes('password') || config.name.includes('secret') 
-                                                ? '••••••••' 
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 max-w-xs truncate" title={config.configuration}>
+                                            {config.name.includes('password') || config.name.includes('secret')
+                                                ? '••••••••'
                                                 : config.configuration}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
                                             {config.description}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 dark:text-slate-500">
                                             {config.reg_dt}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button 
+                                            <button
                                                 onClick={() => handleOpenEdit(config)}
                                                 className="text-blue-600 hover:text-blue-900 mr-3"
                                                 title="Edit"
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => handleDelete(config.name)}
                                                 className="text-red-600 hover:text-red-900"
                                                 title="Delete"
@@ -252,7 +244,7 @@ export function SystemConfig() {
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-white border-t border-gray-200">
+                <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 transition-colors">
                     <Pagination
                         currentPage={page}
                         totalPages={Math.ceil(totalItems / pageSize)}
@@ -270,15 +262,15 @@ export function SystemConfig() {
             {/* Modal */}
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in border border-gray-100">
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                            <h2 className="text-lg font-bold text-gray-800">
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-pretendard">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 transition-colors">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">
                                 {isEditMode ? '설정 수정' : '새 설정 추가'}
                             </h2>
-                            <button 
-                                onClick={() => setIsModalOpen(false)} 
-                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                                 <X className="w-6 h-6" />
                             </button>
@@ -287,58 +279,58 @@ export function SystemConfig() {
                         <form onSubmit={handleSubmit} className="flex flex-col">
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        이름 (Key) <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                                        이름 (Key) <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.name}
-                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         readOnly={isEditMode}
                                         placeholder="e.g. mail.host"
-                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${isEditMode ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : 'border-gray-200'}`}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${isEditMode ? 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed border-gray-200 dark:border-slate-700' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100'}`}
                                     />
-                                    {isEditMode && <p className="text-xs text-gray-400 mt-1">이름은 생성 후 변경할 수 없습니다.</p>}
+                                    {isEditMode && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">이름은 생성 후 변경할 수 없습니다.</p>}
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        설정 (JSON) <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                                        설정 (JSON) <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <textarea
                                         value={formData.configuration}
-                                        onChange={(e) => setFormData({...formData, configuration: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, configuration: e.target.value })}
                                         placeholder='{"key": "value"}'
                                         rows={5}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm bg-gray-50/30"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono text-sm bg-gray-50/30 dark:bg-slate-800/50 text-gray-900 dark:text-slate-100"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        설명 <span className="text-red-500">*</span>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+                                        설명 <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <textarea
                                         value={formData.description}
-                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="설정에 대한 간단한 설명"
                                         rows={2}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none"
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                                     />
                                 </div>
                             </div>
 
-                            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
+                            <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-end space-x-3 transition-colors">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                                 >
                                     취소
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center"
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm flex items-center"
                                 >
                                     <Save className="w-4 h-4 mr-2" />
                                     저장

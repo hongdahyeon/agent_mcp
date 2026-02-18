@@ -8,14 +8,14 @@ import { Pagination } from './common/Pagination';
 export const EmailSender: React.FC = () => {
     // API State
     const [apiLoading, setApiLoading] = useState(false);
-    
+
     // Form State
     const [recipient, setRecipient] = useState('');
     const [subject, setSubject] = useState('');
     const [content, setContent] = useState('');
     const [isScheduled, setIsScheduled] = useState(false);
     const [scheduledDt, setScheduledDt] = useState('');
-    
+
     // Logs State
     const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
@@ -55,7 +55,7 @@ export const EmailSender: React.FC = () => {
 
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!recipient || !subject || !content) {
             alert('수신자, 제목, 내용을 모두 입력해주세요.');
             return;
@@ -78,15 +78,15 @@ export const EmailSender: React.FC = () => {
         try {
             const res = await fetch('/api/email/send', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     ...getAuthHeaders()
                 },
                 body: JSON.stringify(payload)
             });
-            
+
             const data = await res.json();
-            
+
             if (res.ok && data.success) {
                 alert(isScheduled ? '메일 발송이 예약되었습니다.' : '메일이 발송되었습니다.');
                 // 폼 초기화
@@ -111,14 +111,14 @@ export const EmailSender: React.FC = () => {
 
     const handleCancel = async (logId: number) => {
         if (!confirm('정말 이 메일 발송을 취소하시겠습니까?')) return;
-        
+
         try {
             const res = await fetch(`/api/email/cancel/${logId}`, {
                 method: 'POST',
                 headers: getAuthHeaders()
             });
             const data = await res.json();
-            
+
             if (res.ok && data.success) {
                 alert('발송이 취소되었습니다.');
                 fetchLogs();
@@ -132,14 +132,14 @@ export const EmailSender: React.FC = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
-            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 font-pretendard">
+            <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                        <Send className="w-6 h-6 text-blue-600" />
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                        <Send className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
                             메일 발송
                         </h2>
                     </div>
@@ -149,53 +149,53 @@ export const EmailSender: React.FC = () => {
             <div className="flex-1 overflow-y-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left: Email Form */}
-                    <div className="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit">
-                        <h2 className="text-lg font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                    <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 h-fit transition-colors duration-300">
+                        <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-slate-200 flex items-center gap-2">
                             <Send className="w-5 h-5" /> 메일 작성
                         </h2>
-                        
+
                         <form onSubmit={handleSend} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">수신자 이메일</label>
-                                <input 
-                                    type="email" 
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">수신자 이메일</label>
+                                <input
+                                    type="email"
                                     value={recipient}
                                     onChange={(e) => setRecipient(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     placeholder="example@email.com"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
-                                <input 
-                                    type="text" 
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">제목</label>
+                                <input
+                                    type="text"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     placeholder="메일 제목"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">내용</label>
-                                <textarea 
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">내용</label>
+                                <textarea
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    className="w-full h-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                                    className="w-full h-40 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
                                     placeholder="메일 내용을 입력하세요..."
                                     required
                                 />
                             </div>
 
-                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700 transition-colors">
                                 <div className="flex items-center justify-between mb-2">
-                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer select-none">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={isScheduled} 
+                                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-slate-400 cursor-pointer select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={isScheduled}
                                             onChange={(e) => {
                                                 const checked = e.target.checked;
                                                 setIsScheduled(checked);
@@ -206,48 +206,47 @@ export const EmailSender: React.FC = () => {
                                                     setScheduledDt(localIso);
                                                 }
                                             }}
-                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                            className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700"
                                         />
                                         예약 발송
                                     </label>
-                                    {isScheduled && <Calendar className="w-4 h-4 text-gray-500" />}
+                                    {isScheduled && <Calendar className="w-4 h-4 text-gray-500 dark:text-slate-500" />}
                                 </div>
-                                
+
                                 {isScheduled && (
-                                    <input 
-                                        type="datetime-local" 
+                                    <input
+                                        type="datetime-local"
                                         value={scheduledDt}
                                         onChange={(e) => setScheduledDt(e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                         required
                                     />
                                 )}
                             </div>
 
-                            <button 
-                                type="submit" 
+                            <button
+                                type="submit"
                                 disabled={apiLoading}
-                                className={`w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors ${
-                                    apiLoading 
-                                    ? 'bg-gray-400 cursor-not-allowed' 
-                                    : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
-                                }`}
+                                className={`w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors ${apiLoading
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+                                    }`}
                             >
-                                 {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                                 {isScheduled ? '예약 발송' : '즉시 발송'}
+                                {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                                {isScheduled ? '예약 발송' : '즉시 발송'}
                             </button>
                         </form>
                     </div>
 
                     {/* Right: History Table */}
-                    <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full transition-colors duration-300">
                         <div className="flex items-center justify-between mb-4 shrink-0">
-                            <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                            <h2 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center gap-2">
                                 <Clock className="w-5 h-5" /> 내 발송 이력
                             </h2>
-                            <button 
-                                onClick={() => fetchLogs(page, pageSize)} 
-                                className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                            <button
+                                onClick={() => fetchLogs(page, pageSize)}
+                                className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
                                 title="새로고침"
                             >
                                 <RefreshCw className={`w-5 h-5 ${loadingLogs ? 'animate-spin' : ''}`} />
@@ -256,7 +255,7 @@ export const EmailSender: React.FC = () => {
 
                         <div className="flex-1 overflow-auto min-h-0">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200 sticky top-0 z-10">
+                                <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 font-medium border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10 transition-colors">
                                     <tr>
                                         <th className="px-4 py-3">상태</th>
                                         <th className="px-4 py-3">수신자</th>
@@ -265,39 +264,38 @@ export const EmailSender: React.FC = () => {
                                         <th className="px-4 py-3 text-center">상세</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100">
+                                <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                                     {logs.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                                            <td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-slate-500">
                                                 발송 이력이 없습니다.
                                             </td>
                                         </tr>
                                     ) : (
                                         logs.map((log) => (
-                                            <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                            <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-1.5">
-                                                            {log.status === 'SENT' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                                                            {log.status === 'FAILED' && <XCircle className="w-4 h-4 text-red-500" />}
-                                                            {log.status === 'CANCELLED' && <XCircle className="w-4 h-4 text-gray-400" />}
-                                                            {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500" />}
-                                                            
-                                                            <span className={`font-medium ${
-                                                                log.status === 'SENT' ? 'text-green-700' :
-                                                                log.status === 'FAILED' ? 'text-red-700' :
-                                                                log.status === 'CANCELLED' ? 'text-gray-500' :
-                                                                'text-amber-600'
-                                                            }`}>
+                                                            {log.status === 'SENT' && <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400" />}
+                                                            {log.status === 'FAILED' && <XCircle className="w-4 h-4 text-red-500 dark:text-red-400" />}
+                                                            {log.status === 'CANCELLED' && <XCircle className="w-4 h-4 text-gray-400 dark:text-slate-500" />}
+                                                            {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />}
+
+                                                            <span className={`font-medium ${log.status === 'SENT' ? 'text-green-700 dark:text-green-400' :
+                                                                    log.status === 'FAILED' ? 'text-red-700 dark:text-red-400' :
+                                                                        log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
+                                                                            'text-amber-600 dark:text-amber-400'
+                                                                }`}>
                                                                 {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
                                                             </span>
                                                         </div>
-                                                        
+
                                                         {/* Cancel Button for PENDING */}
                                                         {log.status.startsWith('PENDING') && (
                                                             <button
                                                                 onClick={() => handleCancel(log.id)}
-                                                                className="text-xs px-2 py-1 bg-white border border-red-200 text-red-600 rounded hover:bg-red-50 transition-colors"
+                                                                className="text-xs px-2 py-1 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                                 title="발송 취소"
                                                             >
                                                                 취소
@@ -311,20 +309,20 @@ export const EmailSender: React.FC = () => {
                                                         </div>
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-900">{log.recipient}</td>
-                                                <td className="px-4 py-3 text-gray-600 truncate max-w-xs" title={log.subject}>
+                                                <td className="px-4 py-3 text-gray-900 dark:text-slate-100">{log.recipient}</td>
+                                                <td className="px-4 py-3 text-gray-600 dark:text-slate-400 truncate max-w-xs" title={log.subject}>
                                                     {log.subject}
                                                 </td>
-                                                <td className="px-4 py-3 text-gray-500 text-xs">
+                                                <td className="px-4 py-3 text-gray-500 dark:text-slate-500 text-xs">
                                                     <div>등록: {log.reg_dt}</div>
                                                     {log.is_scheduled === 1 && (
-                                                        <div className="text-blue-600 font-medium">예약: {log.scheduled_dt}</div>
+                                                        <div className="text-blue-600 dark:text-blue-400 font-medium">예약: {log.scheduled_dt}</div>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
-                                                    <button 
+                                                    <button
                                                         onClick={() => setDetailLog(log)}
-                                                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                                         title="내용 보기"
                                                     >
                                                         <Eye className="w-4 h-4" />
@@ -338,7 +336,7 @@ export const EmailSender: React.FC = () => {
                         </div>
 
                         {/* Pagination */}
-                        <div className="mt-4 pt-4 border-t border-gray-100 shrink-0">
+                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-800 shrink-0 transition-colors">
                             <Pagination
                                 currentPage={page}
                                 totalPages={Math.ceil(total / pageSize)}
@@ -357,39 +355,39 @@ export const EmailSender: React.FC = () => {
 
             {/* Detail Modal */}
             {detailLog && (
-                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDetailLog(null)}>
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in" onClick={e => e.stopPropagation()}>
-                        <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                            <h3 className="text-lg font-bold text-gray-800">메일 상세 내용</h3>
-                            <button onClick={() => setDetailLog(null)} className="text-gray-400 hover:text-gray-600">
+                <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 transition-all" onClick={() => setDetailLog(null)}>
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in transition-colors duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">메일 상세 내용</h3>
+                            <button onClick={() => setDetailLog(null)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
                                 <XCircle className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto font-pretendard">
                             <div className="grid grid-cols-4 gap-2 text-sm">
-                                <span className="text-gray-500 font-medium">수신자:</span>
-                                <span className="col-span-3 text-gray-900">{detailLog.recipient}</span>
-                                <span className="text-gray-500 font-medium">제목:</span>
-                                <span className="col-span-3 text-gray-900 font-bold">{detailLog.subject}</span>
-                                <span className="text-gray-500 font-medium">발신자:</span>
-                                <span className="col-span-3">
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">수신자:</span>
+                                <span className="col-span-3 text-gray-900 dark:text-slate-200">{detailLog.recipient}</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">제목:</span>
+                                <span className="col-span-3 text-gray-900 dark:text-slate-100 font-bold">{detailLog.subject}</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">발신자:</span>
+                                <span className="col-span-3 text-gray-600 dark:text-slate-300">
                                     {detailLog.user_uid === null ? 'AI 에이전트' : `${detailLog.user_nm} (${detailLog.user_id})`}
                                 </span>
                             </div>
-                            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] whitespace-pre-wrap text-gray-800 text-sm leading-relaxed">
+                            <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700 min-h-[200px] whitespace-pre-wrap text-gray-800 dark:text-slate-200 text-sm leading-relaxed transition-colors">
                                 {detailLog.content}
                             </div>
                             {detailLog.error_msg && (
-                                <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-100 text-xs flex items-center gap-2">
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg border border-red-100 dark:border-red-900/50 text-xs flex items-center gap-2">
                                     <AlertCircle className="w-4 h-4" />
                                     {detailLog.error_msg}
                                 </div>
                             )}
                         </div>
-                        <div className="p-4 border-t border-gray-100 flex justify-end">
-                            <button 
+                        <div className="p-4 border-t border-gray-100 dark:border-slate-800 flex justify-end bg-gray-50 dark:bg-slate-800/50 transition-colors">
+                            <button
                                 onClick={() => setDetailLog(null)}
-                                className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                                className="px-6 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                             >
                                 닫기
                             </button>
