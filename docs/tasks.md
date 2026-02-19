@@ -481,3 +481,17 @@
  - [x] 3. 헤더 내 테마 전환 토클 버튼 추가
  - [x] 4. 전역 컴포넌트(Sidebar, Dashboard, Modal 등) 다크 모드 스타일 적용
  - [x] 5. 기능 검증 완료
+
+## 57. OpenAPI 메타데이터 관리 기능 구현 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `openapi_meta.py` 구현 (카테고리/태그 수정 및 안전한 삭제 로직)
+- [x] 2. Backend: 신규 관리 API 엔드포인트 구현 (`PUT`, `DELETE`, `GET by-meta`)
+- [x] 3. Frontend: `OpenApiMetaManager.tsx` 컴포넌트 구현 (관리자 전용)
+- [x] 4. Frontend: `App.tsx` 메뉴 연동 및 `OpenApiManager.tsx` 중복 UI 정리
+- [x] 5. 기능 검증 및 린트 오류 수정 완료
+
+## 58. OpenAPI PDF 내보내기 기능 보완 (Refinement)
+- [x] 1. Backend: `get_openapi_by_tool_id` 수정 (카테고리명 및 태그 정보 포함)
+- [x] 2. Utils: `pdf_generator.py` 수정 (문서 내 카테고리와 태그 항목 추가)
+- [x] 3. Frontend: 도구 목록 및 상세 타입 정의(`OpenApiConfig`) 업데이트로 데이터 정합성 확보
+- [x] 4. 기능 검증 완료

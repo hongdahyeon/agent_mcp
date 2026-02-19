@@ -12,6 +12,9 @@ export interface OpenApiConfig {
     description_agent: string;
     description_info: string;
     batch_id: string;
+    category_id?: number;
+    category_name?: string;
+    tags?: string[];
     reg_dt?: string;
 }
 

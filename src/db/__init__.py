@@ -90,6 +90,22 @@ from .openapi_limit import (
     delete_openapi_limit
 )
 
+from .openapi_meta import (
+    get_openapi_categories,
+    upsert_openapi_category,
+    update_openapi_category,
+    delete_openapi_category,
+    search_openapi_tags,
+    upsert_openapi_tag,
+    update_openapi_tag,
+    delete_openapi_tag,
+    update_openapi_tags,
+    get_openapi_tags,
+    get_openapi_by_meta,
+    get_openapi_meta_stats
+)
+
+
 
 
 from .schema import (
@@ -178,5 +194,18 @@ __all__ = [
     'get_openapi_limit',
     'get_openapi_limit_list',
     'upsert_openapi_limit',
-    'delete_openapi_limit'
+    'delete_openapi_limit',
+    'get_openapi_categories',
+    'upsert_openapi_category',
+    'update_openapi_category',
+    'delete_openapi_category',
+    'search_openapi_tags',
+    'upsert_openapi_tag',
+    'update_openapi_tag',
+    'delete_openapi_tag',
+    'update_openapi_tags',
+    'get_openapi_tags',
+    'get_openapi_by_meta',
+    'get_openapi_meta_stats'
 ]
+

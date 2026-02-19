@@ -881,3 +881,40 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
 1. **Persistence**: 테마 변경 후 새로고침 시 설정이 유지됨을 확인.
 2. **Component Unity**: 모든 메뉴 및 모달에서 일관된 다크 테마가 적용됨을 확인.
 3. **Chart Integration**: 대시보드 진입 시 및 테마 전환 시 차트 색상이 즉시 반응함을 확인.
+
+---
+
+## Phase 33: OpenAPI Meta Management (Admin Only) [Completed]
+
+### Goal
+관리자(Admin)가 OpenAPI의 카테고리와 태그를 체계적으로 관리(이름 수정, 안전한 삭제)할 수 있는 전용 인터페이스를 제공하고, 데이터 정합성을 유지합니다.
+
+### Implemented Changes
+- **Database (`src/db/openapi_meta.py`)**: 
+    - 카테고리/태그 이름 수정을 위한 `update_openapi_category`, `update_openapi_tag` 구현.
+    - 삭제 시 연관된 OpenAPI 존재 여부를 체크하는 안전 장치가 포함된 `delete_openapi_category`, `delete_openapi_tag` 구현.
+    - 특정 메타데이터에 속한 API 목록 조회를 위한 `get_openapi_by_meta` 구현.
+- **Backend API**: `src/routers/openapi.py`에 메타데이터 관리 전용 엔드포인트 추가.
+- **Frontend**: 
+    - `OpenApiMetaManager.tsx`: 카테고리/태그 목록, 인라인 수정, 연관 API 조회 기능을 포함한 어드민 전용 컴포넌트 구축.
+    - `OpenApiManager.tsx`: 기존의 중복된 통계 요약 카드 UI 제거 및 코드 정리.
+- **Integration**: `App.tsx` 사이드바 메뉴 연동 및 타입 안정성 강화.
+
+---
+
+## Phase 34: OpenAPI PDF Export Refinement [Completed]
+
+### Goal
+PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때 해당 API의 카테고리와 태그 정보를 포함하도록 보완합니다.
+
+### Implemented Changes
+- **Backend (`src/db/openapi.py`)**: `get_openapi_by_tool_id` 함수를 수정하여 카테고리명과 태그 목록을 조인 테이블을 통해 함께 조회하도록 최적화했습니다.
+- **Utils (`src/utils/pdf_generator.py`)**: 
+    - PDF 내 "Basic Information" 섹션에 'Category'와 'Tags' 항목을 추가했습니다.
+    - 태그 정보가 없는 경우에도 레이아웃이 깨지지 않도록 예외 처리 로직을 적용했습니다.
+- **Frontend**: `OpenApiConfig` 타입 인터페이스를 업데이트하여 카테고리명과 태그 데이터를 명시적으로 정의하고 `any` 타입을 제거했습니다.
+
+### Verification Results
+1. PDF 문서 내 카테고리와 태그 정보가 정상적으로 표시됨을 확인.
+2. 관리자 메뉴를 통한 카테고리/태그 수정 결과가 실시간으로 반영됨을 확인.
+3. 연관된 API가 있는 메타데이터 삭제 시도시 안내 메시지와 함께 삭제가 방지됨을 확인.
