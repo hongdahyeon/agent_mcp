@@ -22,12 +22,12 @@ export function CustomTools() {
     const [loading, setLoading] = useState(true);
     const [globalError, setGlobalError] = useState(''); // API 에러 등 글로벌 에러
     const [processing, setProcessing] = useState(false); // 저장/삭제 중 로딩 상태
-    
+
     // Pagination
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
-    
+
     // Server-side pagination
     const displayedTools = Array.isArray(tools) ? tools : [];
 
@@ -303,75 +303,74 @@ export function CustomTools() {
     // 4. UI 렌더링
     // -------------------------------------------------------------------------
     return (
-        <div className="space-y-6 h-full flex flex-col">
+        <div className="space-y-6 h-full flex flex-col font-pretendard">
             {/* Header 섹션 */}
-            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                       <Database className="w-6 h-6 text-blue-500" />
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                        <Database className="w-6 h-6 text-blue-500 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
                             사용자 정의 도구 (Custom Tools)
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.</p>
                     </div>
                 </div>
                 <button
                     onClick={handleOpenModal}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-md"
                 >
                     <Plus className="w-4 h-4 mr-2" />
                     새 도구 만들기
                 </button>
             </header>
 
-
             {/* 글로벌 에러 메시지 (API 에러 등) */}
             {globalError && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg flex items-center animate-pulse">
+                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg flex items-center animate-pulse border border-red-100 dark:border-red-900/30 transition-colors">
                     <AlertCircle className="w-5 h-5 mr-2" />
                     {globalError}
                 </div>
             )}
 
             {/* 도구 목록 테이블 (Tool List) */}
-            <div className="bg-white shadow rounded-lg overflow-hidden border border-gray-200 flex-1 flex flex-col">
+            <div className="bg-white dark:bg-slate-900 shadow rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800 flex-1 flex flex-col transition-colors duration-300">
                 <div className="overflow-x-auto flex-1">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50 sticky top-0 z-10">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
+                        <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">이름 / 타입</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">설명 (Agent용)</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이름 / 타입</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">설명 (Agent용)</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">관리</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800 transition-colors">
                             {loading ? (
                                 <tr><td colSpan={4} className="text-center py-10 text-gray-500">로딩 중...</td></tr>
                             ) : tools.length === 0 ? (
                                 <tr><td colSpan={4} className="text-center py-10 text-gray-500">등록된 도구가 없습니다.</td></tr>
                             ) : (
                                 displayedTools.map(tool => (
-                                    <tr key={tool.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
+                                    <tr key={tool.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 {tool.tool_type === 'SQL'
-                                                    ? <Database className="w-4 h-4 text-orange-500 mr-2" />
-                                                    : <Code className="w-4 h-4 text-green-500 mr-2" />
+                                                    ? <Database className="w-4 h-4 text-orange-500 dark:text-orange-400 mr-2" />
+                                                    : <Code className="w-4 h-4 text-green-500 dark:text-green-400 mr-2" />
                                                 }
                                                 <div>
-                                                    <div className="text-sm font-medium text-gray-900">{tool.name}</div>
-                                                    <div className="text-xs text-gray-500">{tool.tool_type}</div>
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{tool.name}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-slate-400">{tool.tool_type}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900 max-w-md truncate" title={tool.description_agent}>
+                                            <div className="text-sm text-gray-900 dark:text-slate-100 max-w-md truncate" title={tool.description_agent}>
                                                 {tool.description_agent}
                                             </div>
-                                            <div className="text-xs text-gray-400 max-w-md truncate">
+                                            <div className="text-xs text-gray-400 dark:text-slate-500 max-w-md truncate">
                                                 {tool.description_user}
                                             </div>
                                         </td>
@@ -391,7 +390,7 @@ export function CustomTools() {
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-white border-t border-gray-200">
+                <div className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 transition-colors">
                     <Pagination
                         currentPage={page}
                         totalPages={Math.ceil(totalItems / pageSize)}
@@ -408,15 +407,15 @@ export function CustomTools() {
 
             {/* 도구 생성/수정 모달 (Modal) */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in border border-gray-100">
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-                            <h3 className="text-lg font-bold text-gray-800">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in font-pretendard">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-scale-in border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 transition-colors">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">
                                 {editingTool ? '도구 수정' : '새 도구 생성'}
                             </h3>
-                            <button 
-                                onClick={() => setIsModalOpen(false)} 
-                                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                             >
                                 <X className="w-6 h-6" />
                             </button>
@@ -426,10 +425,10 @@ export function CustomTools() {
                             {/* 기본 정보 (Basic Info) */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">도구 이름 (영문)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">도구 이름 (영문)</label>
                                     <input
                                         type="text"
-                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.name ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
                                         value={formData.name}
                                         onChange={e => handleChange('name', e.target.value)}
                                         placeholder="get_user_info"
@@ -437,9 +436,9 @@ export function CustomTools() {
                                     {fieldErrors.name && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.name}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">타입</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">타입</label>
                                     <select
-                                        className="block w-full border border-gray-200 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm bg-white transition-all"
+                                        className="block w-full border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 transition-all"
                                         value={formData.tool_type}
                                         onChange={e => handleChange('tool_type', e.target.value)}
                                     >
@@ -451,10 +450,10 @@ export function CustomTools() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">사용자용 설명</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">사용자용 설명</label>
                                     <input
                                         type="text"
-                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.description_user ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.description_user ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
                                         value={formData.description_user}
                                         onChange={e => handleChange('description_user', e.target.value)}
                                         placeholder="사용자 정보를 조회합니다."
@@ -462,10 +461,10 @@ export function CustomTools() {
                                     {fieldErrors.description_user && <p className="mt-1 text-xs text-red-600 font-medium">{fieldErrors.description_user}</p>}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Agent용 설명 (프롬프트)</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Agent용 설명 (프롬프트)</label>
                                     <input
                                         type="text"
-                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.description_agent ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                                        className={`block w-full border rounded-lg shadow-sm py-2 px-3 focus:outline-none sm:text-sm transition-all ${fieldErrors.description_agent ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
                                         value={formData.description_agent}
                                         onChange={e => handleChange('description_agent', e.target.value)}
                                         placeholder="Retrieve user information from DB."
@@ -476,11 +475,11 @@ export function CustomTools() {
 
                             {/* 로직 정의 (Logic Definition) */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
                                     {formData.tool_type === 'SQL' ? 'SQL Query (Use :param_name for binding)' : 'Python Expression'}
                                 </label>
                                 <textarea
-                                    className={`w-full h-32 font-mono text-sm border rounded-lg p-3 focus:outline-none bg-gray-50/50 transition-all ${fieldErrors.definition ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
+                                    className={`w-full h-32 font-mono text-sm border rounded-lg p-3 focus:outline-none bg-gray-50/50 dark:bg-slate-800/50 text-gray-900 dark:text-slate-100 transition-all ${fieldErrors.definition ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500'}`}
                                     value={formData.definition}
                                     onChange={e => handleChange('definition', e.target.value)}
                                     placeholder={formData.tool_type === 'SQL'
@@ -494,7 +493,7 @@ export function CustomTools() {
                             {/* 파라미터 정의 (Parameters) */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <label className="block text-sm font-medium text-gray-700 font-bold">파라미터 정의</label>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 font-bold">파라미터 정의</label>
                                     <button type="button" onClick={handleAddParam} className="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center transition-colors">
                                         <Plus className="w-4 h-4 mr-1" />
                                         파라미터 추가
@@ -502,19 +501,19 @@ export function CustomTools() {
                                 </div>
                                 <div className="space-y-2">
                                     {formData.params.map((param, idx) => (
-                                        <div key={idx} className="flex flex-col space-y-1 bg-gray-50/50 p-2 rounded-lg border border-gray-100 transition-colors hover:border-gray-200">
+                                        <div key={idx} className="flex flex-col space-y-1 bg-gray-50/50 dark:bg-slate-800/50 p-2 rounded-lg border border-gray-100 dark:border-slate-800 transition-colors hover:border-gray-200 dark:hover:border-slate-700">
                                             <div className="flex space-x-2 items-start">
                                                 <div className="flex-1">
                                                     <input
                                                         type="text"
                                                         placeholder="Name"
-                                                        className={`w-full border rounded-lg px-2 py-1.5 text-sm transition-all ${fieldErrors[`param_name_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none'}`}
+                                                        className={`w-full border rounded-lg px-2 py-1.5 text-sm transition-all ${fieldErrors[`param_name_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none'}`}
                                                         value={param.param_name}
                                                         onChange={e => handleParamChange(idx, 'param_name', e.target.value)}
                                                     />
                                                 </div>
                                                 <select
-                                                    className="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                    className="w-24 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                                     value={param.param_type}
                                                     onChange={e => handleParamChange(idx, 'param_type', e.target.value)}
                                                 >
@@ -523,7 +522,7 @@ export function CustomTools() {
                                                     <option value="BOOLEAN">Boolean</option>
                                                 </select>
                                                 <select
-                                                    className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white"
+                                                    className="w-20 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                                     value={param.is_required}
                                                     onChange={e => handleParamChange(idx, 'is_required', e.target.value)}
                                                 >
@@ -534,12 +533,12 @@ export function CustomTools() {
                                                     <input
                                                         type="text"
                                                         placeholder="Description"
-                                                        className={`w-full border rounded-lg px-2 py-1.5 text-sm transition-all ${fieldErrors[`param_desc_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none'}`}
+                                                        className={`w-full border rounded-lg px-2 py-1.5 text-sm transition-all ${fieldErrors[`param_desc_${idx}`] ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none'}`}
                                                         value={param.description}
                                                         onChange={e => handleParamChange(idx, 'description', e.target.value)}
                                                     />
                                                 </div>
-                                                <button type="button" onClick={() => handleRemoveParam(idx)} className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                                                <button type="button" onClick={() => handleRemoveParam(idx)} className="text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -556,14 +555,14 @@ export function CustomTools() {
                                         </div>
                                     ))}
                                     {formData.params.length === 0 && (
-                                        <p className="text-sm text-gray-400 italic text-center py-4 bg-gray-50/30 rounded-lg border border-dashed border-gray-200">파라미터가 비어 있습니다.</p>
+                                        <p className="text-sm text-gray-400 dark:text-slate-600 italic text-center py-4 bg-gray-50/30 dark:bg-slate-800/20 rounded-lg border border-dashed border-gray-200 dark:border-slate-800">파라미터가 비어 있습니다.</p>
                                     )}
                                 </div>
                             </div>
 
                             {/* 테스트 실행 (Test Runner) */}
-                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100/50 shadow-inner">
-                                <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center">
+                            <div className="bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/30 shadow-inner">
+                                <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3 flex items-center">
                                     <Play className="w-4 h-4 mr-1.5" /> 테스트 실행
                                 </h4>
                                 <div className="grid grid-cols-2 gap-4 mb-3">
@@ -571,10 +570,10 @@ export function CustomTools() {
                                     {formData.params.map((p, idx) => (
                                         p.param_name ? (
                                             <div key={idx}>
-                                                <label className="block text-xs font-semibold text-blue-700/70 mb-1">{p.param_name}</label>
+                                                <label className="block text-xs font-semibold text-blue-700/70 dark:text-blue-400/70 mb-1">{p.param_name}</label>
                                                 <input
                                                     type="text"
-                                                    className="w-full text-sm border border-blue-200 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                                    className="w-full text-sm border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
                                                     placeholder={p.param_type}
                                                     onChange={e => {
                                                         const valInput = e.target.value;
@@ -600,18 +599,18 @@ export function CustomTools() {
                                     </button>
                                 </div>
                                 {testResult && (
-                                    <div className="mt-3 bg-gray-900 text-green-400 p-3 rounded-lg text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto shadow-inner">
+                                    <div className="mt-3 bg-gray-900 dark:bg-black text-green-400 p-3 rounded-lg text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto shadow-inner border border-gray-800 dark:border-slate-800">
                                         {testResult}
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end space-x-3">
+                        <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-end space-x-3 transition-colors">
                             <button
                                 type="button"
                                 onClick={() => setIsModalOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                             >
                                 취소
                             </button>
@@ -619,7 +618,7 @@ export function CustomTools() {
                                 type="button"
                                 onClick={handleSubmit}
                                 disabled={processing}
-                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center"
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm disabled:opacity-50 flex items-center"
                             >
                                 {processing && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
                                 {processing ? '저장 중...' : '저장'}

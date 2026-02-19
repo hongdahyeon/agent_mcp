@@ -7,6 +7,8 @@ export interface User {
     user_nm: string;
     role: string;
     is_enable?: string;
+    is_locked?: string;
+    login_fail_count?: number;
     last_cnn_dt?: string;
     login_ts?: number; // 세션 로그인 timestamp
 }

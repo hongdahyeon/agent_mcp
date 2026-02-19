@@ -12,21 +12,20 @@ import { Play, RotateCcw, RefreshCw, Copy, Check } from 'lucide-react';
 
 interface Props {
     tools: Tool[];
-    sendRpc: (method: string, params?: any, id?: number | string) => Promise<void>;
-    lastResult: any;
+    sendRpc: (method: string, params?: Record<string, unknown>, id?: number | string) => Promise<void>;
+    lastResult: unknown;
     refreshTools?: () => void;
 }
 
 export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const [selectedTool, setSelectedTool] = useState<string>('');
-    const [formValues, setFormValues] = useState<Record<string, any>>({});
+    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
     // Result handling (Local state for display control)
-    const [displayResult, setDisplayResult] = useState<any>(lastResult || null);
+    const [displayResult, setDisplayResult] = useState<unknown>(lastResult || null);
     const [copied, setCopied] = useState(false);
 
     const currentTool = tools.find(t => t.name === selectedTool);
-
 
     // Reset form when tool changes
     const handleToolChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -48,11 +47,11 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
         if (!currentTool) return;
 
         // Convert types based on schema
-        const args: Record<string, any> = {};
+        const args: Record<string, unknown> = {};
         const props = currentTool.inputSchema.properties;
 
         Object.keys(formValues).forEach(key => {
-            const prop = props[key];
+            const prop = props[key] as { type?: string };
             const type = prop?.type;
             const value = formValues[key];
 
@@ -87,15 +86,15 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const getFormattedResult = () => {
         if (!displayResult) return '';
         // Deep clone to avoid mutating state directly
-        const renderedResult = JSON.parse(JSON.stringify(displayResult));
+        const renderedResult = JSON.parse(JSON.stringify(displayResult)) as { content?: Array<{ type: string; text?: unknown }> };
         if (renderedResult.content && Array.isArray(renderedResult.content)) {
-            renderedResult.content.forEach((item: any) => {
+            renderedResult.content.forEach((item) => {
                 if (item.type === 'text' && typeof item.text === 'string') {
                     try {
                         // Try to parse inner JSON
-                        const parsed = JSON.parse(item.text);
+                        const parsed = JSON.parse(item.text) as unknown;
                         item.text = parsed;
-                    } catch (e) {
+                    } catch {
                         // Ignore if not valid JSON, keep as string
                     }
                 }
@@ -115,31 +114,31 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     };
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4">
-            <header className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 animate-in fade-in duration-500">
+            <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                        <Play className="w-6 h-6 text-blue-600" />
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+                        <Play className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800">
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">
                             도구 테스터
                         </h2>
                     </div>
                 </div>
             </header>
-            
+
             <div className="flex-1 min-h-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                     {/* Input Area */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden transition-colors duration-300">
                         <div className="mb-6 flex-shrink-0">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">테스트할 도구 선택</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 font-pretendard">테스트할 도구 선택</label>
                             <div className="flex items-center space-x-2">
                                 <select
                                     value={selectedTool}
                                     onChange={handleToolChange}
-                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white hover:border-blue-400"
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:border-blue-400"
                                 >
                                     <option value="">선택하세요 (Select Tool)</option>
                                     {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
@@ -153,7 +152,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                 {refreshTools && (
                                     <button
                                         onClick={refreshTools}
-                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                        className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
                                         title="도구 목록 새로고침"
                                     >
                                         <RefreshCw className="w-5 h-5" />
@@ -162,24 +161,24 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                             </div>
                         </div>
 
-                        <div className="flex-1 space-y-4 mb-6 overflow-y-auto">
+                        <div className="flex-1 space-y-4 mb-6 overflow-y-auto custom-scrollbar">
                             {currentTool ? Object.keys(currentTool.inputSchema.properties).map(key => {
                                 const prop = currentTool.inputSchema.properties[key];
                                 return (
                                     <div key={key}>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            {key} {prop.description && <span className="text-gray-400 text-xs">({prop.description})</span>}
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">
+                                            {key} {prop.description && <span className="text-gray-400 dark:text-slate-500 text-xs">({prop.description})</span>}
                                         </label>
                                         <input
                                             type={prop.type === 'integer' || prop.type === 'number' ? 'number' : 'text'}
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             onChange={(e) => setFormValues(prev => ({ ...prev, [key]: e.target.value }))}
-                                            value={formValues[key] || ''}
+                                            value={(formValues[key] as string | number) || ''}
                                         />
                                     </div>
                                 )
                             }) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-slate-500 font-pretendard">
                                     <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
                                     <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
                                 </div>
@@ -190,7 +189,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                             <button
                                 onClick={handleExecute}
                                 disabled={!selectedTool}
-                                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group"
+                                className="w-full bg-blue-600 dark:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-500 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group font-pretendard"
                             >
                                 <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                                 실행 (Execute)
@@ -199,42 +198,42 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                     </div>
 
                     {/* Result Area */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden transition-colors duration-300">
                         <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                            <h3 className="text-lg font-semibold text-gray-700 flex items-center">
+                            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center font-pretendard">
                                 실행 결과 (JSON)
-                                {displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Updated</span>}
+                                {!!displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">Updated</span>}
                             </h3>
 
-                            {displayResult && (
+                            {!!displayResult && (
                                 <button
                                     onClick={handleCopy}
-                                    className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-gray-200"
+                                    className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
                                     title="결과 복사"
                                 >
                                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    <span>{copied ? 'Copied!' : 'Copy'}</span>
+                                    <span className="font-pretendard">{copied ? 'Copied!' : 'Copy'}</span>
                                 </button>
                             )}
                         </div>
-                        <pre className="flex-1 bg-gray-900 text-green-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 shadow-inner custom-scrollbar">
+                        <pre className="flex-1 bg-gray-900 dark:bg-[#020617] text-green-400 dark:text-emerald-400 rounded-lg p-4 font-mono text-sm overflow-auto whitespace-pre-wrap border border-gray-800 dark:border-slate-800 shadow-inner custom-scrollbar">
                             {displayResult ? (() => {
                                 // Deep clone to avoid mutating state directly
                                 const renderedResult = JSON.parse(JSON.stringify(displayResult));
-                                if (renderedResult.content && Array.isArray(renderedResult.content)) {
-                                    renderedResult.content.forEach((item: any) => {
+                                if (renderedResult && typeof renderedResult === 'object' && 'content' in renderedResult && Array.isArray(renderedResult.content)) {
+                                    (renderedResult.content as Array<{ type: string; text?: unknown }>).forEach((item) => {
                                         if (item.type === 'text' && typeof item.text === 'string') {
                                             try {
-                                                const parsed = JSON.parse(item.text);
+                                                const parsed = JSON.parse(item.text) as unknown;
                                                 item.text = parsed;
-                                            } catch (e) {
+                                            } catch {
                                                 // Ignore
                                             }
                                         }
                                     });
                                 }
                                 return JSON.stringify(renderedResult, null, 2);
-                            })() : <span className="text-gray-600"> ... 실행 결과가 여기에 표시됩니다.</span>}
+                            })() : <span className="text-gray-600 dark:text-slate-600 font-pretendard"> ... 실행 결과가 여기에 표시됩니다.</span>}
                         </pre>
                     </div>
                 </div>

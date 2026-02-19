@@ -13,6 +13,11 @@ except ImportError:
     - [4] check_user_id: 사용자 ID 중복 확인
     - [5] create_user: 새 사용자 생성
     - [6] update_user: 사용자 정보 수정
+        -> (1) 이름, 권한, 상태, 잠금 상태, 로그인 실패 횟수 수정
+        -> (2) 비밀번호 수정은 별도 처리
+    - [7] increment_login_fail_count: 로그인 실패 횟수 증가
+    - [8] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
+    - [9] set_user_locked: 사용자 잠금 상태 설정
 """
 
 # [1] verify_password: 비밀번호 검증
@@ -41,7 +46,7 @@ def get_all_users(page: int = 1, size: int = 20):
     total = cursor.fetchone()[0]
 
     # 보안을 위해 비밀번호 제외
-    query = 'SELECT uid, user_id, user_nm, role, is_enable, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
+    query = 'SELECT uid, user_id, user_nm, role, is_enable, is_locked, login_fail_count, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
     users = conn.execute(query, (size, offset)).fetchall()
     conn.close()
     
@@ -74,14 +79,16 @@ def create_user(user_data: dict):
 
     try:
         conn.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, role, is_enable, last_cnn_dt)
-            VALUES (?, ?, ?, ?, ?, NULL)
+            INSERT INTO h_user (user_id, password, user_nm, role, is_enable, is_locked, login_fail_count, last_cnn_dt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
         ''', (
-            user_data['user_id'], 
-            password_hash, 
-            user_data['user_nm'], 
-            user_data.get('role', 'ROLE_USER'), 
-            user_data.get('is_enable', 'Y')
+            user_data['user_id'],
+            password_hash,
+            user_data['user_nm'],
+            user_data.get('role', 'ROLE_USER'),
+            user_data.get('is_enable', 'Y'),
+            user_data.get('is_locked', 'N'),
+            user_data.get('login_fail_count', 0)
         ))
         conn.commit()
     except Exception: # sqlite3.IntegrityError might not be directly imported unless we import sqlite3
@@ -112,6 +119,14 @@ def update_user(user_id: str, update_data: dict):
         fields.append("is_enable = ?")
         values.append(update_data['is_enable'])
     
+    if 'is_locked' in update_data:
+        fields.append("is_locked = ?")
+        values.append(update_data['is_locked'])
+    
+    if 'login_fail_count' in update_data:
+        fields.append("login_fail_count = ?")
+        values.append(update_data['login_fail_count'])
+    
     if not fields:
         conn.close()
         return # 업데이트할 내용 없음
@@ -121,5 +136,33 @@ def update_user(user_id: str, update_data: dict):
     query = f"UPDATE h_user SET {', '.join(fields)} WHERE user_id = ?"
     
     conn.execute(query, tuple(values))
+    conn.commit()
+    conn.close()
+
+
+# [7] increment_login_fail_count: 로그인 실패 횟수 증가
+def increment_login_fail_count(user_id: str) -> int:
+    """로그인 실패 횟수를 1 증가시키고 현재 횟수를 반환."""
+    conn = get_db_connection()
+    conn.execute('UPDATE h_user SET login_fail_count = login_fail_count + 1 WHERE user_id = ?', (user_id,))
+    conn.commit()
+    
+    row = conn.execute('SELECT login_fail_count FROM h_user WHERE user_id = ?', (user_id,)).fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+# [8] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
+def reset_login_fail_count(user_id: str):
+    """로그인 실패 횟수를 0으로 초기화하고 잠금을 해제."""
+    conn = get_db_connection()
+    conn.execute("UPDATE h_user SET login_fail_count = 0, is_locked = 'N' WHERE user_id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+# [9] set_user_locked: 사용자 잠금 상태 설정
+def set_user_locked(user_id: str, is_locked: str = 'Y'):
+    """사용자의 잠금 상태를 변경."""
+    conn = get_db_connection()
+    conn.execute('UPDATE h_user SET is_locked = ? WHERE user_id = ?', (is_locked, user_id))
     conn.commit()
     conn.close()

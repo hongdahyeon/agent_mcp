@@ -185,7 +185,7 @@
     - [x] bcrypt 라이브러리 버전 고정 (4.0.1)으로 Passlib 호환성 문제 해결
     - [x] Frontend(Tester.tsx)에서 파라미터 타입 변환 로직 추가 (string -> int/bool)
     - [x] Stdio (Claude Desktop) 연동을 위한 stdout 출력 제거 및 sys.path 보강
-근본적인 토큰 전송 로직 수정
+- [x] 1. 근본적인 토큰 전송 로직 수정
 - [x] 2. DB Layer 리팩토링 마무리
     - [x] `db_init_manager.py` -> `src/db/init_manager.py` 이동
     - [x] `src/db/__init__.py`에 `init_db` 노출 및 Import 경로 수정
@@ -409,3 +409,89 @@
 - [x] 4. Documentation
     - [x] 사용 가이드 (`docs/open_api.md`) 작성
     - [x] `requirements.txt` 업데이트 (`xmltodict` 추가)
+
+## 50. OpenAPI Proxy 실행 보안 강화 (Authentication)
+- [x] 1. 통합 인증 의존성 구현 (`src/dependencies.py`: `get_current_active_user`)
+    - [x] JWT (`Authorization: Bearer`) 및 외부 토큰 (`token` query param) 동시 지원
+- [x] 2. OpenAPI 프록시 엔드포인트에 인증 적용 (`src/routers/openapi.py`)
+- [x] 3. 기능 검증 및 테스트 완료
+
+
+## 51. OpenAPI 사용 통계 및 사용량 제한 구현 (Phase 27)
+- [x] 1. DB: `h_openapi_usage`, `h_openapi_limit` 테이블 생성 (`init_manager.py`)
+- [x] 2. DB: `openapi_usage.py` 구현 (로깅 및 ECharts용 통계 조회)
+- [x] 3. DB: `openapi_limit.py` 구현 (TOKEN > USER > ROLE 순위 제한 조회)
+- [x] 4. Backend: `api_execute_openapi` 핸들러 수정 (제한 체크 및 상세 로깅)
+- [x] 5. Backend: 신규 관리 API 구현 (`stats`, `limits`, `my-usage`)
+- [x] 6. Frontend: 관련 Type 정의 (`types/openapi.ts`)
+- [x] 7. Frontend: `OpenApiStats.tsx` 구현 (ECharts 시각화 대시보드)
+- [x] 8. Frontend: `OpenApiLimit.tsx` 구현 (토큰 연동 제한 관리 UI)
+- [x] 9. Frontend: 라우팅 및 메뉴 구성 (`App.tsx`)
+- [x] 10. 전체 기능 검증 및 테스트 완료
+- [x] 11. DB: `h_openapi_usage`에 `error_msg` 컬럼 추가
+- [x] 12. Backend: 에러 발생 시(429 포함) `error_msg` 로깅 로직 보완
+- [x] 13. Frontend: 상세 이력 테이블에 실패 사유(눈 아이콘) 뷰어 추가
+- [x] 14. 최종 검증 및 테스트 완료
+- [x] 15. DB: 오늘 사용량을 도구별로 집계하는 `get_user_openapi_tool_usage` 구현
+- [x] 16. Backend: `/api/openapi/my-usage` 업데이트 (도구별 상세 포함)
+- [x] 17. Frontend: `MyPage.tsx`에 '오늘의 OpenAPI 사용 현황' 섹션 추가
+- [x] 18. 최종 마무리 및 검토 완료
+- [x] 19. Backend: `GET /api/openapi` 목록 조회 권한을 모든 유저로 확대 (일반 유저도 목록 조회 및 사용 가능)
+- [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
+- [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
+- [x] 22. 유저 권한으로 기능 동작 확인 및 `App.tsx` 렌더링 버그 수정 완료
+- [x] 23. Backend: `/api/execute/{tool_id}` 라우터를 `execution.py`로 분리
+- [x] 24. Backend: `src/sse_server.py`에 신규 라우터 등록
+- [x] 25. 기능 동작 테스트 (기존 기능 유지 확인)
+
+## 52. 사이드바 및 레이아웃 개선
+- [x] 1. 접이식 사이드바 상태 관리 및 토글 버튼 구현
+- [x] 2. 1024px 미만 화면 자동 접힘 반응형 로직 적용
+- [x] 3. 사이드바 접힘 시 UI 최적화 (라벨 숨김, 아이콘 정렬)
+
+## 53. OpenAPI 가이드 및 에디터 고도화
+- [x] 1. OpenAPI 사용 제한 목록 가독성 개선 (`target_name` 표시)
+- [x] 2. DB 마이그레이션: `h_openapi` 테이블 `description_info` 컬럼 추가
+- [x] 3. 백엔드 `OpenApiUpsertRequest` 모델 필드 추가 및 저장 오류 수정
+- [x] 4. 프론트엔드 탭 방식(편집/미리보기) 마크다운 에디터 UI 구현
+- [x] 5. HTML 태그(`rehype-raw`) 및 GFM(`remark-gfm`) 렌더링 지원 전면 적용
+- [x] 6. 일반 사용자용 가이드 보기 모달(`prose` 테마) 적용
+
+## 54. 계정 잠금 기능 및 관리자 해제 기능 구현 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_user` 테이블 `is_locked`, `login_fail_count` 컬럼 추가 및 마이그레이션 (`sqlite3` 임포트 오류 수정 포함)
+- [x] 2. Backend: `auth.py` 로그인 로직 수정 (5회 실패 시 잠금, 성공 시 초기화)
+- [x] 3. Backend: `user.py` 및 `users.py` 수정 (관리자용 잠금 해제 기능 및 계정 생성 로직 고도화)
+- [x] 4. Frontend: `Login.tsx` 잠금 메시지 처리 및 오류 수정
+- [x] 5. Frontend: `Users.tsx` 계정 잠금 상태 표시 및 해제 기능 추가
+- [x] 6. 기능 검증 완료
+ 
+ ## 55. OpenAPI 상세 정보 PDF 내보내기 (New)
+ - [x] 상세 구현 계획 수립 (implementation_plan.md)
+ - [x] 1. Dependency: `requirements.txt`에 `fpdf2` 추가
+ - [x] 2. Backend: `src/utils/pdf_generator.py` 구현 (한글 폰트, HTML 태그 제거, 동적 테이블)
+ - [x] 3. Backend: `src/routers/openapi.py` 내 PDF 내보내기 API (`/api/openapi/{tool_id}/export`) 구현 (Admin 전용 서비스 키 포함)
+ - [x] 4. Frontend: `OpenApiManager.tsx`에 PDF 다운로드 버튼 추가 및 연동
+ - [x] 5. 기능 검증 및 UI 최적화 완료
+ 
+ ## 56. 다크 모드(Dark Mode) 구현 (New)
+ - [x] 상세 구현 계획 수립 (implementation_plan.md)
+ - [x] 1. Tailwind CSS 다크 모드 설정 (class strategy)
+ - [x] 2. 테마 상태 관리 훅(useTheme) 및 localStorage 연동
+ - [x] 3. 헤더 내 테마 전환 토클 버튼 추가
+ - [x] 4. 전역 컴포넌트(Sidebar, Dashboard, Modal 등) 다크 모드 스타일 적용
+ - [x] 5. 기능 검증 완료
+
+## 57. OpenAPI 메타데이터 관리 기능 구현 (New)
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `openapi_meta.py` 구현 (카테고리/태그 수정 및 안전한 삭제 로직)
+- [x] 2. Backend: 신규 관리 API 엔드포인트 구현 (`PUT`, `DELETE`, `GET by-meta`)
+- [x] 3. Frontend: `OpenApiMetaManager.tsx` 컴포넌트 구현 (관리자 전용)
+- [x] 4. Frontend: `App.tsx` 메뉴 연동 및 `OpenApiManager.tsx` 중복 UI 정리
+- [x] 5. 기능 검증 및 린트 오류 수정 완료
+
+## 58. OpenAPI PDF 내보내기 기능 보완 (Refinement)
+- [x] 1. Backend: `get_openapi_by_tool_id` 수정 (카테고리명 및 태그 정보 포함)
+- [x] 2. Utils: `pdf_generator.py` 수정 (문서 내 카테고리와 태그 항목 추가)
+- [x] 3. Frontend: 도구 목록 및 상세 타입 정의(`OpenApiConfig`) 업데이트로 데이터 정합성 확보
+- [x] 4. 기능 검증 완료

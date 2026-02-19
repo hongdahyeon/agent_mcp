@@ -612,45 +612,34 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
     -   Use a textarea for `configuration`.
     -   Add "Beautify JSON" or simple validation before submit.
 
-# Phase 20: Gmail Service Integration [Planned]
+## Phase 20: Gmail 연동 및 메일 발송 기능 (Items 32, 34-37) [Completed]
 
-## Goal
-`h_system_config`의 `gmail_config` (JSON)를 파싱하여 메일 발송.
+### 1. 개요
+시스템 설정을 통해 SMTP 정보를 관리하고, 사용자가 웹 UI에서 즉시 또는 예약 메일을 발송할 수 있는 기능을 구현했습니다.
 
-### 1. Mailer Utility
--   Get config by name `gmail_config`.
--   Parse JSON -> extract host, port, user, password.
+### 2. 구현 내용
+- **Mailer Utility (`src/utils/mailer.py`)**: `smtplib`와 `email.mime`을 사용하여 실제 메일 발송 로직을 구현했습니다. `h_system_config`의 Gmail 설정을 동적으로 불러옵니다.
+- **Database Layer (`src/db/email_manager.py`)**: 메일 발송 이력 저장(`h_email_log`), 상태 업데이트(SENT, FAILED, PENDING), 발송 취소 기능을 구현했습니다.
+- **Backend API (`src/sse_server.py`)**: 
+    - `POST /api/email/send`: 메일 발송 요청 접수 (즉시/예약 분기)
+    - `GET /api/email/logs`: 발송 이력 조회
+    - `POST /api/email/cancel/{log_id}`: 예약된 메일 발송 취소
+- **Frontend UI (`EmailSender.tsx`)**: 
+    - 수신자, 제목, 내용 입력 폼
+    - 예약 발송 설정 (현재 시간 기준 미래 시간 선택)
+    - 발송 이력 테이블 및 '취소' 버튼 (PENDING 상태 전용)
 
 ---
 
-# Phase 21: Email Scheduler Implementation [Completed]
+## Phase 21: 자동 예약 발송 스케줄러 (Item 38) [Completed]
 
-## Goal
-예약된 이메일(`is_scheduled=1`, `status='PENDING'`, `scheduled_dt <= now`)을 주기적으로 확인하여 자동으로 발송하는 스케줄러를 구현합니다.
+### 1. 개요
+사용자가 설정한 예약 시간에 맞춰 PENDING 상태인 메일을 자동으로 발송하는 백그라운드 스케줄러를 구현했습니다.
 
-## Requirements
-1.  **Scheduler Library**: `APScheduler` (Advanced Python Scheduler) 사용.
-2.  **Job**: 1분 주기로 DB를 조회하여 발송 대상 이메일을 찾음.
-3.  **Process**:
-    -   DB에서 `PENDING` 상태이면서 `scheduled_dt`가 현재 시간보다 과거/현재인 건 조회.
-    -   SMTP를 통해 메일 발송.
-    -   성공 시 `status='SENT'`, `sent_dt=now`.
-    -   실패 시 `status='FAILED'`, `error_msg` 기록.
-
-## Proposed Changes
-
-### 1. Dependencies
--   `requirements.txt`: `apscheduler` 추가.
-
-### 2. Database Logic (`src/db/email_manager.py`)
--   `get_pending_scheduled_emails()`: 발송 대상 이메일 조회 함수 추가.
-
-### 3. Scheduler Logic (`src/scheduler.py`) [New]
--   `setup_scheduler(app)`: FastAPI 앱 시작 시 스케줄러 구동.
--   `process_scheduled_emails()`: 실제 발송 로직 (DB 조회 -> Mailer 전송 -> DB 업데이트).
-
-###- [x] 4. Integration: `src/sse_server.py`에 스케줄러 연동 (Lifespan)
-- [x] 5. 기능 검증
+### 2. 구현 내용
+- **Scheduler (`src/scheduler.py`)**: `APScheduler` 라이브러리를 사용하여 1분마다 `process_scheduled_emails`를 실행합니다.
+- **발송 로직**: 현재 시간(`now`)보다 이전에 예약된 `PENDING` 건을 조회하여 순차적으로 발송하고 결과를 DB에 업데이트합니다.
+- **통합**: `sse_server.py`의 Lifespan 핸들러에 스케줄러 시작/종료 로직을 포함하여 서버 생명주기와 동기화했습니다.
 
 ---
 
@@ -691,7 +680,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 
 ---
 
-## 작업 결과 및 워크스루 (Walkthrough)
+## Phase 23 작업 결과 및 워크스루 (Walkthrough)
 
 ### 1. Database Layer 수정
 - **`src/db/access_token.py`**: `get_user_by_active_token(token)` 함수를 구현했습니다.
@@ -713,10 +702,219 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 - **`src/utils/server_audit.py`**: `audit_log` 데코레이터가 `async` 함수(Coroutine)를 지원하도록 수정했습니다.
 - **`src/dynamic_loader.py`**: 동적으로 생성된 도구 핸들러에 `@audit_log`를 적용하여, Claude Desktop 등 Stdio 방식을 사용할 때도 동적 도구 실행 이력이 DB에 정상적으로 기록되도록 했습니다.
 
-## Verification Plan
-1. [x] **Dependency Install**: `pip install apscheduler`
-2. [x] **Schedule Test**:
-    - [x] 이메일 예약 발송 요청 (`scheduled_dt` = 2분 뒤).
-    - [x] DB `h_email_log`에 `PENDING` 상태 확인.
-    - [x] 2분 후 자동으로 `SENT`로 변경되는지 확인.
-    - [x] 실제 메일 수신 확인.
+## Phase 24: UI/UX 고도화 및 편의 기능 (Items 33-37, 43-48) [Completed]
+- **메뉴 구조 개편**: 기능별 그룹화 및 사이드바 레이아웃 개선 (Item 33)
+- **메일 발송 관리**: 발송 이력 기록, 취소 기능 및 UI 보강 (Items 34-37)
+- **대시보드 개선**: 사용자별 통계 차트(Donut) 및 결과 통계 레이아웃 최적화 (Items 43-44)
+- **디자인 통일**: 전반적인 UI에 Glassmorphism 스타일 및 동일한 헤더/페이지네이션 적용 (Items 45-47)
+- **데이터 뷰어**: 사용 이력 상세(JSON) 조회를 위한 모달 뷰어 구현 (Item 48)
+
+---
+
+## Phase 25: OpenAPI Proxy Management (Item 49) [Completed]
+- **데이터베이스 연동**: `h_openapi` 테이블 구축 및 CRUD 로직 구현
+- **프록시 서버**: 외부 API를 호출하고 결과를 JSON으로 변환하여 반환하는 엔드포인트 구현
+- **XML 변환**: `xmltodict`를 사용하여 공공데이터 등의 XML 응답을 자동 JSON 변환 처리
+- **관리 UI**: OpenAPI 등록, 수정, 삭제 및 즉석 실행 테스트 UI 구축
+
+---
+
+## Phase 26: OpenAPI Proxy 보안 강화 (Item 50) [Completed]
+- **통합 인증 도입**: JWT와 외부 액세스 토큰(`sk_...`)을 모두 지원하는 `get_current_active_user` 의존성 구현
+- **보안 적용**: 프록시 실행 엔드포인트에 인증 체크를 추가하여 무분별한 외부 호출 차단
+- **인증 유연성**: `Authorization: Bearer` 헤더 및 `token` 쿼리 파라미터 방식 지원
+
+---
+
+## Phase 27: OpenAPI 사용 통계 및 사용량 제한 구현 [Completed]
+
+### 목표
+OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용자, 권한, 그리고 **외부 접속 토큰별**로 일일리 사용량을 제한하는 기능을 구현합니다. 사용 이력은 **차트와 그래프**를 통해 시각화하여 관리 편의성을 높입니다.
+
+### Proposed Changes
+
+#### 1. Database Layer
+*   **[MODIFY] `src/db/init_manager.py`**: 
+    *   `h_openapi_usage`: `user_uid` (Nullable), `token_id` (Nullable, 외부 토큰 식별용) 포함하여 생성.
+    *   `h_openapi_limit`: `target_type`에 `TOKEN` 추가.
+*   **[NEW] `src/db/openapi_usage.py`**: 사용 이력 저장 및 **ECharts 연동용 통계 데이터** 반환 함수 구현.
+*   **[NEW] `src/db/openapi_limit.py`**: TOKEN > USER > ROLE 순으로 적용되는 사용량 제한 조회 로직 구현.
+*   **[MODIFY] `src/db/__init__.py`**: 신규 함수들 Expose.
+
+#### 2. Backend API Layer
+*   **[MODIFY] `src/routers/openapi.py`**:
+    *   `api_execute_openapi` 핸들러 수정: 호출 전 토큰/유저별 제한 체크 및 호출 후 결과(성공/실패/IP 등) 로깅.
+    *   신규 API 추가: `/api/openapi/stats` (차트용 데이터), `/api/openapi/limits` (토큰 포함 관리), `/api/openapi/my-usage`.
+
+#### 3. Frontend Layer
+*   **[NEW] `types/openapi.ts`**: 관련 타입 정의.
+*   **[NEW] `OpenApiStats.tsx`**: 사용 통계 대시보드 (ECharts를 활용한 시각화).
+*   **[NEW] `OpenApiLimit.tsx`**: 사용 제한 관리 UI (토큰 선택 기능 포함).
+*   **[MODIFY] `App.tsx`**: 라우팅 및 메뉴 추가.
+
+#### Implemented Changes
+- **통계 대시보드**: ECharts를 활용한 호출 통계 시각화 구현
+- **사용량 제한**: TOKEN > USER > ROLE 순위의 제한 로직 적용
+- **표시 개선**: 사용 제한 목록에서 ID 대신 실제 이름(사용자명/토큰명) 표시 (`target_name` 추가)
+
+---
+
+## Phase 28: 사이드바 반응형 및 레이아웃 개선 [Completed]
+- **접이식 사이드바**: `isSidebarCollapsed` 상태를 통한 레이아웃 너비 조정 (w-64 <-> w-20)
+- **반응형 디자인**: 1024px 미만 화면에서 사이드바 자동 접힘 처리
+- **UI 최적화**: 접힘 상태에서 아이콘 중심 정렬 및 라벨 숨김 처리
+
+---
+
+## Phase 29: OpenAPI 가이드 에디터 고도화 [Completed]
+- **에디터 UI**: 마크다운 편집과 실시간 미리보기를 전환할 수 있는 **탭 방식** 도입
+- **데이터 모델**: `h_openapi` 테이블 및 Pydantic 모델에 `description_info` 필드 반영 및 저장 오류 수정
+- **렌더링 지원**:
+    - `rehype-raw` 적용으로 마크다운 내 HTML 태그(`<b>` 등) 지원
+    - `remark-gfm` 적용으로 표, 링크 등 풍부한 서식 지원
+- **사용자 경험**: 목록의 '눈' 아이콘을 통해 깔끔한 `prose` 테마 모달로 가이드 제공
+
+
+---
+
+## Phase 30: Account Locking & Admin Unlocking Logic (New)
+
+### Goal
+보안 강화를 위해 5회 이상 로그인 실패 시 계정을 자동으로 잠금 처리하고, 관리자가 이를 확인하고 해제할 수 있는 기능을 구현합니다.
+
+### Proposed Changes
+
+#### 1. Database Layer
+- **[MODIFY] `src/db/init_manager.py`**:
+    - `h_user` 테이블에 `is_locked` (TEXT, 'N'/'Y'), `login_fail_count` (INTEGER, Default 0) 컬럼 추가.
+    - 기존 DB를 위한 ALTER TABLE 마이그레이션 로직 추가.
+- **[MODIFY] `src/db/user.py`**:
+    - `increment_login_fail_count(user_id)`: 실패 횟수 증가 및 현재 횟수 반환.
+    - `reset_login_fail_count(user_id)`: 실패 횟수 0으로 초기화 및 잠금 해제.
+    - `set_user_locked(user_id, is_locked)`: 잠금 상태 직접 변경.
+
+#### 2. Backend API
+- **[MODIFY] `src/routers/auth.py`**:
+    - 로그인 시도 시 `is_locked` 체크.
+    - 비밀번호 불일치 시 `login_fail_count` 증가, 5회 도달 시 `is_locked='Y'`.
+    - 로그인 성공 시 `login_fail_count` 초기화.
+- **[MODIFY] `src/routers/users.py`**:
+    - 사용자 정보 수정 API에서 `is_locked` 필드 처리 지원.
+
+#### 3. Frontend Layer
+- **[MODIFY] `src/frontend/src/components/Login.tsx`**:
+    - 403 에러 발생 시 'locked' 포함 여부에 따라 잠금 메시지 표시.
+- **[MODIFY] `src/frontend/src/components/Users.tsx`**:
+    - 사용자 목록에 '잠금 상태' 컬럼 추가.
+    - 모달 또는 목록에서 잠금 해제 기능 제공.
+
+### Verification Plan
+1. 잘못된 비번으로 5회 로그인 시도 -> 계정 잠금 메시지 확인.
+2. DB 상에서 `is_locked='Y'`, `login_fail_count=5` 확인.
+3. 관리자 계정으로 로그인하여 '사용자 관리' 메뉴 접속.
+4. 해당 유저의 잠금 상태 확인 및 '해제' 버튼 클릭.
+5. 유저가 다시 정상 로그인 가능한지 확인 (실패 횟수 초기화 여부 포함).
+ 
+ ---
+ 
+ ## Phase 31: OpenAPI PDF Export [Completed]
+ 
+ ### Goal
+ 등록된 OpenAPI의 상세 정보를 PDF 파일로 내보내는 기능을 구현하여 사용자가 문서를 오프라인으로 보관하거나 공유하기 쉽게 합니다.
+ 
+ ### Implemented Changes
+ - **PDF Generator**: `fpdf2` 라이브러리를 기반으로 한 `src/utils/pdf_generator.py`를 구현했습니다.
+     - 한국어 지원을 위해 `Malgun Gothic` 폰트를 시스템 또는 프로젝트 경로에서 로드합니다.
+     - 사용자 가이드 내 HTML 태그(`<b>` 등)를 제거하여 텍스트만 깔끔하게 출력합니다.
+     - `fpdf2`의 최신 테이블 기능을 사용하여 URL, 서비스 키 등 길이가 긴 데이터도 셀 높이가 자동 조절되도록 최적화했습니다.
+ - **Backend API**: `src/routers/openapi.py`에 `/api/openapi/{tool_id}/export` 엔드포인트를 추가했습니다.
+     - 다운로드하는 사용자가 `ROLE_ADMIN`일 경우에만 서비스 키 정보를 포함하여 생성합니다.
+     - 파일명 인코딩을 처리하여 한글 파일명이 깨지지 않도록 구현했습니다.
+ - **Frontend**: `OpenApiManager.tsx` 목록 화면의 '작업' 컬럼에 PDF 다운로드 아이콘 및 핸들러를 추가했습니다.
+ 
+ ### Verification Results
+ 1. OpenAPI 목록에서 PDF 아이콘 클릭 시 파일 다운로드 확인.
+ 2. 관리자 계정으로 다운로드 시 서비스 키 포함 확인.
+ 3. 일반 사용자 계정으로 다운로드 시 서비스 키 제외 확인.
+ 4. 긴 텍스트 및 한글 깨짐 없이 레이아웃이 깔끔하게 유지됨을 확인.
+ 
+ ---
+ 
+ ## Phase 32: Dark Mode Implementation [Planned]
+ 
+ ### Goal
+ 사용자 경험(UX) 개선을 위해 시스템 전반에 다크 모드(Dark Mode)를 지원합니다. 사용자는 헤더의 버튼을 통해 테마를 전환할 수 있으며, 설정은 브라우저에 저장되어 유지됩니다.
+ 
+ ### Proposed Changes
+ - **Styles**: Tailwind CSS의 `darkMode: 'class'` 설정을 활성화하고 전역 테마 변수를 정의합니다.
+ - **State Logic**: `localStorage`와 연동되는 `useTheme` 커스텀 훅을 통해 테마 상태를 관리합니다.
+ - **UI Components**:
+     - **Header**: 테마 전환(Sun/Moon) 버튼 추가.
+     - **Common**: `dark:` 클래스 접두사를 사용하여 배경, 텍스트, 보더 색상을 어두운 톤으로 조정합니다.
+     - **ECharts**: 테마 변경 시 차트 테마(Dark/Light)도 동적으로 전환되도록 처리합니다.
+ 
+ ### Verification Plan
+ 1. 테마 토글 버튼 작동 여부 및 즉각적인 UI 반영 확인.
+ 2. 새로고침 시 테마 유지 확인.
+ 3. 전반적인 UI 컴포넌트(모달, 테이블, 차트) 시인성 검토.
+---
+
+## Phase 32: Dark Mode Implementation [Completed]
+
+### Goal
+사용자가 라이트 모드와 다크 모드를 자유롭게 전환할 수 있도록 시스템 전반에 테마 기능을 도입합니다. 사용자 설정은 저장되어 새로고침 후에도 유지되어야 합니다.
+
+### Implemented Changes
+
+#### 1. Configuration & Utilities
+- **Tailwind CSS**: `darkMode: 'class'` 설정을 통해 클래스 기반 다크 모드 활성화.
+- **useTheme Hook**: 테마 상태 (`light` / `dark`) 관리, `localStorage` 연동, DOM 클래스 조작 로직 구현.
+- **Global Styles**: `index.css`에 기본 배경/글자색 및 매끄러운 전환을 위한 `transition` 효과 추가.
+
+#### 2. Frontend Components
+- **App Layout**: 헤더에 테마 전환 버튼 (Sun/Moon 아이콘) 추가, 사이드바 및 레이아웃에 다크 모드 스타일 적용.
+- **Dashboard**: ECharts 차트 테마를 현재 모드에 맞게 동적으로 변경하도록 구현 (`backgroundColor: 'transparent'`).
+- **Tester / LogViewer**: 입력 필드, 코드 블록, 결과 표시창 등 주요 컴포넌트에 통일된 다크 모드 스타일 적용.
+- **OpenApiManager**: 복잡한 모달, 탭, 에디터 및 미리보기 영역까지 모든 UI 요소에 다크 모드 적용 완료.
+
+### Verification Results
+1. **Persistence**: 테마 변경 후 새로고침 시 설정이 유지됨을 확인.
+2. **Component Unity**: 모든 메뉴 및 모달에서 일관된 다크 테마가 적용됨을 확인.
+3. **Chart Integration**: 대시보드 진입 시 및 테마 전환 시 차트 색상이 즉시 반응함을 확인.
+
+---
+
+## Phase 33: OpenAPI Meta Management (Admin Only) [Completed]
+
+### Goal
+관리자(Admin)가 OpenAPI의 카테고리와 태그를 체계적으로 관리(이름 수정, 안전한 삭제)할 수 있는 전용 인터페이스를 제공하고, 데이터 정합성을 유지합니다.
+
+### Implemented Changes
+- **Database (`src/db/openapi_meta.py`)**: 
+    - 카테고리/태그 이름 수정을 위한 `update_openapi_category`, `update_openapi_tag` 구현.
+    - 삭제 시 연관된 OpenAPI 존재 여부를 체크하는 안전 장치가 포함된 `delete_openapi_category`, `delete_openapi_tag` 구현.
+    - 특정 메타데이터에 속한 API 목록 조회를 위한 `get_openapi_by_meta` 구현.
+- **Backend API**: `src/routers/openapi.py`에 메타데이터 관리 전용 엔드포인트 추가.
+- **Frontend**: 
+    - `OpenApiMetaManager.tsx`: 카테고리/태그 목록, 인라인 수정, 연관 API 조회 기능을 포함한 어드민 전용 컴포넌트 구축.
+    - `OpenApiManager.tsx`: 기존의 중복된 통계 요약 카드 UI 제거 및 코드 정리.
+- **Integration**: `App.tsx` 사이드바 메뉴 연동 및 타입 안정성 강화.
+
+---
+
+## Phase 34: OpenAPI PDF Export Refinement [Completed]
+
+### Goal
+PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때 해당 API의 카테고리와 태그 정보를 포함하도록 보완합니다.
+
+### Implemented Changes
+- **Backend (`src/db/openapi.py`)**: `get_openapi_by_tool_id` 함수를 수정하여 카테고리명과 태그 목록을 조인 테이블을 통해 함께 조회하도록 최적화했습니다.
+- **Utils (`src/utils/pdf_generator.py`)**: 
+    - PDF 내 "Basic Information" 섹션에 'Category'와 'Tags' 항목을 추가했습니다.
+    - 태그 정보가 없는 경우에도 레이아웃이 깨지지 않도록 예외 처리 로직을 적용했습니다.
+- **Frontend**: `OpenApiConfig` 타입 인터페이스를 업데이트하여 카테고리명과 태그 데이터를 명시적으로 정의하고 `any` 타입을 제거했습니다.
+
+### Verification Results
+1. PDF 문서 내 카테고리와 태그 정보가 정상적으로 표시됨을 확인.
+2. 관리자 메뉴를 통한 카테고리/태그 수정 결과가 실시간으로 반영됨을 확인.
+3. 연관된 API가 있는 메타데이터 삭제 시도시 안내 메시지와 함께 삭제가 방지됨을 확인.

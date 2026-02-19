@@ -15,3 +15,9 @@ boto3
 
 # XML to JSON conversion
 xmltodict
+
+# Markdown processing
+markdown
+
+# PDF generation
+fpdf2

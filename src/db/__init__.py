@@ -19,7 +19,10 @@ from .user import (
     get_all_users,
     check_user_id,
     create_user,
-    update_user
+    update_user,
+    increment_login_fail_count,
+    reset_login_fail_count,
+    set_user_locked
 )
 
 from .login_hist import (
@@ -72,6 +75,37 @@ from .openapi import (
     delete_openapi
 )
 
+from .openapi_usage import (
+    log_openapi_usage,
+    get_openapi_usage_logs,
+    get_openapi_stats,
+    get_user_openapi_daily_usage,
+    get_user_openapi_tool_usage
+)
+
+from .openapi_limit import (
+    get_openapi_limit,
+    get_openapi_limit_list,
+    upsert_openapi_limit,
+    delete_openapi_limit
+)
+
+from .openapi_meta import (
+    get_openapi_categories,
+    upsert_openapi_category,
+    update_openapi_category,
+    delete_openapi_category,
+    search_openapi_tags,
+    upsert_openapi_tag,
+    update_openapi_tag,
+    delete_openapi_tag,
+    update_openapi_tags,
+    get_openapi_tags,
+    get_openapi_by_meta,
+    get_openapi_meta_stats
+)
+
+
 
 
 from .schema import (
@@ -106,6 +140,9 @@ __all__ = [
     'check_user_id',
     'create_user',
     'update_user',
+    'increment_login_fail_count',
+    'reset_login_fail_count',
+    'set_user_locked',
     'log_login_attempt',
     'get_login_history',
     'log_tool_usage',
@@ -148,5 +185,27 @@ __all__ = [
     'get_openapi_list',
     'get_openapi_by_tool_id',
     'upsert_openapi',
-    'delete_openapi'
+    'delete_openapi',
+    'log_openapi_usage',
+    'get_openapi_usage_logs',
+    'get_openapi_stats',
+    'get_user_openapi_daily_usage',
+    'get_user_openapi_tool_usage',
+    'get_openapi_limit',
+    'get_openapi_limit_list',
+    'upsert_openapi_limit',
+    'delete_openapi_limit',
+    'get_openapi_categories',
+    'upsert_openapi_category',
+    'update_openapi_category',
+    'delete_openapi_category',
+    'search_openapi_tags',
+    'upsert_openapi_tag',
+    'update_openapi_tag',
+    'delete_openapi_tag',
+    'update_openapi_tags',
+    'get_openapi_tags',
+    'get_openapi_by_meta',
+    'get_openapi_meta_stats'
 ]
+
