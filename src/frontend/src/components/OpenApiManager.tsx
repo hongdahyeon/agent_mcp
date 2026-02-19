@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Globe, Plus, Trash2, Edit2, Play, Save, X, Link as LinkIcon, FileText, Upload, Eye, EyeOff, Copy, Check, FileDown } from 'lucide-react';
+import { Globe, Plus, Trash2, Edit2, Play, Save, X, Link as LinkIcon, FileText, Upload, Eye, EyeOff, Copy, Check, FileDown, Search, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
+import Autocomplete from './common/Autocomplete';
 import type { OpenApiConfig, UploadedFile } from '../types/openApiConfig';
+
+interface MetaItem {
+    id: number;
+    name: string;
+    count?: number;
+}
 
 // 파일 다운로드
 const handleDownload = async (fileId: string, fileName: string) => {
@@ -59,6 +66,18 @@ export function OpenApiManager() {
     const [guideModal, setGuideModal] = useState<{ open: boolean; api?: OpenApiConfig }>({ open: false });
     const [editorTab, setEditorTab] = useState<'edit' | 'preview'>('edit');
 
+    // 카테고리/태그 데이터
+    const [categories, setCategories] = useState<MetaItem[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<MetaItem | null>(null);
+    const [selectedTags, setSelectedTags] = useState<MetaItem[]>([]);
+    
+    // 필터링 상태
+    const [filterCategory, setFilterCategory] = useState<string>('');
+    const [filterQ, setFilterQ] = useState<string>('');
+    const [selectedFilterTag, setSelectedFilterTag] = useState<MetaItem | null>(null);
+
+
+
     // 현재 세션 유저 정보
     const [currentUser] = useState(() => {
         const userStr = localStorage.getItem('user_session');
@@ -67,12 +86,27 @@ export function OpenApiManager() {
     const isAdmin = currentUser?.role === 'ROLE_ADMIN';
 
     // OpenAPI 목록 조회
-    const fetchApis = useCallback(async (pageNum = page, size = pageSize) => {
+    const fetchApis = useCallback(async (
+        pageNum: number = page, 
+        size: number = pageSize, 
+        categoryId: string = filterCategory, 
+        q: string = filterQ, 
+        tagObj: any = selectedFilterTag
+    ) => {
         try {
             setLoading(true);
-            const res = await fetch(`/api/openapi?page=${pageNum}&size=${size}`, {
+            const params = new URLSearchParams({
+                page: pageNum.toString(),
+                size: size.toString()
+            });
+            if (categoryId) params.append('category_id', categoryId);
+            if (q) params.append('q', q);
+            if (tagObj?.name) params.append('tag', tagObj.name);
+
+            const res = await fetch(`/api/openapi?${params.toString()}`, {
                 headers: getAuthHeaders(),
             });
+
             if (!res.ok) throw new Error('Failed to fetch OpenAPIs');
             const data = await res.json();
             setApis(data.items || []);
@@ -82,11 +116,26 @@ export function OpenApiManager() {
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize]);
+    }, [page, pageSize, filterCategory, filterQ, selectedFilterTag]);
 
+    // 실제 트리거용 useEffect
     useEffect(() => {
-        fetchApis(page, pageSize);
-    }, [page, pageSize, fetchApis]);
+        // filterCategory, selectedFilterTag, page, pageSize 변경 시 즉시 검색
+        fetchApis(page, pageSize, filterCategory, filterQ, selectedFilterTag);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize, filterCategory, selectedFilterTag]); 
+
+    // 초기 데이터 로드 (카테고리)
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch('/api/openapi/categories', { headers: getAuthHeaders() });
+                if (res.ok) setCategories(await res.json());
+            } catch (e) { console.error(e); }
+        };
+        fetchCategories();
+    }, []);
+
 
     // OpenAPI 저장
     const handleSave = async () => {
@@ -147,20 +196,23 @@ export function OpenApiManager() {
                 },
                 body: JSON.stringify({
                     ...currentApi,
+                    category_id: selectedCategory?.id || null,
+                    tags: selectedTags.map(t => t.name),
                     batch_id: batchId,
                     method: currentApi.method || 'GET',
                     auth_type: currentApi.auth_type || 'NONE',
                 }),
             });
 
+
             if (!res.ok) throw new Error('Failed to save OpenAPI');
 
+            fetchApis();
             setIsModalOpen(false);
             setCurrentApi({});
             setSelectedFiles([]);
             setAttachedFiles([]);
             setRemovedFileIds([]);
-            fetchApis();
         } catch (err: unknown) {
             if (err instanceof Error) alert(err.message);
         }
@@ -208,7 +260,6 @@ export function OpenApiManager() {
         }
     };
 
-    // 수정 모달
     const openEditModal = (api: OpenApiConfig) => {
         setCurrentApi({ ...api });
         setRemovedFileIds([]);
@@ -220,7 +271,10 @@ export function OpenApiManager() {
             setAttachedFiles([]);
         }
         setIsModalOpen(true);
+        setSelectedCategory(api.category_id ? { id: api.category_id, name: api.category_name || '' } : null);
+        setSelectedTags(api.tags?.map((t: string) => ({ name: t, id: t })) || []);
     };
+
 
     // 테스트 실행
     const handleRunTest = async () => {
@@ -290,24 +344,100 @@ export function OpenApiManager() {
                         </p>
                     </div>
                 </div>
-                {isAdmin && (
-                    <button
-                        onClick={() => { setCurrentApi({}); setIsModalOpen(true); setSelectedFiles([]); setAttachedFiles([]); setRemovedFileIds([]); }}
-                        className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all shadow-sm font-pretendard"
-                    >
-                        <Plus className="w-4 h-4" />
-                        신규 API 등록
-                    </button>
-                )}
+                <div className="flex items-center gap-3">
+                    {isAdmin && (
+                        <button
+                            onClick={() => { 
+                                setCurrentApi({}); 
+                                setSelectedCategory(null); 
+                                setSelectedTags([]); 
+                                setIsModalOpen(true); 
+                                setSelectedFiles([]); 
+                                setAttachedFiles([]); 
+                                setRemovedFileIds([]); 
+                            }}
+                            className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all shadow-sm font-pretendard"
+                        >
+                            <Plus className="w-4 h-4" />
+                            신규 API 등록
+                        </button>
+                    )}
+                </div>
+
             </header>
+
+            {/* Search Form */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-wrap gap-4 items-end flex-none transition-colors duration-300 font-pretendard">
+                <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">이름 / 도구 ID</label>
+                    <div className="relative">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                            type="text"
+                            placeholder="검색어 입력..."
+                            className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                            value={filterQ}
+                            onChange={(e) => setFilterQ(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    fetchApis(1);
+                                }
+                            }}
+                        />
+                    </div>
+                </div>
+                <div className="w-48">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">카테고리</label>
+                    <select
+                        className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                        value={filterCategory}
+                        onChange={(e) => {
+                            setFilterCategory(e.target.value);
+                            setPage(1);
+                        }}
+                    >
+                        <option value="">전체 카테고리</option>
+                        {categories.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="w-64">
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">태그</label>
+                    <Autocomplete
+                        value={selectedFilterTag}
+                        onChange={setSelectedFilterTag}
+                        onSearch={async (q) => {
+                            const res = await fetch(`/api/openapi/tags/search?q=${q}`, { headers: getAuthHeaders() });
+                            return await res.json();
+                        }}
+                        placeholder="태그 선택..."
+                    />
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => {
+                            setFilterQ('');
+                            setFilterCategory('');
+                            setSelectedFilterTag(null);
+                            setPage(1);
+                        }}
+                        className="px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        초기화
+                    </button>
+                </div>
+            </div>
 
             <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col min-h-0 overflow-hidden transition-colors duration-300">
                 <div className="flex-1 overflow-x-auto custom-scrollbar">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 text-sm sticky top-0 z-10 font-pretendard">
                             <tr>
-                                <th className="px-6 py-4 text-left font-medium">도구 ID / 한글명</th>
-                                <th className="px-6 py-4 text-left font-medium">기관명</th>
+                                <th className="px-6 py-4 text-left font-medium">카테고리 / 이름</th>
+                                <th className="px-6 py-4 text-left font-medium">태그</th>
                                 <th className="px-6 py-4 text-left font-medium">메서드 / URL</th>
                                 <th className="px-6 py-4 text-center font-medium">가이드</th>
                                 <th className="px-6 py-4 text-center font-medium">첨부파일</th>
@@ -320,10 +450,20 @@ export function OpenApiManager() {
                             {apis.map((api) => (
                                 <tr key={api.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-gray-900 dark:text-slate-100">{api.name_ko}</div>
-                                        <div className="text-xs text-gray-500 dark:text-slate-500 font-mono mt-1">{api.tool_id}</div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{ (api as any).category_name || '미분류' }</span>
+                                            <div className="font-semibold text-gray-900 dark:text-slate-100 mt-0.5">{api.name_ko}</div>
+                                            <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">{api.tool_id}</div>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-slate-400">{api.org_name || '-'}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-wrap gap-1">
+                                            { (api as any).tags && Array.isArray((api as any).tags) ? (api as any).tags.map((tag: string, idx: number) => (
+                                                <span key={idx} className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] border border-gray-200 dark:border-slate-700">#{tag}</span>
+                                            )) : <span className="text-xs text-gray-300">-</span> }
+                                        </div>
+                                    </td>
+
                                     <td className="px-6 py-4">
                                         <span className={
                                             `inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mr-2 ${api.method === 'GET' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -355,7 +495,7 @@ export function OpenApiManager() {
                                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                                             >
                                                 <FileText className="w-3 h-3" />
-                                                연동됨
+                                                파일 존재
                                             </button>
                                         ) : (
                                             <span className="text-xs text-gray-300 dark:text-slate-700">-</span>
@@ -444,6 +584,7 @@ export function OpenApiManager() {
                 </div>
             </div>
 
+
             {/* Modal */}
             {
                 isModalOpen && (
@@ -467,7 +608,49 @@ export function OpenApiManager() {
                                     </h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">카테고리</label>
+                                            <Autocomplete
+                                                value={selectedCategory}
+                                                onChange={setSelectedCategory}
+                                                onSearch={async (q) => {
+                                                    const res = await fetch(`/api/openapi/categories`, { headers: getAuthHeaders() });
+                                                    const data = await res.json();
+                                                    return data.filter((item: any) => item.name.includes(q));
+                                                }}
+                                                onCreate={async (name) => {
+                                                    const res = await fetch('/api/openapi/categories', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                                                        body: JSON.stringify({ name })
+                                                    });
+                                                    const data = await res.json();
+                                                    // 카테고리 목록 갱신을 위해 상위 상태 업데이트 (생략 가능하나 UX상 좋음)
+                                                    setCategories(prev => [...prev, { id: data.id, name }]);
+                                                    return { id: data.id, name };
+                                                }}
+                                                placeholder="카테고리 선택 또는 입력 후 추가"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">태그 (다중 선택)</label>
+                                            <Autocomplete
+                                                multiple
+                                                value={selectedTags}
+                                                onChange={setSelectedTags}
+                                                onSearch={async (q) => {
+                                                    const res = await fetch(`/api/openapi/tags/search?q=${q}`, { headers: getAuthHeaders() });
+                                                    return await res.json();
+                                                }}
+                                                onCreate={async (name) => {
+                                                    // 태그는 DB에는 저장되지만 매핑은 저장 시점에 처리하므로 클라이언트 상태만 반환
+                                                    return { id: name, name }; 
+                                                }}
+                                                placeholder="태그 입력 후 Enter"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
                                             <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">도구 ID (영문, URL 경로용) *</label>
+
                                             <input
                                                 type="text"
                                                 className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-mono bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"

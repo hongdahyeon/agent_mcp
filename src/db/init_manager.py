@@ -259,6 +259,43 @@ def init_db():
     )
     ''')
 
+    ''' #17. OpenAPI 카테고리 테이블 '''
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi_category (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+
+    ''' #18. OpenAPI 태그 테이블 '''
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi_tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+
+    ''' #19. OpenAPI 태그 매핑 테이블 '''
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_openapi_tag_map (
+        openapi_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        PRIMARY KEY (openapi_id, tag_id),
+        FOREIGN KEY (openapi_id) REFERENCES h_openapi (id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES h_openapi_tag (id) ON DELETE CASCADE
+    )
+    ''')
+
+    ''' #20. OpenAPI 테이블 마이그레이션 (category_id 추가) '''
+    cursor.execute("PRAGMA table_info(h_openapi)")
+    columns = [info[1] for info in cursor.fetchall()]
+    if 'category_id' not in columns:
+        cursor.execute("ALTER TABLE h_openapi ADD COLUMN category_id INTEGER")
+        print("[DB] 마이그레이션: h_openapi 테이블에 category_id 컬럼 추가됨", file=sys.stderr)
+
+
     ''' #17. 기본 시스템 설정 시딩 (완료 후 주석 처리됨) '''
     """
     gmail_config = {

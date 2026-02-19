@@ -99,6 +99,15 @@ def generate_openapi_pdf(
         row.cell(api_data.get('method', 'GET'))
         
         row = table.row()
+        row.cell("Category")
+        row.cell(api_data.get('category_name', '-'))
+
+        row = table.row()
+        row.cell("Tags")
+        tags_list = api_data.get('tags', [])
+        row.cell(", ".join(tags_list) if tags_list else "-")
+
+        row = table.row()
         row.cell("API URL")
         row.cell(api_data.get('api_url', 'N/A'))
         

@@ -18,6 +18,7 @@ import { EmailSender } from './components/EmailSender';
 import { EmailHistory } from './components/EmailHistory';
 import { FileManager } from './components/FileManager';
 import { OpenApiManager } from './components/OpenApiManager';
+import { OpenApiMetaManager } from './components/OpenApiMetaManager';
 import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
 import type { User } from './types/auth';
@@ -25,7 +26,7 @@ import { useTheme } from './hooks/useTheme';
 import {
   Activity, Terminal, FileText,
   CheckCircle2, XCircle, History, LogOut,
-  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe,
+  User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe, Tag,
   Menu, Sun, Moon
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
@@ -88,7 +89,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-stats' | 'openapi-limits';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -264,6 +265,7 @@ function App() {
       label: 'OpenAPI 관리',
       items: [
         { id: 'openapi', label: 'OpenAPI 목록/테스트', icon: Globe }, // 일반 유저도 접근 가능, OpenAPI 사용 가능(수정/등록/삭제 불가능)
+        { id: 'openapi-meta', label: 'OpenAPI 메타 관리', icon: Tag, adminOnly: true },
         { id: 'openapi-stats', label: 'OpenAPI 사용 통계', icon: BarChart4, adminOnly: true },
         { id: 'openapi-limits', label: 'OpenAPI 사용 제한', icon: Shield, adminOnly: true }
       ]
@@ -435,6 +437,7 @@ function App() {
           {activeView === 'config' && user.role === 'ROLE_ADMIN' && <SystemConfig />}
           {activeView === 'file-manager' && <FileManager />}
           {activeView === 'openapi' && <OpenApiManager />}
+          {activeView === 'openapi-meta' && user.role === 'ROLE_ADMIN' && <OpenApiMetaManager />}
           {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats theme={theme} />}
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
         </div>
