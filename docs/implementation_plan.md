@@ -918,3 +918,43 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. PDF 문서 내 카테고리와 태그 정보가 정상적으로 표시됨을 확인.
 2. 관리자 메뉴를 통한 카테고리/태그 수정 결과가 실시간으로 반영됨을 확인.
 3. 연관된 API가 있는 메타데이터 삭제 시도시 안내 메시지와 함께 삭제가 방지됨을 확인.
+
+---
+
+
+## Phase 35: DB 백업 및 복구 기능 (관리자 전용)
+
+### 목표
+서버 내 `backups/` 디렉토리에 DB 스냅샷을 저장하고, 관리자가 목록에서 선택하여 특정 시점으로 복구할 수 있는 기능을 구현합니다.
+
+### 상세 요구사항
+1. **백업 (Backup)**:
+   - 실행 시점의 `agent_mcp.db` 파일을 `backups/` 디렉토리에 복사.
+   - 포맷: `YYYY-MM-DD_HH-mm.db` (예: 2026-02-19_22-24.db)
+2. **목록 조회 (List)**:
+   - `backups/` 디렉토리 내의 파일 목록을 날짜 역순으로 제공.
+3. **복구 (Restore)**:
+   - 관리자가 목록에서 파일을 선택하여 복구 요청.
+   - 현재 DB를 다른 이름으로 안전하게 보관 후, 선택한 파일로 교체.
+   - **주의**: SQLite 연결 상태에 따라 서버 프로세스 재시작이 필요할 수 있으나 유지 가능한 방식으로 시도.
+
+### Proposed Changes
+
+- [x] 상세 구현 계획 수정 반영 (implementation_plan.md)
+- [x] 1. Backend: DB 백업 생성 API 구현 (`POST /api/admin/db/backup`)
+- [x] 2. Backend: 백업 파일 목록 조회 API 구현 (`GET /api/admin/db/backups`)
+- [x] 3. Backend: 특정 파일 선택 복구 API 구현 (`POST /api/admin/db/restore/{filename}`)
+- [x] 4. Frontend: DB 백업 관리 UI 구현 (목록, 생성 버튼)
+- [x] 5. 기능 테스트 및 검증
+- **`DELETE /api/admin/db/backups/{filename}`**: (선택) 불필요한 백업 삭제.
+
+#### 2. Frontend (`src/frontend/src/components/DbBackupManager.tsx` 신설)
+- **UI**: 
+  - [백업 생성] 버튼.
+  - 백업 목록 테이블 (파일명, 생성일시, 크기, [복구] 버튼, [삭제] 버튼).
+- **Navigation**: `App.tsx` 메뉴에 추가.
+
+### Verification Plan
+1. **Backup Test**: 클릭 시 DB 파일이 정상적으로 다운로드되는지 확인.
+2. **Restore Test**: 다른 상태의 DB 파일을 업로드하여 복구 후 데이터 확인.
+3. **Security Test**: 일반 유저 접근 차단 확인.

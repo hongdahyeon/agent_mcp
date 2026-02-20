@@ -3,7 +3,7 @@ import { Tag, Folder, Edit2, Trash2, X, Check, Search, ChevronRight, AlertCircle
 import { getAuthHeaders } from '../utils/auth';
 
 interface MetaItem {
-    id: number;
+    id: number | string;
     name: string;
     count: number;
 }
@@ -19,13 +19,13 @@ export const OpenApiMetaManager = () => {
     const [tags, setTags] = useState<MetaItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'category' | 'tag'>('category');
-    
+
     // Editing state
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | string | null>(null);
     const [editName, setEditName] = useState('');
-    
+
     // Relation view state
-    const [selectedMeta, setSelectedMeta] = useState<{ type: 'category' | 'tag', id: number, name: string } | null>(null);
+    const [selectedMeta, setSelectedMeta] = useState<{ type: 'category' | 'tag', id: number | string, name: string } | null>(null);
     const [relatedApis, setRelatedApis] = useState<ApiItem[]>([]);
     const [apisLoading, setApisLoading] = useState(false);
 
@@ -47,7 +47,7 @@ export const OpenApiMetaManager = () => {
         fetchStats();
     }, [fetchStats]);
 
-    const handleUpdate = async (id: number, type: 'category' | 'tag') => {
+    const handleUpdate = async (id: number | string, type: 'category' | 'tag') => {
         if (!editName.trim()) return;
         try {
             const endpoint = type === 'category' ? `/api/openapi/categories/${id}` : `/api/openapi/tags/${id}`;
@@ -68,7 +68,7 @@ export const OpenApiMetaManager = () => {
         }
     };
 
-    const handleDelete = async (id: number, type: 'category' | 'tag', count: number) => {
+    const handleDelete = async (id: number | string, type: 'category' | 'tag', count: number) => {
         if (count > 0) {
             alert('연관된 OpenAPI가 있는 항목은 삭제할 수 없습니다.');
             return;
@@ -95,7 +95,7 @@ export const OpenApiMetaManager = () => {
         }
     };
 
-    const fetchRelatedApis = async (type: 'category' | 'tag', id: number, name: string) => {
+    const fetchRelatedApis = async (type: 'category' | 'tag', id: number | string, name: string) => {
         try {
             setApisLoading(true);
             setSelectedMeta({ type, id, name });
@@ -138,7 +138,7 @@ export const OpenApiMetaManager = () => {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {items.map(item => (
-                        <div 
+                        <div
                             key={item.id}
                             className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${selectedMeta?.id === item.id && selectedMeta?.type === activeTab ? 'bg-indigo-50/50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-gray-50/30 dark:bg-slate-800/30 border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700'}`}
                         >
@@ -159,7 +159,7 @@ export const OpenApiMetaManager = () => {
                                         <button onClick={() => setEditingId(null)} className="text-gray-400"><X className="w-4 h-4" /></button>
                                     </div>
                                 ) : (
-                                    <div 
+                                    <div
                                         className="flex items-center gap-2 cursor-pointer flex-1"
                                         onClick={() => fetchRelatedApis(activeTab, item.id, item.name)}
                                     >
@@ -170,16 +170,16 @@ export const OpenApiMetaManager = () => {
                                     </div>
                                 )}
                             </div>
-                            
+
                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
+                                <button
                                     onClick={() => { setEditingId(item.id); setEditName(item.name); }}
                                     className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
                                     title="이름 수정"
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => handleDelete(item.id, activeTab, item.count)}
                                     className={`p-1.5 rounded-lg transition-all ${item.count > 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-white dark:hover:bg-slate-800'}`}
                                     disabled={item.count > 0}
@@ -198,7 +198,7 @@ export const OpenApiMetaManager = () => {
             <div className="w-1/2 flex flex-col bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
                 <header className="p-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
                     <h3 className="text-sm font-bold text-gray-600 dark:text-slate-400 flex items-center gap-2">
-                        <Search className="w-4 h-4" /> 
+                        <Search className="w-4 h-4" />
                         {selectedMeta ? (
                             <><span className="text-indigo-600 dark:text-indigo-400">"{selectedMeta.name}"</span> 연관 OpenAPI 목록</>
                         ) : (

@@ -93,8 +93,8 @@ export function Login({ onLogin }: Props) {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-4 transition-colors duration-300">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden border dark:border-slate-700 transition-colors">
                 <div className="bg-blue-600 p-8 text-center">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                         <Lock className="w-8 h-8 text-white" />
@@ -106,21 +106,21 @@ export function Login({ onLogin }: Props) {
                 <div className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {error && (
-                            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center">
+                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm flex items-center">
                                 <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
                                 {error}
                             </div>
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">아이디</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">아이디</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <UserIcon className="h-5 w-5 text-gray-400" />
+                                    <UserIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
                                     placeholder="Enter User ID"
                                     value={userId}
                                     onChange={(e) => setUserId(e.target.value)}
@@ -130,14 +130,14 @@ export function Login({ onLogin }: Props) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">비밀번호</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400" />
+                                    <Lock className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                                 </div>
                                 <input
                                     type="password"
-                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white transition-colors"
                                     placeholder="Enter Password (4+ chars)"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -150,11 +150,11 @@ export function Login({ onLogin }: Props) {
                             <input
                                 id="remember-me"
                                 type="checkbox"
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded dark:bg-slate-700"
                                 checked={rememberMe}
                                 onChange={(e) => setRememberMe(e.target.checked)}
                             />
-                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-slate-300">
                                 아이디 기억하기
                             </label>
                         </div>
@@ -170,10 +170,10 @@ export function Login({ onLogin }: Props) {
                     </form>
 
                     <div className="mt-4 flex items-center justify-between">
-                        <span className="text-xs text-gray-400">초기 계정: admin / 1234</span>
+                        <span className="text-xs text-gray-400 dark:text-slate-500">초기 계정: admin / 1234</span>
                         <button
                             onClick={() => setIsSignupOpen(true)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center gap-1 transition-colors"
+                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
                         >
                             <UserPlus className="w-4 h-4" />
                             회원가입
