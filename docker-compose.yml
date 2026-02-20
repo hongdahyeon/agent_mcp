@@ -1,0 +1,38 @@
+version: "3.8"
+
+name: agent-mcp-infra
+
+services:
+  seaweedfs:
+    container_name: mcp-seaweedfs
+    image: chrislusf/seaweedfs:3.59
+    ports:
+      - "19333:9333"   # Master
+      - "18080:8080"   # Volume
+      - "18888:8888"   # Filer UI
+      - "18333:8333"   # S3 API
+      - "28888:18888"  # gRPC
+    command: "server -s3 -s3.port=8333 -filer -dir=/data -master.volumeSizeLimitMB=1024"
+    volumes:
+      - ./infra/seaweedfs_data:/data
+    networks:
+      - mcp-network
+
+  minio:
+    container_name: mcp-minio
+    image: minio/minio:latest
+    ports:
+      - "19000:9000"   # S3 API
+      - "19001:9001"   # Console UI
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin1234
+    command: server /data --console-address ":9001"
+    volumes:
+      - ./infra/minio_data:/data
+    networks:
+      - mcp-network
+
+networks:
+  mcp-network:
+    driver: bridge

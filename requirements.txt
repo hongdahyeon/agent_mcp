@@ -2,3 +2,22 @@ mcp
 fastapi
 uvicorn
 sse-starlette
+
+apscheduler
+
+# JWT Authentication
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+python-multipart
+# RAG & S3
+boto3
+
+# XML to JSON conversion
+xmltodict
+
+# Markdown processing
+markdown
+
+# PDF generation
+fpdf2
