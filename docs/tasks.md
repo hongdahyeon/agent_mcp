@@ -495,3 +495,11 @@
 - [x] 2. Utils: `pdf_generator.py` 수정 (문서 내 카테고리와 태그 항목 추가)
 - [x] 3. Frontend: 도구 목록 및 상세 타입 정의(`OpenApiConfig`) 업데이트로 데이터 정합성 확보
 - [x] 4. 기능 검증 완료
+
+## 59. DB 백업 및 복구 기능 구현 (New)
+- [x] 상세 구현 계획 수정 반영 (implementation_plan.md)
+- [x] 1. Backend: DB 백업 생성 API 구현 (`POST /api/admin/db/backup`)
+- [x] 2. Backend: 백업 파일 목록 조회 API 구현 (`GET /api/admin/db/backups`)
+- [x] 3. Backend: 특정 파일 선택 복구 API 구현 (`POST /api/admin/db/restore/{filename}`)
+- [x] 4. Frontend: DB 백업 관리 UI 구현 (목록, 생성 버튼)
+- [x] 5. 기능 테스트 및 검증

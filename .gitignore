@@ -9,3 +9,4 @@ dist/
 logs/
 agent_mcp.db
 venv/
+backups/

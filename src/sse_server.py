@@ -19,7 +19,7 @@ from src.utils.auth import verify_token
 from src.db import get_user, get_access_token
 from src.utils.context import set_current_user, clear_current_user
 # Include Routers
-from src.routers import auth, users, mcp as mcp_router, system, email, files, openapi, execution
+from src.routers import auth, users, mcp as mcp_router, system, email, files, openapi, execution, admin_db
 
 """
     - routers/*.py
@@ -40,7 +40,7 @@ os.makedirs(LOG_DIR, exist_ok=True)
 current_time = datetime.datetime.now().strftime("%Y-%m-%d")
 log_filename = f"{LOG_DIR}/{current_time}.txt"
 
-logger = logging.getLogger() 
+logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
@@ -84,6 +84,15 @@ app.add_middleware(
 
 # ==========================================
 # 3. Include Routers
+# - auth.py         : 로그인, 로그아웃, 회원가입, 토큰 갱신 등
+# - users.py        : 사용자 관리
+# - mcp.py          : MCP 서버
+# - system.py       : 시스템 관리
+# - email.py        : 이메일 관리
+# - files.py        : 파일 관리
+# - openapi.py      : OpenAPI 문서
+# - execution.py    : 실행 관리
+# - admin_db.py     : DB 관리 (복구/백업)
 # ==========================================
 app.include_router(auth.router)
 app.include_router(users.router)
@@ -93,6 +102,7 @@ app.include_router(email.router)
 app.include_router(files.router)
 app.include_router(openapi.router)
 app.include_router(execution.router)
+app.include_router(admin_db.router)
 
 # ==========================================
 # 4. SSE Handler (Integrated)

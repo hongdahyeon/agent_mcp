@@ -21,6 +21,7 @@ import { OpenApiManager } from './components/OpenApiManager';
 import { OpenApiMetaManager } from './components/OpenApiMetaManager';
 import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
+import DbBackupManager from './components/DbBackupManager';
 import type { User } from './types/auth';
 import { useTheme } from './hooks/useTheme';
 import {
@@ -89,7 +90,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -275,6 +276,7 @@ function App() {
       items: [
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
+        { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
@@ -440,6 +442,7 @@ function App() {
           {activeView === 'openapi-meta' && user.role === 'ROLE_ADMIN' && <OpenApiMetaManager />}
           {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats theme={theme} />}
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
+          {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
         </div>
       </main>
     </div>

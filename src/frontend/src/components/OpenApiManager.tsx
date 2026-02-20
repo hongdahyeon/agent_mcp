@@ -9,7 +9,7 @@ import Autocomplete from './common/Autocomplete';
 import type { OpenApiConfig, UploadedFile } from '../types/openApiConfig';
 
 interface MetaItem {
-    id: number;
+    id: number | string;
     name: string;
     count?: number;
 }
@@ -70,7 +70,7 @@ export function OpenApiManager() {
     const [categories, setCategories] = useState<MetaItem[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<MetaItem | null>(null);
     const [selectedTags, setSelectedTags] = useState<MetaItem[]>([]);
-    
+
     // 필터링 상태
     const [filterCategory, setFilterCategory] = useState<string>('');
     const [filterQ, setFilterQ] = useState<string>('');
@@ -87,10 +87,10 @@ export function OpenApiManager() {
 
     // OpenAPI 목록 조회
     const fetchApis = useCallback(async (
-        pageNum: number = page, 
-        size: number = pageSize, 
-        categoryId: string = filterCategory, 
-        q: string = filterQ, 
+        pageNum: number = page,
+        size: number = pageSize,
+        categoryId: string = filterCategory,
+        q: string = filterQ,
         tagObj: any = selectedFilterTag
     ) => {
         try {
@@ -123,7 +123,7 @@ export function OpenApiManager() {
         // filterCategory, selectedFilterTag, page, pageSize 변경 시 즉시 검색
         fetchApis(page, pageSize, filterCategory, filterQ, selectedFilterTag);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, pageSize, filterCategory, selectedFilterTag]); 
+    }, [page, pageSize, filterCategory, selectedFilterTag]);
 
     // 초기 데이터 로드 (카테고리)
     useEffect(() => {
@@ -347,14 +347,14 @@ export function OpenApiManager() {
                 <div className="flex items-center gap-3">
                     {isAdmin && (
                         <button
-                            onClick={() => { 
-                                setCurrentApi({}); 
-                                setSelectedCategory(null); 
-                                setSelectedTags([]); 
-                                setIsModalOpen(true); 
-                                setSelectedFiles([]); 
-                                setAttachedFiles([]); 
-                                setRemovedFileIds([]); 
+                            onClick={() => {
+                                setCurrentApi({});
+                                setSelectedCategory(null);
+                                setSelectedTags([]);
+                                setIsModalOpen(true);
+                                setSelectedFiles([]);
+                                setAttachedFiles([]);
+                                setRemovedFileIds([]);
                             }}
                             className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all shadow-sm font-pretendard"
                         >
@@ -451,16 +451,16 @@ export function OpenApiManager() {
                                 <tr key={api.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{ (api as any).category_name || '미분류' }</span>
+                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{(api as any).category_name || '미분류'}</span>
                                             <div className="font-semibold text-gray-900 dark:text-slate-100 mt-0.5">{api.name_ko}</div>
                                             <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">{api.tool_id}</div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex flex-wrap gap-1">
-                                            { (api as any).tags && Array.isArray((api as any).tags) ? (api as any).tags.map((tag: string, idx: number) => (
+                                            {(api as any).tags && Array.isArray((api as any).tags) ? (api as any).tags.map((tag: string, idx: number) => (
                                                 <span key={idx} className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 rounded text-[10px] border border-gray-200 dark:border-slate-700">#{tag}</span>
-                                            )) : <span className="text-xs text-gray-300">-</span> }
+                                            )) : <span className="text-xs text-gray-300">-</span>}
                                         </div>
                                     </td>
 
@@ -643,7 +643,7 @@ export function OpenApiManager() {
                                                 }}
                                                 onCreate={async (name) => {
                                                     // 태그는 DB에는 저장되지만 매핑은 저장 시점에 처리하므로 클라이언트 상태만 반환
-                                                    return { id: name, name }; 
+                                                    return { id: name, name };
                                                 }}
                                                 placeholder="태그 입력 후 Enter"
                                             />
