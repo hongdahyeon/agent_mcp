@@ -28,7 +28,7 @@ export default function OpenApiStatsView({ theme }: Props) {
     const [logs, setLogs] = useState<OpenApiUsageLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [total, setTotal] = useState(0);
 
     // 실패 사유 모달
@@ -83,7 +83,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                 borderWidth: 2
             },
             label: { show: false },
-            data: stats.resultStats.map(s => ({
+            data: (stats?.resultStats || []).map(s => ({
                 value: s.cnt,
                 name: s.success === 'SUCCESS' ? '성공' : '실패',
                 itemStyle: { color: s.success === 'SUCCESS' ? '#10B981' : '#EF4444' }
@@ -97,7 +97,7 @@ export default function OpenApiStatsView({ theme }: Props) {
         tooltip: { trigger: 'axis' },
         xAxis: {
             type: 'category',
-            data: stats.toolStats.map(s => s.tool_id),
+            data: (stats?.toolStats || []).map(s => s.tool_id),
             axisLabel: { rotate: 45, color: isDark ? '#94a3b8' : '#64748b' }
         },
         yAxis: {
@@ -106,7 +106,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             axisLabel: { color: isDark ? '#94a3b8' : '#64748b' }
         },
         series: [{
-            data: stats.toolStats.map(s => s.cnt),
+            data: (stats?.toolStats || []).map(s => s.cnt),
             type: 'bar',
             itemStyle: { color: '#3B82F6', borderRadius: [5, 5, 0, 0] }
         }]
@@ -126,7 +126,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                 borderColor: isDark ? '#0f172a' : '#fff',
                 borderWidth: 2
             },
-            data: stats.userStats.map(s => ({ value: s.cnt, name: s.label })),
+            data: (stats?.userStats || []).map(s => ({ value: s.cnt, name: s.label })),
             emphasis: {
                 itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
             }
@@ -210,7 +210,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             </div>
 
             {/* Usage Logs Table */}
-            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col min-h-0 transition-colors duration-300">
+            <div className="flex-[2] min-h-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col min-h-0 transition-colors duration-300">
                 <div className="flex-none px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center font-pretendard">
                         <History className="w-4 h-4 mr-2" /> 상세 호출 이력

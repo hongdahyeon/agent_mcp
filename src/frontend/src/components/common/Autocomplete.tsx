@@ -128,16 +128,16 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
 
     return (
         <div className={`relative ${className}`} ref={wrapperRef}>
-            <div className="flex items-center gap-2 p-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent bg-white transition-all duration-200 min-h-[42px]">
+            <div className="flex items-center gap-2 p-2 border border-gray-300 dark:border-slate-700 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent bg-white dark:bg-slate-800 transition-all duration-200 min-h-[42px]">
                 <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
                     {multiple ? (
                         Array.isArray(value) && value.map((item, idx) => (
-                            <span key={idx} className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-sm font-medium animate-in fade-in zoom-in duration-200">
+                            <span key={idx} className="flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-sm font-medium animate-in fade-in zoom-in duration-200 border border-blue-200 dark:border-blue-800/50">
                                 {item[displayField]}
                                 <button 
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); removeValue(item); }}
-                                    className="hover:text-blue-900 focus:outline-none"
+                                    className="hover:text-blue-900 dark:hover:text-blue-200 focus:outline-none"
                                 >
                                     &times;
                                 </button>
@@ -145,7 +145,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                         ))
                     ) : (
                         value && (
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 text-gray-700 rounded-md text-sm font-semibold border border-gray-200">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-md text-sm font-semibold border border-gray-200 dark:border-slate-600">
                                 <span className="truncate max-w-[200px]">{value[displayField]}</span>
                                 <button 
                                     type="button"
@@ -162,7 +162,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                         <input
                             ref={inputRef}
                             type="text"
-                            className="flex-1 outline-none min-w-[80px] text-sm text-gray-700 bg-transparent placeholder:text-gray-400"
+                            className="flex-1 outline-none min-w-[80px] text-sm text-gray-700 dark:text-slate-200 bg-transparent placeholder:text-gray-400 dark:placeholder:text-slate-500"
                             placeholder={multiple && Array.isArray(value) && value.length > 0 ? "" : placeholder}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
@@ -176,12 +176,12 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
             </div>
 
             {isOpen && (
-                <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-60 overflow-auto scrollbar-hide py-1 animate-in slide-in-from-top-2 duration-200">
+                <ul className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-60 overflow-auto scrollbar-hide py-1 animate-in slide-in-from-top-2 duration-200">
                     {suggestions.map((item, index) => (
                         <li
                             key={index}
                             className={`px-4 py-2 text-sm cursor-pointer transition-colors duration-150 ${
-                                index === selectedIndex ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50 text-gray-700'
+                                index === selectedIndex ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-300'
                             }`}
                             onClick={() => handleSelect(item)}
                         >
@@ -192,7 +192,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                     {onCreate && query.trim() && !suggestions.find(s => s[displayField].toLowerCase() === query.trim().toLowerCase()) && (
                         <li
                             className={`px-4 py-2 text-sm cursor-pointer border-t border-gray-100 italic transition-colors duration-150 ${
-                                selectedIndex === suggestions.length ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50 text-blue-400'
+                                selectedIndex === suggestions.length ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-medium' : 'hover:bg-gray-50 dark:hover:bg-slate-700 text-blue-400 dark:text-blue-400'
                             }`}
                             onClick={handleCreate}
                         >
@@ -201,7 +201,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                     )}
                     
                     {suggestions.length === 0 && !onCreate && (
-                        <li className="px-4 py-3 text-sm text-gray-400 text-center italic">
+                        <li className="px-4 py-3 text-sm text-gray-400 dark:text-slate-500 text-center italic">
                             검색 결과가 없습니다.
                         </li>
                     )}
