@@ -32,7 +32,7 @@ export const OpenApiMetaManager = () => {
     const fetchStats = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch('/api/openapi/stats', { headers: getAuthHeaders() });
+            const res = await fetch('/api/openapi/meta-stats', { headers: getAuthHeaders() });
             const data = await res.json();
             setCategories(data.categories || []);
             setTags(data.tags || []);

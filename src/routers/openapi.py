@@ -143,10 +143,18 @@ class OpenApiLimitRequest(BaseModel):
     max_count: int          # limit count
     description: Optional[str] = None
 
-# [12] OpenAPI 사용 통계 조회
+# [12] OpenAPI 사용 통계 조회 (사용량/성공여부/툴별)
 # => ADMIN 권한만 조회 가능
 @router.get("/api/openapi/stats")
 async def api_get_openapi_stats(current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.db import get_openapi_stats
+    return get_openapi_stats()
+
+# [12-1] OpenAPI 메타데이터 통계 조회 (카테고리/태그별)
+# => ADMIN 권한만 조회 가능
+@router.get("/api/openapi/meta-stats")
+async def api_get_openapi_meta_stats(current_user: dict = Depends(get_current_user_jwt)):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     from src.db import get_openapi_meta_stats
     return get_openapi_meta_stats()
