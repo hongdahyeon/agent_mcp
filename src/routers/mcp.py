@@ -7,7 +7,7 @@ try:
         get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
-        create_access_token, get_all_access_tokens, delete_access_token
+        create_access_token, get_all_access_tokens, delete_access_token, get_specific_user_tool_usage
     )
     from src.dependencies import get_current_user_jwt
     from src.tool_executor import execute_sql_tool, execute_python_tool
@@ -16,7 +16,7 @@ except ImportError:
         get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
-        create_access_token, get_all_access_tokens, delete_access_token
+        create_access_token, get_all_access_tokens, delete_access_token, get_specific_user_tool_usage
     )
     from dependencies import get_current_user_jwt
     from tool_executor import execute_sql_tool, execute_python_tool
@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 # MCP Tool 사용 이력 조회 (관리자 전용, 필터링 포함)
 @router.get("/mcp/usage-history")
 async def get_usage_history(
-    page: int = 1, 
-    size: int = 20, 
+    page: int = 1,
+    size: int = 20,
     user_id: str | None = None,
     tool_nm: str | None = None,
     success: str | None = None,
@@ -65,7 +65,8 @@ async def api_get_my_usage(current_user: dict = Depends(get_current_user_jwt)):
         "user_id": user['user_id'],
         "usage": usage,
         "limit": limit,
-        "remaining": remaining
+        "remaining": remaining,
+        "tool_usage": get_specific_user_tool_usage(user['uid'])
     }
 
 # (관리자용) 전체 사용자 사용량 통계 조회

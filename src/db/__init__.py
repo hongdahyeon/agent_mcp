@@ -35,7 +35,8 @@ from .mcp_tool_usage import (
     get_tool_usage_logs,
     get_tool_stats,
     get_user_daily_usage,
-    get_user_tool_stats
+    get_user_tool_stats,
+    get_specific_user_tool_usage
 )
 
 from .mcp_tool_limit import (
@@ -150,6 +151,7 @@ __all__ = [
     'get_tool_stats',
     'get_user_daily_usage',
     'get_user_tool_stats',
+    'get_specific_user_tool_usage',
     'get_user_limit',
     'get_admin_usage_stats',
     'get_limit_list',
