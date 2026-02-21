@@ -4,19 +4,35 @@ import os
 import json
 from datetime import datetime
 
-# 프로젝트 루트를 path에 추가하여 모듈 임포트 가능하게 함
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 프로젝트 루트 (agent_mcp)를 path에 추가
+# src/db/check/db_reset.py -> check -> db -> src -> agent_mcp (4 levels)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 try:
     from src.db.connection import get_db_connection
     from src.db.init_manager import init_db
     from src.utils.auth import get_password_hash
-except ImportError:
-    # 폴백 (스크립트 직접 실행 시)
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from connection import get_db_connection
-    from init_manager import init_db
-    # utils 폴백은 복잡하므로 되도록 위의 임포트가 성공해야 함
+except ImportError as e:
+    # 폴백: 개별 디렉토리를 path에 추가 (개발 환경 및 직접 실행 대응)
+    try:
+        SRC_DIR = os.path.join(ROOT_DIR, "src")
+        DB_DIR = os.path.join(SRC_DIR, "db")
+        UTILS_DIR = os.path.join(SRC_DIR, "utils")
+        
+        for d in [SRC_DIR, DB_DIR, UTILS_DIR]:
+            if d not in sys.path:
+                sys.path.append(d)
+        
+        from connection import get_db_connection
+        from init_manager import init_db
+        from auth import get_password_hash
+    except ImportError as second_e:
+        print(f"[FATAL] Import failed: {e}")
+        print(f"[DEBUG] ROOT_DIR: {ROOT_DIR}")
+        print(f"[DEBUG] sys.path: {sys.path}")
+        sys.exit(1)
 
 def reset_and_seed():
     """데이터베이스의 모든 테이블을 삭제(DROP)하고, 초기화 후 기본 데이터를 삽입(SEED)합니다."""

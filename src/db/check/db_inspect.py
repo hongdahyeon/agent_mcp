@@ -2,15 +2,24 @@ import sqlite3
 import sys
 import os
 
-# 프로젝트 루트를 path에 추가하여 모듈 임포트 가능하게 함
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# 프로젝트 루트 (agent_mcp)를 path에 추가
+# src/db/check/db_inspect.py -> check -> db -> src -> agent_mcp (4 levels)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 try:
     from src.db.connection import get_db_connection
-except ImportError:
-    # 절대 경로가 아닌 경우를 대비한 폴백 (스크립트 직접 실행 시)
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from connection import get_db_connection
+except ImportError as e:
+    # 폴백: 개별 디렉토리를 path에 추가 (개발 환경 및 직접 실행 대응)
+    DB_DIR = os.path.join(ROOT_DIR, "src", "db")
+    if DB_DIR not in sys.path:
+        sys.path.append(DB_DIR)
+    try:
+        from connection import get_db_connection
+    except ImportError:
+        print(f"[FATAL] Import failed: {e}")
+        sys.exit(1)
 
 def inspect_db():
     """데이터베이스의 테이블 및 컬럼 구조를 출력합니다."""

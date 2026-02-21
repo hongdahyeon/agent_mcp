@@ -59,7 +59,7 @@ export function OpenApiManager() {
 
     // 페이징
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [totalItems, setTotalItems] = useState(0);
     const [resultCopied, setResultCopied] = useState(false);
     const [urlCopied, setUrlCopied] = useState(false);
@@ -431,7 +431,7 @@ export function OpenApiManager() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col min-h-0 overflow-hidden transition-colors duration-300">
+            <div className="flex-[2] min-h-[500px] bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col min-h-0 overflow-hidden transition-colors duration-300">
                 <div className="flex-1 overflow-x-auto custom-scrollbar">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 text-sm sticky top-0 z-10 font-pretendard">
@@ -572,7 +572,7 @@ export function OpenApiManager() {
                         </tbody>
                     </table>
                 </div>
-                <div className="bg-white border-t border-gray-100 p-2">
+                <div className="bg-white dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 p-2 transition-colors duration-300">
                     <Pagination
                         currentPage={page}
                         pageSize={pageSize}
