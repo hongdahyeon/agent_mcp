@@ -31,3 +31,10 @@ export interface UsageHistoryResponse {
     size: number;
     items: UsageLog[];
 }
+
+export interface MyMcpUsage {
+    usage: number;
+    limit: number;
+    remaining: number;
+    tool_usage: { tool_nm: string; cnt: number }[];
+}

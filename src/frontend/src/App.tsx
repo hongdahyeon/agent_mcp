@@ -99,7 +99,7 @@ function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
 
   // 로그인 상태와 상관없이 useMcp는 항상 호출되지만, authToken이 변경되면 재연결됨
-  const { connected, statusText, stats, availableTools, sendRpc, lastResult, refreshTools } = useMcp('/sse', authToken);
+  const { connected, statusText, stats, availableTools, sendRpc, lastResult, refreshTools, refreshStats } = useMcp('/sse', authToken);
 
   // Phase 3: 사용량 데이터 상태 관리
   const [usageData, setUsageData] = useState<UsageData | null>(null);
@@ -423,7 +423,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} onRefresh={refreshStats} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
