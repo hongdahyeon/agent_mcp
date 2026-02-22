@@ -10,7 +10,10 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 """
-   이메일 발송 관련 py 파일 
+   이메일 발송 관련 py 파일
+   - [1] _get_config: DB에서 이메일 설정을 가져옵니다.
+   - [2] send_immediate: 즉시 이메일 발송을 합니다.
+   - [3] check_smtp_connection: SMTP 연결 상태를 확인합니다.
 """
 
 class EmailSender:
@@ -65,5 +68,23 @@ class EmailSender:
                 
             return True, None
             
+        except Exception as e:
+            return False, str(e)
+
+    # [3] check_smtp_connection: SMTP 연결 상태를 확인합니다.
+    def check_smtp_connection(self) -> tuple[bool, str | None]:
+        """Check SMTP server connection and login."""
+        try:
+            config = self._get_config()
+            smtp_host = config['mail.host']
+            smtp_port = int(config['mail.port'])
+            username = config['mail.username']
+            password = config['mail.password']
+            
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+            server.starttls()
+            server.login(username, password)
+            server.quit()
+            return True, None
         except Exception as e:
             return False, str(e)

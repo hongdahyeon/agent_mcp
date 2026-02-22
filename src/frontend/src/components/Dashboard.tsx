@@ -1,8 +1,9 @@
 
 import ReactECharts from 'echarts-for-react';
 import type { UsageStats } from '../types';
+import { useState, useCallback, useEffect } from 'react';
 import { Activity, RotateCw } from 'lucide-react';
-import { useState } from 'react';
+import { clsx } from 'clsx';
 
 /*
 * 메인 대시보드에 대한 컴포넌트
@@ -97,16 +98,57 @@ export function Dashboard({ stats, theme, onRefresh }: Props) {
   };
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [health, setHealth] = useState<import('../types/system').SystemHealth | null>(null);
+
+  const fetchHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/system/health', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHealth(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch health:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHealth();
+    const timer = setInterval(fetchHealth, 30000); // 30초마다 갱신
+    return () => clearInterval(timer);
+  }, [fetchHealth]);
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
     try {
-      await onRefresh();
+      await Promise.all([onRefresh(), fetchHealth()]);
     } finally {
-      // 애니메이션 효과를 위해 약간의 지연 시간 부여
       setTimeout(() => setIsRefreshing(false), 500);
     }
+  };
+
+  const HealthItem = ({ label, status }: { label: string, status: 'OK' | 'ERROR' | 'ON' | 'OFF' }) => {
+    const isGood = status === 'OK' || status === 'ON';
+    const isBad = status === 'ERROR';
+
+    return (
+      <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-800">
+        <div className={clsx(
+          "w-2 h-2 rounded-full",
+          isGood ? "bg-green-500" : isBad ? "bg-red-500" : "bg-gray-400"
+        )} />
+        <span className="text-xs font-medium text-gray-600 dark:text-slate-300">{label}:</span>
+        <span className={clsx(
+          "text-xs font-bold",
+          isGood ? "text-green-600 dark:text-green-400" : isBad ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-slate-400"
+        )}>
+          {status}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -122,14 +164,23 @@ export function Dashboard({ stats, theme, onRefresh }: Props) {
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">도구 및 사용자별 실시간 사용 통계를 확인합니다.</p>
           </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all duration-200 disabled:opacity-50"
-        >
-          <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span className="font-medium text-sm">{isRefreshing ? '새로고침 중...' : '새로고침'}</span>
-        </button>
+        <div className="flex items-center space-x-4">
+          {health && (
+            <div className="hidden lg:flex items-center space-x-2 mr-4 border-r border-gray-100 dark:border-slate-800 pr-4">
+              <HealthItem label="DB" status={health.db} />
+              <HealthItem label="SMTP" status={health.smtp} />
+              <HealthItem label="SCHEDULER" status={health.scheduler} />
+            </div>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all duration-200 disabled:opacity-50"
+          >
+            <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="font-medium text-sm">{isRefreshing ? '새로고침 중...' : '새로고침'}</span>
+          </button>
+        </div>
       </header>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left: Tool Usage (Pie) */}
