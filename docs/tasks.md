@@ -597,3 +597,10 @@
 - [x] 2. Frontend: `App.tsx`에서 대시보드로 새로고침 함수 전달
 - [x] 3. Frontend: `Dashboard.tsx` 상단 헤더 및 새로고침 버튼 UI 구현
 - [x] 4. 최종 기능 검증 및 문서 업데이트
+
+## 64. 대시보드 시스템 헬스 체크 및 스케줄러 관리 기능 추가 (Completed)
+
+- [x] Backend: `src/scheduler.py`, `src/utils/mailer.py` 점검 및 제어 로직 추가
+- [x] Backend: `src/routers/system.py` health & scheduler API 구현
+- [x] Frontend: `SchedulerManager.tsx` 구현 및 대시보드 UI 연동
+- [x] 최종 기능 검증 및 문서 업데이트

@@ -22,10 +22,11 @@ import { OpenApiMetaManager } from './components/OpenApiMetaManager';
 import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
 import DbBackupManager from './components/DbBackupManager';
+import SchedulerManager from './components/SchedulerManager';
 import type { User } from './types/auth';
 import { useTheme } from './hooks/useTheme';
 import {
-  Activity, Terminal, FileText,
+  Activity, Terminal, FileText, Clock,
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe, Tag,
   Menu, Sun, Moon
@@ -90,7 +91,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -277,6 +278,7 @@ function App() {
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
         { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true },
+        { id: 'scheduler', label: '스케줄러 관리', icon: Clock, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
@@ -443,6 +445,7 @@ function App() {
           {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats theme={theme} />}
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
           {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
+          {activeView === 'scheduler' && user.role === 'ROLE_ADMIN' && <SchedulerManager />}
         </div>
       </main>
     </div>

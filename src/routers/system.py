@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 import json
 import os
@@ -121,3 +121,63 @@ async def get_log_content(filename: str):
         raise HTTPException(status_code=404, detail="Log file not found")
     with open(file_path, "r", encoding="utf-8") as f:
         return {"filename": filename, "content": f.read()}
+
+# --- System Health & Scheduler ---
+
+# api_get_health: 시스템 헬스 체크
+@router.get("/api/system/health")
+async def api_get_health(current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    health = {"db": "OK", "smtp": "OK", "scheduler": "OFF"}
+    # 1. DB Check
+    try:
+        from src.db.connection import get_db_connection
+        conn = get_db_connection()
+        conn.execute("SELECT 1")
+        conn.close()
+    except Exception: health["db"] = "ERROR"
+    # 2. SMTP Check
+    try:
+        from src.utils.mailer import EmailSender
+        sender = EmailSender()
+        success, _ = sender.check_smtp_connection()
+        if not success: health["smtp"] = "ERROR"
+    except Exception: health["smtp"] = "ERROR"
+    # 3. Scheduler Check
+    try:
+        from src.scheduler import scheduler
+        if scheduler.running: health["scheduler"] = "ON"
+    except Exception: health["scheduler"] = "ERROR"
+    return health
+
+# 스케줄러에 등록된 작업 목록 조회
+@router.get("/api/system/scheduler/jobs")
+async def api_get_scheduler_jobs(current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.scheduler import get_scheduler_jobs
+    return {"jobs": get_scheduler_jobs()}
+
+# 스케줄러 제어
+@router.post("/api/system/scheduler/control")
+async def api_control_scheduler(action: str = Query(...), current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.scheduler import start_scheduler, shutdown_scheduler, scheduler
+    try:
+        if action == "start":
+            if not scheduler.running: start_scheduler()
+        elif action == "stop":
+            if scheduler.running: shutdown_scheduler()
+        return {"success": True, "running": scheduler.running}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 스케줄러 작업 삭제
+@router.delete("/api/system/scheduler/jobs/{job_id}")
+async def api_delete_scheduler_job(job_id: str, current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.scheduler import scheduler
+    try:
+        scheduler.remove_job(job_id)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Job not found or error: {str(e)}")

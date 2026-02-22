@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
 
+"""
+    스케줄러와 관련된 기능들
+    - [1] process_scheduled_emails: 주기적으로 실행되어 예약된 이메일을 발송하는 작업
+    - [2] send_one_email: 특정 로그 ID의 이메일을 즉시 발송하고 결과를 업데이트하는 작업
+    - [3] add_scheduled_job: 특정 시간에 이메일을 발송하도록 스케줄러에 작업을 등록하는 작업
+    - [4] get_scheduler_jobs: 현재 스케줄러에 등록된 작업 목록을 반환하는 작업
+    - [5] start_scheduler: 스케줄러를 시작하는 작업
+    - [6] shutdown_scheduler: 스케줄러를 종료하는 작업
+"""
+
+# [1] process_scheduled_emails: 주기적으로 실행되어 예약된 이메일을 발송하는 작업
 def process_scheduled_emails():
     """
     주기적으로 실행되어 예약된 이메일을 발송하는 작업입니다.
@@ -46,6 +57,7 @@ def process_scheduled_emails():
     except Exception as e:
         logger.error(f"Error in process_scheduled_emails: {e}")
 
+# [2] send_one_email: 특정 로그 ID의 이메일을 즉시 발송하고 결과를 업데이트하는 작업
 def send_one_email(log_id: int):
     """
     특정 로그 ID의 이메일을 즉시 발송하고 결과를 업데이트합니다.
@@ -88,6 +100,7 @@ def send_one_email(log_id: int):
     except Exception as e:
         logger.error(f"Error in send_one_email: {e}")
 
+# [3] add_scheduled_job: 특정 시간에 이메일을 발송하도록 스케줄러에 작업을 등록하는 작업
 def add_scheduled_job(log_id: int, run_date: str):
     """
     특정 시간에 이메일을 발송하도록 스케줄러에 작업을 등록합니다.
@@ -116,8 +129,8 @@ def add_scheduled_job(log_id: int, run_date: str):
             return
 
         if not scheduler.running:
-            logger.warning("Scheduler is not running. Job not added.")
-            return
+            logger.info("Scheduler is not running. Starting it now.")
+            start_scheduler()
 
         scheduler.add_job(
             send_one_email,
@@ -131,6 +144,23 @@ def add_scheduled_job(log_id: int, run_date: str):
     except Exception as e:
         logger.error(f"Failed to add scheduled job: {e}")
 
+# [4] get_scheduler_jobs: 현재 스케줄러에 등록된 작업 목록을 반환하는 작업
+def get_scheduler_jobs():
+    """
+    현재 스케줄러에 등록된 작업 목록을 반환합니다.
+    """
+    jobs = []
+    for job in scheduler.get_jobs():
+        jobs.append({
+            "id": job.id,
+            "name": job.name,
+            "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+            "args": str(job.args),
+            "pending": job.pending
+        })
+    return jobs
+
+# [5] start_scheduler: 스케줄러를 시작하는 작업
 def start_scheduler():
     """
     스케줄러를 시작합니다.
@@ -149,6 +179,7 @@ def start_scheduler():
         scheduler.start()
         logger.info("Email Scheduler started.")
 
+# [6] shutdown_scheduler: 스케줄러를 종료하는 작업
 def shutdown_scheduler():
     """
     스케줄러를 종료합니다.
