@@ -580,3 +580,20 @@
 - [x] 4. 프로젝트 관리 도구(`db_reset.py`, `db_inspect.py`) 개선 및 오류 수정
   - [x] 경로 인식 로직 수정 및 임포트 오류(AttributeError 등) 완벽 해결
 - [x] 5. 최종 검증 및 tasks.md 문서 업데이트
+
+## 62. 내 정보 관리 화면에 도구 사용 이력 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: 특정 사용자의 일일 도구 사용량을 집계하는 `get_specific_user_tool_usage` 구현
+- [x] 2. Backend: `/api/mcp/my-usage` API가 도구별 상세 사용량을 반환하도록 수정
+- [x] 3. Frontend: `UserUsage.ts` 타입 정의(`MyMcpUsage`) 추가
+- [x] 4. Frontend: `MyPage.tsx` UI 수정 및 '오늘의 일반 MCP 도구 사용 현황' 카드 추가
+- [x] 5. 최종 기능 검증 및 문서 업데이트
+
+## 63. 대시보드 새로고침 기능 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Frontend: `useMcp.ts` 훅에서 `refreshStats` 기능 노출
+- [x] 2. Frontend: `App.tsx`에서 대시보드로 새로고침 함수 전달
+- [x] 3. Frontend: `Dashboard.tsx` 상단 헤더 및 새로고침 버튼 UI 구현
+- [x] 4. 최종 기능 검증 및 문서 업데이트

@@ -1,8 +1,10 @@
 
 import ReactECharts from 'echarts-for-react';
 import type { UsageStats } from '../types';
+import { Activity, RotateCw } from 'lucide-react';
+import { useState } from 'react';
 
-/* 
+/*
 * 메인 대시보드에 대한 컴포넌트
 * - 서버 상태, 도구 사용 통계(차트)를 보여준다.
 * - 기존 로그 영역은 사용자별 요청 횟수 차트로 대체됨.
@@ -10,9 +12,10 @@ import type { UsageStats } from '../types';
 interface Props {
   stats: UsageStats;
   theme: 'light' | 'dark';
+  onRefresh?: () => Promise<void>;
 }
 
-export function Dashboard({ stats, theme }: Props) {
+export function Dashboard({ stats, theme, onRefresh }: Props) {
   const isDark = theme === 'dark';
 
   // 1. Tool Usage Chart Data
@@ -93,8 +96,41 @@ export function Dashboard({ stats, theme }: Props) {
     ]
   };
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      // 애니메이션 효과를 위해 약간의 지연 시간 부여
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* 상단 헤더 영역 */}
+      <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+            <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">대시보드</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">도구 및 사용자별 실시간 사용 통계를 확인합니다.</p>
+          </div>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all duration-200 disabled:opacity-50"
+        >
+          <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span className="font-medium text-sm">{isRefreshing ? '새로고침 중...' : '새로고침'}</span>
+        </button>
+      </header>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left: Tool Usage (Pie) */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">

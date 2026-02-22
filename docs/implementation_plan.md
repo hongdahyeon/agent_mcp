@@ -949,7 +949,7 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 - **`DELETE /api/admin/db/backups/{filename}`**: (선택) 불필요한 백업 삭제.
 
 #### 2. Frontend (`src/frontend/src/components/DbBackupManager.tsx` 신설)
-- **UI**: 
+- **UI**:
   - [백업 생성] 버튼.
   - 백업 목록 테이블 (파일명, 생성일시, 크기, [복구] 버튼, [삭제] 버튼).
 - **Navigation**: `App.tsx` 메뉴에 추가.
@@ -958,3 +958,41 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. **Backup Test**: 클릭 시 DB 파일이 정상적으로 다운로드되는지 확인.
 2. **Restore Test**: 다른 상태의 DB 파일을 업로드하여 복구 후 데이터 확인.
 3. **Security Test**: 일반 유저 접근 차단 확인.
+---
+
+## Phase 36: 내 정보 관리 화면 도구 사용 이력 보완 [Completed]
+
+### 목표
+내 정보(My Page) 화면에서 기존의 OpenAPI 사용량뿐만 아니라, 일반 MCP 도구(add, subtract 등)의 사용 현황도 확인할 수 있도록 기능을 보완합니다.
+
+### 구현 내용
+- **DB Layer (`src/db/mcp_tool_usage.py`)**: 특정 사용자의 오늘 날짜 기준 도구별 사용 횟수를 집계하는 `get_specific_user_tool_usage` 함수를 추가했습니다.
+- **Backend API (`src/routers/mcp.py`)**: `/api/mcp/my-usage` 엔드포인트가 `tool_usage` 배열을 추가로 응답하도록 수정했습니다.
+- **Frontend UI (`MyPage.tsx`)**: 
+    - `Terminal` 아이콘과 함께 "오늘의 일반 MCP 도구 사용 현황" 카드를 새롭게 추가했습니다.
+    - 전체 한도 대비 사용률을 시각화하는 게이지 바와 도구별 상세 횟수 목록을 구현했습니다.
+    - 다크 모드 스타일이 완벽하게 적용되도록 `transition` 및 색상 토큰을 정비했습니다.
+
+### 검증 결과
+1. 일반 MCP 도구 실행 후 My Page 진입 시 실시간으로 사용 횟수가 반영됨을 확인.
+2. OpenAPI 사용량 카드와 일반 도구 사용량 카드가 나란히 배치되어 일관된 UX 제공 확인.
+3. 무제한(-1) 한도일 경우 '∞' 표시 및 게이지 바 0% 고정 로직 정상 동작 확인.
+---
+
+## Phase 37: 대시보드 통계 새로고침 기능 추가 [Completed]
+
+### 목표
+메인 대시보드에서 도구 사용 및 사용자별 요청 통계 데이터를 페이지 전체 새로고침 없이 수동으로 갱신할 수 있는 기능을 추가합니다.
+
+### 구현 내용
+- **Hooks (`useMcp.ts`)**: 내부 `fetchStats` 함수를 외부에서 호출 가능하도록 `refreshStats`라는 이름으로 `UseMcpResult`에 포함하여 반환합니다.
+- **App (`App.tsx`)**: `useMcp`에서 추출한 `refreshStats`를 `Dashboard` 컴포너트의 `onRefresh` prop으로 전달합니다.
+- **UI (`Dashboard.tsx`)**:
+    - 대시보드 상단에 표준 헤더 디자인을 적용했습니다. (`Activity` 아이콘, 타이틀, 설명문 포함)
+    - `RotateCw` 아이콘을 활용한 '새로고침' 버튼을 추가했습니다.
+    - 버튼 클릭 시 `animate-spin` 애니메이션과 `disabled` 처리를 통해 사용자에게 진행 상태를 시각적으로 전달합니다.
+
+### 검증 결과
+1. 새로고침 버튼 클릭 시 네트워크 탭에서 `/api/mcp/stats` 호출 및 데이터 갱신 확인.
+2. 도구 실행 후 대시보드로 돌아와 새로고침 시 즉각적으로 차트의 수치가 업데이트됨을 확인.
+3. 다크 모드 환경에서도 버튼 및 헤더 디자인이 조화롭게 표시됨을 확인.
