@@ -20,7 +20,7 @@ export function Pagination({
     onPageSizeChange,
     className
 }: PaginationProps) {
-    const pageSizeOptions = [10, 50, 100];
+    const pageSizeOptions = [10, 20, 50, 100];
 
     // Helper to generate page numbers to display
     const getPageNumbers = () => {

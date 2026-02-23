@@ -59,8 +59,8 @@ async def api_send_email(req: EmailSendRequest, current_user: dict = Depends(get
 # 이메일 로그 조회
 @router.get("/logs")
 async def api_get_email_logs(
-    page: int = Query(1, ge=1), 
-    size: int = Query(10, ge=1, le=100), 
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     all_logs: bool = Query(False),
     current_user: dict = Depends(get_current_user_jwt)
 ):

@@ -114,15 +114,16 @@ def get_user_by_active_token(token: str):
         ''', (token,)).fetchone()
         
         if row:
-            # 외부 연동용은 사전에 정의된 'external' 유저 정보를 반환하되, token_id를 추가함
+            # 외부 연동용은 토큰 정보만 반환 (사용자 uid는 None)
             token_info = dict(row)
-            from .user import get_user
-            user = get_user('external')
-            if user:
-                user_dict = dict(user)
-                user_dict['_token_id'] = token_info['id'] # 내부 식별용
-                user_dict['_token_nm'] = token_info['name']
-                return user_dict
+            return {
+                "uid": None,
+                "user_id": f"token:{token_info['name']}",
+                "user_nm": token_info['name'],
+                "role": "ROLE_USER",
+                "_token_id": token_info['id'],
+                "_token_nm": token_info['name']
+            }
             
         return None
     finally:

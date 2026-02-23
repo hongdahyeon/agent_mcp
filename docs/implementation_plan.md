@@ -1021,3 +1021,34 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. **API 무결성**: `/api/mcp/stats` 호출 시 `heatmapStats` 배열(dow, hour, cnt)이 정상 포함됨을 확인.
 2. **인터랙션**: 차트 클릭 시 `user_id` 또는 `label`을 파라미터로 하여 상세 API가 호출되고 결과가 화면에 반영됨을 확인.
 3. **오류 해결**: `mcp.py` 내 신규 함수 임포트 누락으로 인한 `NameError`를 수정하여 백엔드 구동 안정성을 확보했습니다.
+
+---
+
+## Phase 39: MCP & OpenAPI 로깅 및 통계 고도화 [Completed]
+
+### Goal
+로깅 데이터의 정밀도를 높이고, 시각화 통계를 통해 관리자에게 더 깊은 분석 인사이트를 제공합니다. 또한 OpenAPI 프록시 실행의 편의성을 개선합니다.
+
+### Implemented Changes
+
+#### 1. Enhanced Logging (`h_mcp_tool_usage`)
+- `token_id` 컬럼 추가 및 `audit_log` 데코레이터에서 실제 토큰 ID를 수집하여 저장하도록 개선.
+- 외부 토큰(`sk_...`) 사용 시 'external' 유저로 하드코딩하던 로직을 제거하고, 실제 토큰 엔티티와 연동하여 식별하도록 수정.
+
+#### 2. Usage Statistics (Heatmap)
+- 7x24 (요일별/시간대별) 사용량 히트맵 통계 DB 함수 및 API 구현.
+- `Dashboard` 및 `OpenApiStats` 화면에 히트맵 차트 적용.
+
+#### 3. Top 5 Usage Analysis (Admin Only)
+- 각 사용자 또는 토큰별로 가장 많이 사용된 도구 Top 5를 분석하는 기능 추가.
+- 관리자 권한을 가진 사용자에게만 상세 분석(Heatmap 클릭 등) 화면 노출.
+
+#### 4. OpenAPI Proxy Improvements
+- 프록시 실행 시 DB에 저장된 `params_schema` 정보를 기본 파라미터로 자동 병합.
+- `ServiceKey` 등 고정값은 DB 정보를 우선 활용하며, 사용자가 직접 제공한 경우 이를 덮어쓰도록(Override) 구현.
+
+### Verification Results
+1. **Logging**: `token_id`가 DB에 정상 기록됨을 확인.
+2. **Stats**: Heatmap 차트를 통해 사용량이 높은 시간대 식별 가능.
+3. **Security**: 일반 유저 계정으로 접속 시 상세 분석 버튼 및 데이터가 노출되지 않음을 확인.
+4. **Proxy**: 필수 파라미터 누락 없이 DB 설정값으로 정상 실행됨을 확인.

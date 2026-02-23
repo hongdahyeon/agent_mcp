@@ -37,13 +37,16 @@ def audit_log(func):
                 
             token = os.environ.get('token')
             user_uid = None
+            token_id = None
             if token:
                 try:
                     user = db.get_user_by_active_token(token)
-                    if user: user_uid = user['uid']
+                    if user:
+                        user_uid = user.get('uid')
+                        token_id = user.get('_token_id')
                 except: pass
             
-            if not user_uid:
+            if user_uid is None and token_id is None:
                 raise Exception("Authentication required. Please set the 'token' environment variable in your Claude Desktop configuration.")
 
             is_success = False
@@ -62,9 +65,9 @@ def audit_log(func):
                 raise e
             finally:
                 # [3] 도구 실행이 끝난 후(성공/실패 무관) DB에 이력을 저장합니다.
-                if user_uid:
+                if user_uid or token_id:
                     try:
-                        db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
+                        db.log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=tool_name, tool_params=str(params), success=is_success, result=result_val)
                     except: pass
         return async_wrapper
     else:
@@ -77,13 +80,16 @@ def audit_log(func):
                 
             token = os.environ.get('token')
             user_uid = None
+            token_id = None
             if token:
                 try:
                     user = db.get_user_by_active_token(token)
-                    if user: user_uid = user['uid']
+                    if user:
+                        user_uid = user.get('uid')
+                        token_id = user.get('_token_id')
                 except: pass
             
-            if not user_uid:
+            if user_uid is None and token_id is None:
                 raise Exception("Authentication required. Please set the 'token' environment variable in your Claude Desktop configuration.")
 
             is_success = False
@@ -101,8 +107,8 @@ def audit_log(func):
                 is_success = False
                 raise e
             finally:
-                if user_uid:
+                if user_uid or token_id:
                     try:
-                        db.log_tool_usage(user_uid, tool_name, str(params), is_success, result_val)
+                        db.log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=tool_name, tool_params=str(params), success=is_success, result=result_val)
                     except: pass
         return sync_wrapper

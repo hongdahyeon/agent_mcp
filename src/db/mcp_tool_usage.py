@@ -14,15 +14,22 @@ from .connection import get_db_connection
 """
 
 # [1] log_tool_usage: MCP Tool 사용 이력 관리 함수 (관리자용)
-def log_tool_usage(user_uid: int, tool_nm: str, tool_params: str, success: bool, result: str):
+def log_tool_usage(
+    user_uid: int = None,
+    tool_nm: str = "",
+    tool_params: str = "",
+    success: bool = True,
+    result: str = "",
+    token_id: int = None
+):
     """MCP Tool 사용 이력을 기록."""
     conn = get_db_connection()
     status = 'SUCCESS' if success else 'FAIL'
     
     conn.execute('''
-    INSERT INTO h_mcp_tool_usage (user_uid, tool_nm, tool_params, tool_success, tool_result, reg_dt)
-    VALUES (?, ?, ?, ?, ?, ?)
-    ''', (user_uid, tool_nm, tool_params, status, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    INSERT INTO h_mcp_tool_usage (user_uid, token_id, tool_nm, tool_params, tool_success, tool_result, reg_dt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (user_uid, token_id, tool_nm, tool_params, status, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     
     conn.commit()
     conn.close()
@@ -67,11 +74,30 @@ def get_tool_usage_logs(page: int = 1, size: int = 20,
             t.tool_result,
             t.reg_dt,
             u.user_id,
-            u.user_nm
-        {base_where}
-        ORDER BY t.reg_dt DESC
-        LIMIT ? OFFSET ?
+            u.user_nm,
+            tk.name as token_name
+        FROM h_mcp_tool_usage t
+        LEFT JOIN h_user u ON t.user_uid = u.uid
+        LEFT JOIN h_access_token tk ON t.token_id = tk.id
+        WHERE 1=1
     '''
+    
+    # [새로고침] where 조건 추가
+    where_sql = ""
+    if search_user_id:
+        where_sql += " AND (u.user_id LIKE ? OR tk.name LIKE ?)"
+        params.extend([f"%{search_user_id}%", f"%{search_user_id}%"])
+        
+    if search_tool_nm:
+        where_sql += " AND t.tool_nm LIKE ?"
+        params.append(f"%{search_tool_nm}%")
+        
+    if search_success and search_success != 'ALL':
+        where_sql += " AND t.tool_success = ?"
+        params.append(search_success)
+
+    query += where_sql
+    query += " ORDER BY t.reg_dt DESC LIMIT ? OFFSET ?"
     # LIMIT, OFFSET 파라미터 추가
     params.extend([size, offset])
     
@@ -90,8 +116,8 @@ def get_tool_usage_logs(page: int = 1, size: int = 20,
             "tool_success": row['tool_success'],
             "tool_result": row['tool_result'],
             "reg_dt": row['reg_dt'],
-            "user_id": row['user_id'],
-            "user_nm": row['user_nm']
+            "user_id": row['user_id'] or (f"token:{row['token_name']}" if row['token_name'] else "Unknown"),
+            "user_nm": row['user_nm'] or row['token_name'] or "Unknown"
         })
         
     return {
@@ -159,10 +185,13 @@ def get_user_tool_stats() -> dict:
     """사용자별 도구 사용 횟수 집계."""
     conn = get_db_connection()
     query = '''
-        SELECT u.user_id, COUNT(*) as cnt
-        FROM h_mcp_tool_usage t
-        LEFT JOIN h_user u ON t.user_uid = u.uid
-        GROUP BY u.user_id
+        SELECT
+            COALESCE(u.user_id, 'token:' || t.name, 'Unknown') as user_id, 
+            COUNT(*) as cnt
+        FROM h_mcp_tool_usage m
+        LEFT JOIN h_user u ON m.user_uid = u.uid
+        LEFT JOIN h_access_token t ON m.token_id = t.id
+        GROUP BY user_id
     '''
     cursor = conn.execute(query)
     rows = cursor.fetchall()
@@ -220,15 +249,31 @@ def get_mcp_hourly_daily_stats():
 def get_mcp_user_tool_detail(user_id: str):
     """특정 유저의 전체 기간 도구별 사용량 (Top 5)"""
     conn = get_db_connection()
-    query = '''
-        SELECT tool_nm, COUNT(*) as cnt
-        FROM h_mcp_tool_usage t
-        LEFT JOIN h_user u ON t.user_uid = u.uid
-        WHERE u.user_id = ?
-        GROUP BY tool_nm
-        ORDER BY cnt DESC
-        LIMIT 5
-    '''
-    rows = conn.execute(query, (user_id,)).fetchall()
+    
+    # (1) token으로 조회
+    if user_id.startswith("token:"):
+        token_name = user_id.replace("token:", "")
+        query = '''
+            SELECT tool_nm, COUNT(*) as cnt
+            FROM h_mcp_tool_usage m
+            JOIN h_access_token t ON m.token_id = t.id
+            WHERE t.name = ?
+            GROUP BY tool_nm
+            ORDER BY cnt DESC
+            LIMIT 5
+        '''
+        rows = conn.execute(query, (token_name,)).fetchall()
+    else: # (2) 유저 정보로 조회
+        query = '''
+            SELECT tool_nm, COUNT(*) as cnt
+            FROM h_mcp_tool_usage m
+            JOIN h_user u ON m.user_uid = u.uid
+            WHERE u.user_id = ?
+            GROUP BY tool_nm
+            ORDER BY cnt DESC
+            LIMIT 5
+        '''
+        rows = conn.execute(query, (user_id,)).fetchall()
+        
     conn.close()
     return [dict(row) for row in rows]

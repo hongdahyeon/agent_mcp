@@ -8,7 +8,7 @@ export const EmailHistory: React.FC = () => {
     const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [total, setTotal] = useState(0);
 
     // Detail Modal State
@@ -85,9 +85,9 @@ export const EmailHistory: React.FC = () => {
                                                 {log.status === 'CANCELLED' && <XCircle className="w-4 h-4 text-gray-400 dark:text-slate-500" />}
                                                 {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />}
                                                 <span className={`font-medium ${log.status === 'SENT' ? 'text-green-700 dark:text-green-400' :
-                                                        log.status === 'FAILED' ? 'text-red-700 dark:text-red-400' :
-                                                            log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
-                                                                'text-amber-600 dark:text-amber-400'
+                                                    log.status === 'FAILED' ? 'text-red-700 dark:text-red-400' :
+                                                        log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
+                                                            'text-amber-600 dark:text-amber-400'
                                                     }`}>
                                                     {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
                                                 </span>
