@@ -9,6 +9,8 @@ from .connection import get_db_connection
     - [4] get_user_daily_usage: 사용자의 금일 도구 사용 횟수 조회
     - [5] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
     - [6] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
+    - [7] get_mcp_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
+    - [8] get_mcp_user_tool_detail: 특정 유저의 전체 기간 도구별 사용량 (Top 5)
 """
 
 # [1] log_tool_usage: MCP Tool 사용 이력 관리 함수 (관리자용)
@@ -194,4 +196,39 @@ def get_specific_user_tool_usage(user_uid: int):
     rows = conn.execute(query, (user_uid, today_start, today_end)).fetchall()
     conn.close()
     
+    return [dict(row) for row in rows]
+
+# [7] get_mcp_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
+def get_mcp_hourly_daily_stats():
+    """시간대별/요일별 사용 통계 (Heatmap용 데이터)"""
+    conn = get_db_connection()
+    # strftime('%w', ...) -> 요일 (0:일요일, 1:월요일, ..., 6:토요일)
+    # strftime('%H', ...) -> 시간 (00-23)
+    query = '''
+        SELECT 
+            strftime('%w', reg_dt) as dow, 
+            strftime('%H', reg_dt) as hour, 
+            COUNT(*) as cnt
+        FROM h_mcp_tool_usage
+        GROUP BY dow, hour
+    '''
+    rows = conn.execute(query).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+# [8] get_mcp_user_tool_detail: 특정 유저의 전체 기간 도구별 사용량 (Top 5)
+def get_mcp_user_tool_detail(user_id: str):
+    """특정 유저의 전체 기간 도구별 사용량 (Top 5)"""
+    conn = get_db_connection()
+    query = '''
+        SELECT tool_nm, COUNT(*) as cnt
+        FROM h_mcp_tool_usage t
+        LEFT JOIN h_user u ON t.user_uid = u.uid
+        WHERE u.user_id = ?
+        GROUP BY tool_nm
+        ORDER BY cnt DESC
+        LIMIT 5
+    '''
+    rows = conn.execute(query, (user_id,)).fetchall()
+    conn.close()
     return [dict(row) for row in rows]
