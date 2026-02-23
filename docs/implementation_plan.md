@@ -918,3 +918,106 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. PDF 문서 내 카테고리와 태그 정보가 정상적으로 표시됨을 확인.
 2. 관리자 메뉴를 통한 카테고리/태그 수정 결과가 실시간으로 반영됨을 확인.
 3. 연관된 API가 있는 메타데이터 삭제 시도시 안내 메시지와 함께 삭제가 방지됨을 확인.
+
+---
+
+
+## Phase 35: DB 백업 및 복구 기능 (관리자 전용)
+
+### 목표
+서버 내 `backups/` 디렉토리에 DB 스냅샷을 저장하고, 관리자가 목록에서 선택하여 특정 시점으로 복구할 수 있는 기능을 구현합니다.
+
+### 상세 요구사항
+1. **백업 (Backup)**:
+   - 실행 시점의 `agent_mcp.db` 파일을 `backups/` 디렉토리에 복사.
+   - 포맷: `YYYY-MM-DD_HH-mm.db` (예: 2026-02-19_22-24.db)
+2. **목록 조회 (List)**:
+   - `backups/` 디렉토리 내의 파일 목록을 날짜 역순으로 제공.
+3. **복구 (Restore)**:
+   - 관리자가 목록에서 파일을 선택하여 복구 요청.
+   - 현재 DB를 다른 이름으로 안전하게 보관 후, 선택한 파일로 교체.
+   - **주의**: SQLite 연결 상태에 따라 서버 프로세스 재시작이 필요할 수 있으나 유지 가능한 방식으로 시도.
+
+### Proposed Changes
+
+- [x] 상세 구현 계획 수정 반영 (implementation_plan.md)
+- [x] 1. Backend: DB 백업 생성 API 구현 (`POST /api/admin/db/backup`)
+- [x] 2. Backend: 백업 파일 목록 조회 API 구현 (`GET /api/admin/db/backups`)
+- [x] 3. Backend: 특정 파일 선택 복구 API 구현 (`POST /api/admin/db/restore/{filename}`)
+- [x] 4. Frontend: DB 백업 관리 UI 구현 (목록, 생성 버튼)
+- [x] 5. 기능 테스트 및 검증
+- **`DELETE /api/admin/db/backups/{filename}`**: (선택) 불필요한 백업 삭제.
+
+#### 2. Frontend (`src/frontend/src/components/DbBackupManager.tsx` 신설)
+- **UI**:
+  - [백업 생성] 버튼.
+  - 백업 목록 테이블 (파일명, 생성일시, 크기, [복구] 버튼, [삭제] 버튼).
+- **Navigation**: `App.tsx` 메뉴에 추가.
+
+### Verification Plan
+1. **Backup Test**: 클릭 시 DB 파일이 정상적으로 다운로드되는지 확인.
+2. **Restore Test**: 다른 상태의 DB 파일을 업로드하여 복구 후 데이터 확인.
+3. **Security Test**: 일반 유저 접근 차단 확인.
+---
+
+## Phase 36: 내 정보 관리 화면 도구 사용 이력 보완 [Completed]
+
+### 목표
+내 정보(My Page) 화면에서 기존의 OpenAPI 사용량뿐만 아니라, 일반 MCP 도구(add, subtract 등)의 사용 현황도 확인할 수 있도록 기능을 보완합니다.
+
+### 구현 내용
+- **DB Layer (`src/db/mcp_tool_usage.py`)**: 특정 사용자의 오늘 날짜 기준 도구별 사용 횟수를 집계하는 `get_specific_user_tool_usage` 함수를 추가했습니다.
+- **Backend API (`src/routers/mcp.py`)**: `/api/mcp/my-usage` 엔드포인트가 `tool_usage` 배열을 추가로 응답하도록 수정했습니다.
+- **Frontend UI (`MyPage.tsx`)**: 
+    - `Terminal` 아이콘과 함께 "오늘의 일반 MCP 도구 사용 현황" 카드를 새롭게 추가했습니다.
+    - 전체 한도 대비 사용률을 시각화하는 게이지 바와 도구별 상세 횟수 목록을 구현했습니다.
+    - 다크 모드 스타일이 완벽하게 적용되도록 `transition` 및 색상 토큰을 정비했습니다.
+
+### 검증 결과
+1. 일반 MCP 도구 실행 후 My Page 진입 시 실시간으로 사용 횟수가 반영됨을 확인.
+2. OpenAPI 사용량 카드와 일반 도구 사용량 카드가 나란히 배치되어 일관된 UX 제공 확인.
+3. 무제한(-1) 한도일 경우 '∞' 표시 및 게이지 바 0% 고정 로직 정상 동작 확인.
+---
+
+## Phase 37: 대시보드 통계 새로고침 기능 추가 [Completed]
+
+### 목표
+메인 대시보드에서 도구 사용 및 사용자별 요청 통계 데이터를 페이지 전체 새로고침 없이 수동으로 갱신할 수 있는 기능을 추가합니다.
+
+### 구현 내용
+- **Hooks (`useMcp.ts`)**: 내부 `fetchStats` 함수를 외부에서 호출 가능하도록 `refreshStats`라는 이름으로 `UseMcpResult`에 포함하여 반환합니다.
+- **App (`App.tsx`)**: `useMcp`에서 추출한 `refreshStats`를 `Dashboard` 컴포너트의 `onRefresh` prop으로 전달합니다.
+- **UI (`Dashboard.tsx`)**:
+    - 대시보드 상단에 표준 헤더 디자인을 적용했습니다. (`Activity` 아이콘, 타이틀, 설명문 포함)
+    - `RotateCw` 아이콘을 활용한 '새로고침' 버튼을 추가했습니다.
+    - 버튼 클릭 시 `animate-spin` 애니메이션과 `disabled` 처리를 통해 사용자에게 진행 상태를 시각적으로 전달합니다.
+
+### 검증 결과
+1. 새로고침 버튼 클릭 시 네트워크 탭에서 `/api/mcp/stats` 호출 및 데이터 갱신 확인.
+2. 도구 실행 후 대시보드로 돌아와 새로고침 시 즉각적으로 차트의 수치가 업데이트됨을 확인.
+3. 다크 모드 환경에서도 버튼 및 헤더 디자인이 조화롭게 표시됨을 확인.
+
+---
+
+## Phase 38: 대시보드 시각화 확장 (Heatmap & 상세 분석) [Completed]
+
+### 목표
+메인 대시보드 및 OpenAPI 통계 화면에 사용 패턴을 한눈에 파악할 수 있는 Heatmap 차트를 도입하고, 특정 사용자/토큰 클릭 시 Top 5 사용 도구를 보여주는 상세 분석 기능을 추가하여 데이터 가독성과 인터랙션을 강화합니다.
+
+### 구현 내용
+
+#### 1. Backend (Database & API)
+- **DB 확장**: `get_mcp_hourly_daily_stats`, `get_openapi_hourly_daily_stats` 함수를 구현하여 요일/시간대별 집계 데이터를 제공합니다.
+- **상세 분석**: `get_mcp_user_tool_detail`, `get_openapi_user_tool_detail` 함수를 통해 특정 대상의 최다 사용 도구 5개를 추출합니다.
+- **API 라우터**: `/api/mcp/stats`, `/api/openapi/stats`에 `heatmapStats` 필드를 추가하고, 상세 조회를 위한 `/api/mcp/user-tool-stats`, `/api/openapi/user-tool-stats` 엔드포인트를 신설했습니다.
+
+#### 2. Frontend (UI/UX)
+- **Heatmap 구현**: ECharts의 `heatmap` 타입을 활용하여 메인 및 OpenAPI 대시보드 상단에 시각적 패턴 분석 영역을 배치했습니다.
+- **2단 레이아웃 (Dashboard)**: 사용자별 요청 횟수 파이 차트 옆에 '상세 분석' 영역을 배치하여, 차트 항목 클릭 시 해당 유저의 Top 5 도구가 즉시 렌더링되도록 구현했습니다.
+- **OpenAPI 상세 분석**: OpenAPI 통계 화면에서도 유저/토큰 클릭 시 상세 도구 사용 순위가 나타나는 인터랙션을 동일하게 적용했습니다.
+- **편의 기능**: 유저 선택 해제 버튼(`Clear Selection`), 데이터 로딩 상태 표시, 데이터 없을 시 폴백 메시지 처리를 완료했습니다.
+
+### 검증 결과
+1. **API 무결성**: `/api/mcp/stats` 호출 시 `heatmapStats` 배열(dow, hour, cnt)이 정상 포함됨을 확인.
+2. **인터랙션**: 차트 클릭 시 `user_id` 또는 `label`을 파라미터로 하여 상세 API가 호출되고 결과가 화면에 반영됨을 확인.
+3. **오류 해결**: `mcp.py` 내 신규 함수 임포트 누락으로 인한 `NameError`를 수정하여 백엔드 구동 안정성을 확보했습니다.

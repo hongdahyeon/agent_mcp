@@ -20,6 +20,7 @@ interface UseMcpResult {
     connected: boolean;
     statusText: string;
     refreshTools: () => void;
+    refreshStats: () => Promise<void>;
 }
 
 /*
@@ -259,5 +260,10 @@ export function useMcp(sseEndpoint: string = '/sse', authToken: string | null = 
         sendRpc('tools/list', {}, 'list_tools');
     }, [sendRpc, addLog]);
 
-    return { stats, availableTools, sendRpc, initialized, lastResult, logs, connected, statusText, refreshTools };
+    // 통계 데이터 새로고침 함수 (명시적 노출)
+    const refreshStats = useCallback(async () => {
+        await fetchStats();
+    }, [fetchStats]);
+
+    return { stats, availableTools, sendRpc, initialized, lastResult, logs, connected, statusText, refreshTools, refreshStats };
 }

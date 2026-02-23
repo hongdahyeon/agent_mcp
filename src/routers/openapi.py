@@ -143,15 +143,32 @@ class OpenApiLimitRequest(BaseModel):
     max_count: int          # limit count
     description: Optional[str] = None
 
-# [12] OpenAPI 사용 통계 조회
+# [12] OpenAPI 사용 통계 조회 (사용량/성공여부/툴별)
 # => ADMIN 권한만 조회 가능
 @router.get("/api/openapi/stats")
 async def api_get_openapi_stats(current_user: dict = Depends(get_current_user_jwt)):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.db import get_openapi_stats, get_openapi_hourly_daily_stats
+    stats = get_openapi_stats()
+    stats['heatmapStats'] = get_openapi_hourly_daily_stats()
+    return stats
+
+# [13] 특정 유저의 전체 기간 도구별 사용량 (Top 5)
+@router.get("/api/openapi/user-tool-stats")
+async def api_get_openapi_user_tool_stats(label: str, current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    from src.db import get_openapi_user_tool_detail
+    return get_openapi_user_tool_detail(label)
+
+# [14] OpenAPI 메타데이터 통계 조회 (카테고리/태그별)
+# => ADMIN 권한만 조회 가능
+@router.get("/api/openapi/meta-stats")
+async def api_get_openapi_meta_stats(current_user: dict = Depends(get_current_user_jwt)):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     from src.db import get_openapi_meta_stats
     return get_openapi_meta_stats()
 
-# [13] OpenAPI 사용 이력 조회 (상세)
+# [15] OpenAPI 사용 이력 조회 (상세)
 # => ADMIN 권한만 조회 가능
 @router.get("/api/openapi/usage-logs")
 async def api_get_openapi_usage_logs(page: int = 1, size: int = 20, current_user: dict = Depends(get_current_user_jwt)):
@@ -159,7 +176,7 @@ async def api_get_openapi_usage_logs(page: int = 1, size: int = 20, current_user
     from src.db import get_openapi_usage_logs
     return get_openapi_usage_logs(page, size)
 
-# [14] OpenAPI 제한 정책 목록 조회
+# [16] OpenAPI 제한 정책 목록 조회
 # => ADMIN 권한만 조회 가능
 @router.get("/api/openapi/limits")
 async def api_get_openapi_limits(page: int = 1, size: int = 20, current_user: dict = Depends(get_current_user_jwt)):
@@ -167,7 +184,7 @@ async def api_get_openapi_limits(page: int = 1, size: int = 20, current_user: di
     from src.db import get_openapi_limit_list
     return get_openapi_limit_list(page, size)
 
-# [15] OpenAPI 제한 정책 등록/수정
+# [17] OpenAPI 제한 정책 등록/수정
 # => ADMIN 권한만 등록/수정 가능
 @router.post("/api/openapi/limits")
 async def api_upsert_openapi_limit(req: OpenApiLimitRequest, current_user: dict = Depends(get_current_user_jwt)):
@@ -176,7 +193,7 @@ async def api_upsert_openapi_limit(req: OpenApiLimitRequest, current_user: dict 
     upsert_openapi_limit(req.dict())
     return {"success": True}
 
-# [16] OpenAPI 제한 정책 삭제
+# [18] OpenAPI 제한 정책 삭제
 # => ADMIN 권한만 삭제 가능
 @router.delete("/api/openapi/limits/{limit_id}")
 async def api_delete_openapi_limit(limit_id: int, current_user: dict = Depends(get_current_user_jwt)):
@@ -185,7 +202,7 @@ async def api_delete_openapi_limit(limit_id: int, current_user: dict = Depends(g
     delete_openapi_limit(limit_id)
     return {"success": True}
 
-# [17] 내 OpenAPI 사용량 조회
+# [19] 내 OpenAPI 사용량 조회
 @router.get("/api/openapi/my-usage")
 async def api_get_my_openapi_usage(current_user: dict = Depends(get_current_active_user)):
     from src.db import get_openapi_limit, get_user_openapi_daily_usage, get_user_openapi_tool_usage
@@ -206,7 +223,7 @@ async def api_get_my_openapi_usage(current_user: dict = Depends(get_current_acti
         "tool_usage": tool_usage
     }
 
-# [18] OpenAPI 상세 정보 PDF 내보내기
+# [20] OpenAPI 상세 정보 PDF 내보내기
 @router.get("/api/openapi/{tool_id}/export")
 async def api_export_openapi_pdf(
     tool_id: str, current_user:

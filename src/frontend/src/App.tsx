@@ -21,10 +21,12 @@ import { OpenApiManager } from './components/OpenApiManager';
 import { OpenApiMetaManager } from './components/OpenApiMetaManager';
 import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
+import DbBackupManager from './components/DbBackupManager';
+import SchedulerManager from './components/SchedulerManager';
 import type { User } from './types/auth';
 import { useTheme } from './hooks/useTheme';
 import {
-  Activity, Terminal, FileText,
+  Activity, Terminal, FileText, Clock,
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe, Tag,
   Menu, Sun, Moon
@@ -89,7 +91,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -98,7 +100,7 @@ function App() {
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('mcp_api_token'));
 
   // 로그인 상태와 상관없이 useMcp는 항상 호출되지만, authToken이 변경되면 재연결됨
-  const { connected, statusText, stats, availableTools, sendRpc, lastResult, refreshTools } = useMcp('/sse', authToken);
+  const { connected, statusText, stats, availableTools, sendRpc, lastResult, refreshTools, refreshStats } = useMcp('/sse', authToken);
 
   // Phase 3: 사용량 데이터 상태 관리
   const [usageData, setUsageData] = useState<UsageData | null>(null);
@@ -275,6 +277,8 @@ function App() {
       items: [
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
         { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
+        { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true },
+        { id: 'scheduler', label: '스케줄러 관리', icon: Clock, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },
         { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
@@ -421,7 +425,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} onRefresh={refreshStats} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
@@ -440,6 +444,8 @@ function App() {
           {activeView === 'openapi-meta' && user.role === 'ROLE_ADMIN' && <OpenApiMetaManager />}
           {activeView === 'openapi-stats' && user.role === 'ROLE_ADMIN' && <OpenApiStats theme={theme} />}
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
+          {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
+          {activeView === 'scheduler' && user.role === 'ROLE_ADMIN' && <SchedulerManager />}
         </div>
       </main>
     </div>

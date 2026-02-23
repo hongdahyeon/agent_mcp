@@ -13,7 +13,7 @@ export function UsageHistory() {
 
     // 페이징 (Pagination)
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [total, setTotal] = useState(0);
 
     // 검색 필터 (Filters)
@@ -254,7 +254,7 @@ export function UsageHistory() {
                     </div>
                 </div>
 
-                <div className="flex-1 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col transition-colors duration-300">
+                <div className="flex-[2] min-h-[450px] bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col transition-colors duration-300">
                     <div className="overflow-x-auto flex-1">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                             <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">

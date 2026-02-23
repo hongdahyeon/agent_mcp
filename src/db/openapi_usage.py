@@ -13,6 +13,8 @@ except ImportError:
     - [3] get_openapi_stats: 대시보드용 통계 (성공/실패, 도구별 횟수)
     - [4] get_user_openapi_daily_usage: 특정 유저/토큰의 오늘 사용량
     - [5] get_user_openapi_tool_usage: 특정 유저/토큰의 오늘 도구별 사용량 상세 조회
+    - [6] get_openapi_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
+    - [7] get_openapi_user_tool_detail: 특정 유저의 전체 기간 도구별 사용량 (Top 5)
 """
 
 # [1] log_openapi_usage: 사용 이력 저장
@@ -158,3 +160,43 @@ def get_user_openapi_tool_usage(user_uid: int = None, token_id: int = None):
         return [dict(row) for row in rows]
     finally:
         conn.close()
+
+# [6] get_openapi_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
+def get_openapi_hourly_daily_stats():
+    """시간대별/요일별 사용 통계 (Heatmap용 데이터)"""
+    conn = get_db_connection()
+    query = '''
+        SELECT 
+            strftime('%w', reg_dt) as dow, 
+            strftime('%H', reg_dt) as hour, 
+            COUNT(*) as cnt
+        FROM h_openapi_usage
+        GROUP BY dow, hour
+    '''
+    rows = conn.execute(query).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+# [7] get_openapi_user_tool_detail: 특정 유저/토큰의 전체 기간 도구별 사용량 (Top 5)
+def get_openapi_user_tool_detail(label: str):
+    """특정 유저/토큰의 전체 기간 도구별 사용량 (Top 5)"""
+    conn = get_db_connection()
+    # label이 user_nm일 수도 있고 token_name일 수도 있으므로 COALESCE 로직 활용
+    query = '''
+        SELECT tool_id, COUNT(*) as cnt
+        FROM (
+            SELECT 
+                log.tool_id,
+                COALESCE(u.user_nm, t.name, 'Unknown') as log_label
+            FROM h_openapi_usage log
+            LEFT JOIN h_user u ON log.user_uid = u.uid
+            LEFT JOIN h_access_token t ON log.token_id = t.id
+        )
+        WHERE log_label = ?
+        GROUP BY tool_id
+        ORDER BY cnt DESC
+        LIMIT 5
+    '''
+    rows = conn.execute(query, (label,)).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]

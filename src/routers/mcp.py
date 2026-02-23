@@ -7,7 +7,8 @@ try:
         get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
-        create_access_token, get_all_access_tokens, delete_access_token
+        create_access_token, get_all_access_tokens, delete_access_token, get_specific_user_tool_usage,
+        get_mcp_hourly_daily_stats, get_mcp_user_tool_detail
     )
     from src.dependencies import get_current_user_jwt
     from src.tool_executor import execute_sql_tool, execute_python_tool
@@ -16,7 +17,8 @@ except ImportError:
         get_tool_usage_logs, get_tool_stats, get_user_daily_usage, get_user_tool_stats, get_user_limit, get_admin_usage_stats,
         get_limit_list, upsert_limit, delete_limit,
         get_all_tools, create_tool, update_tool, delete_tool, get_tool_params, add_tool_param, clear_tool_params, get_tool_by_id,
-        create_access_token, get_all_access_tokens, delete_access_token
+        create_access_token, get_all_access_tokens, delete_access_token, get_specific_user_tool_usage,
+        get_mcp_hourly_daily_stats, get_mcp_user_tool_detail
     )
     from dependencies import get_current_user_jwt
     from tool_executor import execute_sql_tool, execute_python_tool
@@ -31,8 +33,8 @@ logger = logging.getLogger(__name__)
 # MCP Tool 사용 이력 조회 (관리자 전용, 필터링 포함)
 @router.get("/mcp/usage-history")
 async def get_usage_history(
-    page: int = 1, 
-    size: int = 20, 
+    page: int = 1,
+    size: int = 20,
     user_id: str | None = None,
     tool_nm: str | None = None,
     success: str | None = None,
@@ -42,13 +44,21 @@ async def get_usage_history(
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     return get_tool_usage_logs(page, size, user_id, tool_nm, success)
 
+# 대시보드 통계 집계
 @router.get("/mcp/stats")
 async def get_dashboard_stats():
     """도구별 사용 통계 집계 데이터 반환."""
     return {
         "tools": get_tool_stats(),
-        "users": get_user_tool_stats()
+        "users": get_user_tool_stats(),
+        "heatmapStats": get_mcp_hourly_daily_stats()
     }
+
+@router.get("/mcp/user-tool-stats")
+async def get_user_tool_usage_detail(user_id: str, current_user: dict = Depends(get_current_user_jwt)):
+    """특정 사용자의 상세 도구 사용 통계."""
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    return get_mcp_user_tool_detail(user_id)
 
 # 내 금일 사용량 및 잔여 횟수 조회
 @router.get("/mcp/my-usage")
@@ -65,7 +75,8 @@ async def api_get_my_usage(current_user: dict = Depends(get_current_user_jwt)):
         "user_id": user['user_id'],
         "usage": usage,
         "limit": limit,
-        "remaining": remaining
+        "remaining": remaining,
+        "tool_usage": get_specific_user_tool_usage(user['uid'])
     }
 
 # (관리자용) 전체 사용자 사용량 통계 조회

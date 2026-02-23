@@ -29,6 +29,7 @@ export interface OpenApiStats {
     resultStats: { success: string; cnt: number }[];
     toolStats: { tool_id: string; cnt: number }[];
     userStats: { label: string; cnt: number }[];
+    heatmapStats?: { dow: string; hour: string; cnt: number }[];
 }
 
 export interface MyOpenApiUsage {
