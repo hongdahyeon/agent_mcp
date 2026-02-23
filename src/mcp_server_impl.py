@@ -178,20 +178,27 @@ async def call_tool(name: str, arguments: dict):
     # [1] Context에서 사용자 정보 가져오기
     current_user = get_current_user()
     print(f"current_user:: {current_user}")
+    
+    user_uid = None
+    token_id = None
+    
     if current_user:
-        user_uid = current_user['uid']
-        logger.info(f"Tool executed by authenticated user: {current_user['user_id']} ({current_user['role']})")
+        user_uid = current_user.get('uid')
+        token_id = current_user.get('_token_id')
+        logger.info(f"Tool executed by authenticated user/token: {current_user['user_id']} ({current_user['role']})")
     else:
         logger.warning("Tool execution blocked: Unauthenticated")
         return [TextContent(type="text", text="Error: Authentication required to execute tools. Please refresh token.")]
         
     # [2] 사용량 제한 체크
-    daily_usage = get_user_daily_usage(user_uid)
-    daily_limit = get_user_limit(user_uid, current_user.get('role', 'ROLE_USER'))
-    
-    if daily_limit != -1 and daily_usage >= daily_limit:
-        logger.warning(f"Tool execution blocked: Daily limit exceeded ({user_uid}, Usage: {daily_usage}/{daily_limit})")
-        return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}). Please contact admin.")]
+    # user_uid가 있는 경우에만 기존 사용자 제한 체크 수행
+    if user_uid:
+        daily_usage = get_user_daily_usage(user_uid)
+        daily_limit = get_user_limit(user_uid, current_user.get('role', 'ROLE_USER'))
+        
+        if daily_limit != -1 and daily_usage >= daily_limit:
+            logger.warning(f"Tool execution blocked: Daily limit exceeded ({user_uid}, Usage: {daily_usage}/{daily_limit})")
+            return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}). Please contact admin.")]
 
     # [3] 도구 실행 준비
     tool_args = arguments.copy()
@@ -220,16 +227,16 @@ async def call_tool(name: str, arguments: dict):
                         result_val = json.dumps(user_dict, default=str, ensure_ascii=False)
                         is_success = True
             
-            if user_uid:
-                log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
         if name == "get_current_time":
             from datetime import datetime
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             result_val = f"현재 서버 시간: {now_str}"
-            if user_uid:
-                log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
         if name == "send_email":
@@ -251,11 +258,11 @@ async def call_tool(name: str, arguments: dict):
             try:
                 # user_uid=None 전달 (AI 발신임을 표시)
                 log_id = log_email(
-                    user_uid=None, 
-                    recipient=recipient, 
-                    subject=subject, 
-                    content=content, 
-                    is_scheduled=is_scheduled, 
+                    user_uid=None,
+                    recipient=recipient,
+                    subject=subject,
+                    content=content,
+                    is_scheduled=is_scheduled,
                     scheduled_dt=formatted_scheduled_dt
                 )
                 
@@ -285,8 +292,8 @@ async def call_tool(name: str, arguments: dict):
                 result_val = f"이메일 처리 중 오류 발생: {str(e)}"
                 is_success = False
             
-            if user_uid:
-                log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
         # Custom logic for get_user_tokens (if needed, but it was removed from tool list) or other admin tools can go here
@@ -295,20 +302,20 @@ async def call_tool(name: str, arguments: dict):
             a = tool_args.get("a", 0)
             b = tool_args.get("b", 0)
             result_val = str(a + b)
-            if user_uid: log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
             return [TextContent(type="text", text=result_val)]
             
         elif name == "subtract":
             a = tool_args.get("a", 0)
             b = tool_args.get("b", 0)
             result_val = str(a - b)
-            if user_uid: log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
             return [TextContent(type="text", text=result_val)]
             
         elif name == "hellouser":
             user_name = tool_args.get("name", "User")
             result_val = f"Hello {user_name}"
-            if user_uid: log_tool_usage(user_uid, name, str(tool_args), True, result_val)
+            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
         # Dynamic Tools
@@ -333,8 +340,8 @@ async def call_tool(name: str, arguments: dict):
                 if result_val.startswith("Error"):
                     is_success = False
                 
-                if user_uid:
-                    log_tool_usage(user_uid, name, str(tool_args), is_success, result_val)
+                if user_uid or token_id:
+                    log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
                 return [TextContent(type="text", text=result_val)]
         except Exception as e:
             logger.error(f"Dynamic tool execution error: {e}")
@@ -344,8 +351,8 @@ async def call_tool(name: str, arguments: dict):
     except Exception as e:
         error_msg = f"Tool execution failed: {name} - {str(e)}"
         logger.error(error_msg)
-        if user_uid:
+        if user_uid or token_id:
             try:
-                log_tool_usage(user_uid, name, str(tool_args), False, str(e))
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=False, result=str(e))
             except: pass
         return [TextContent(type="text", text=f"Error: {str(e)}")]

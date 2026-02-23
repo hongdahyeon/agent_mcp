@@ -13,7 +13,7 @@ export function LoginHistViewer() {
     const [history, setHistory] = useState<LoginHistory[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10); // 기본값 10
+    const [pageSize, setPageSize] = useState(20); // 기본값 20
     const [total, setTotal] = useState(0);
 
     const fetchHistory = useCallback(async (pageNum: number = 1) => {

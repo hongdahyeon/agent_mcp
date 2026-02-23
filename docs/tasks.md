@@ -616,3 +616,12 @@
 - [x] 6. Frontend: OpenAPI 통계 Heatmap 차트 및 사용자/토큰 상세 분석 구현
 - [x] 7. 최종 검증 및 버그 수정 (`mcp.py` 임포트 오류 해결)
 - [ ] 8. UI, 데이터 조회 부분 이상한지 체크 필요
+
+## 66. MCP 및 OpenAPI 로깅/통계 고도화 (New)
+
+- [x] 1. `h_mcp_tool_usage`: `token_id` 값 저장 추가 (DB 스키마 및 `audit_log` 연동)
+- [x] 2. 외부 토큰 사용 시 'external user' 매핑 로직 제거 및 실제 토큰 식별 적용
+- [x] 3. 사용량 히트맵(7x24) 통계 구현 및 차트 적용 (Dashboard/OpenAPI)
+- [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
+- [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
+- [x] 6. 최종 검증 및 문서 업데이트

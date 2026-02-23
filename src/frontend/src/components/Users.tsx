@@ -24,7 +24,7 @@ export function Users() {
     const [error, setError] = useState('');
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);

@@ -4,35 +4,34 @@ import os
 import json
 from datetime import datetime
 
-# 프로젝트 루트 (agent_mcp)를 path에 추가
-# src/db/check/db_reset.py -> check -> db -> src -> agent_mcp (4 levels)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+# 프로젝트 루트 (agent_mcp)를 path에 추가하여 src 패키지를 찾을 수 있게 함
+# d:/hong/9. project/agent_mcp/src/db/check/db_reset.py
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# src 패키지 자체를 path에 추가하여 내부 모듈을 직접 import 할 수 있게 함
+src_dir = os.path.join(project_root, "src")
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 
 try:
-    from src.db.connection import get_db_connection
-    from src.db.init_manager import init_db
-    from src.utils.auth import get_password_hash
+    from db.connection import get_db_connection
+    from db.init_manager import init_db
+    from utils.auth import get_password_hash
 except ImportError as e:
-    # 폴백: 개별 디렉토리를 path에 추가 (개발 환경 및 직접 실행 대응)
-    try:
-        SRC_DIR = os.path.join(ROOT_DIR, "src")
-        DB_DIR = os.path.join(SRC_DIR, "db")
-        UTILS_DIR = os.path.join(SRC_DIR, "utils")
-        
-        for d in [SRC_DIR, DB_DIR, UTILS_DIR]:
-            if d not in sys.path:
-                sys.path.append(d)
-        
-        from connection import get_db_connection
-        from init_manager import init_db
-        from auth import get_password_hash
-    except ImportError as second_e:
-        print(f"[FATAL] Import failed: {e}")
-        print(f"[DEBUG] ROOT_DIR: {ROOT_DIR}")
-        print(f"[DEBUG] sys.path: {sys.path}")
-        sys.exit(1)
+    print(f"[FATAL] Import failed: {e}")
+    print(f"[DEBUG] project_root: {project_root}")
+    print(f"[DEBUG] sys.path: {sys.path}")
+    sys.exit(1)
+
+"""
+    1. 데이터베이스의 모든 테이블 drop
+    2. 스키마 초기화 (init_manager 호출)
+    3. 데이터 시딩 (Seeding)
+"""
 
 def reset_and_seed():
     """데이터베이스의 모든 테이블을 삭제(DROP)하고, 초기화 후 기본 데이터를 삽입(SEED)합니다."""

@@ -52,9 +52,22 @@ async def api_execute_openapi(
     if not config:
         raise HTTPException(status_code=404, detail=f"OpenAPI configuration for '{tool_id}' not found")
 
-    # 2. 파라미터 수집
-    params = dict(request.query_params)
-    # token 파라미터는 프록시 내부용이므로 외부 API에 전달하지 않음
+    # 2. 파라미터 수집 및 병합
+    # - (1) [수정] DB에 저장된 기본 파라미터(params_schema)를 먼저 가져옴
+    params = {}
+    if config.get('params_schema'):
+        try:
+            db_params = json.loads(config['params_schema'])
+            if isinstance(db_params, dict):
+                params.update(db_params)
+        except Exception as e:
+            logger.error(f"Failed to parse params_schema for {tool_id}: {e}")
+
+    # - (2) 요청에서 온 파라미터로 덮어쓰기 (우선순위: Request > DB Default)
+    request_params = dict(request.query_params)
+    params.update(request_params)
+
+    # 3. token 파라미터는 프록시 내부용이므로 외부 API에 전달하지 않음
     if 'token' in params: del params['token']
     
     body = None

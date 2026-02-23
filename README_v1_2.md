@@ -82,7 +82,7 @@ uvicorn src.sse_server:app --reload --port 8000
     -   **Access Token (`h_access_token`)** 기반 인증.
     -   관리자 페이지의 [보안 토큰 관리: h_access_token] 메뉴에서 발급받은 영구(Long-Lived) 토큰입니다.
     -   CI/CD, 외부 앱, 스크립트 등에서 MCP 서버에 접속할 때 사용합니다.
-    -   이 토큰으로 접속 시 **'External System' (관리자 권한)**으로 매핑됩니다.
+    - 이 토큰으로 접속 시 별도의 공용 계정 매핑 없이, **발급된 토큰 이름으로 직접 식별**되어 사용 이력이 기록됩니다. (Token-based Identity)
 
 ### 4. Claude Desktop 연동 (Client Setup)
 

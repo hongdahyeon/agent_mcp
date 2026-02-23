@@ -25,7 +25,7 @@ export const EmailSender: React.FC = () => {
 
     // Pagination State
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [total, setTotal] = useState(0);
 
     const fetchLogs = React.useCallback(async (pageNum: number = page, size: number = pageSize) => {
@@ -228,8 +228,8 @@ export const EmailSender: React.FC = () => {
                                 type="submit"
                                 disabled={apiLoading}
                                 className={`w-full py-2.5 px-4 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-colors ${apiLoading
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg'
                                     }`}
                             >
                                 {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
@@ -283,9 +283,9 @@ export const EmailSender: React.FC = () => {
                                                             {(log.status === 'PENDING' || log.status.startsWith('PENDING')) && <Clock className="w-4 h-4 text-amber-500 dark:text-amber-400" />}
 
                                                             <span className={`font-medium ${log.status === 'SENT' ? 'text-green-700 dark:text-green-400' :
-                                                                    log.status === 'FAILED' ? 'text-red-700 dark:text-red-400' :
-                                                                        log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
-                                                                            'text-amber-600 dark:text-amber-400'
+                                                                log.status === 'FAILED' ? 'text-red-700 dark:text-red-400' :
+                                                                    log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
+                                                                        'text-amber-600 dark:text-amber-400'
                                                                 }`}>
                                                                 {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
                                                             </span>
