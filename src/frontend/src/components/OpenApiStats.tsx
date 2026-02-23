@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import {
     BarChart3,
@@ -27,6 +27,12 @@ export default function OpenApiStatsView({ theme }: Props) {
     const isDark = theme === 'dark';
     const [stats, setStats] = useState<OpenApiStats | null>(null);
     const [logs, setLogs] = useState<OpenApiUsageLog[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
@@ -97,7 +103,7 @@ export default function OpenApiStatsView({ theme }: Props) {
     };
 
     // 차트 옵션
-    const successOption = stats ? {
+    const successOption = useMemo(() => stats ? {
         backgroundColor: 'transparent',
         tooltip: { trigger: 'item' },
         legend: { bottom: '0%', textStyle: { color: isDark ? '#94a3b8' : '#64748b' } },
@@ -118,10 +124,10 @@ export default function OpenApiStatsView({ theme }: Props) {
                 itemStyle: { color: s.success === 'SUCCESS' ? '#10B981' : '#EF4444' }
             }))
         }]
-    } : {};
+    } : {}, [stats, isDark]);
 
     // 툴 사용량 차트 옵션
-    const toolOption = stats ? {
+    const toolOption = useMemo(() => stats ? {
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis' },
         xAxis: {
@@ -139,10 +145,10 @@ export default function OpenApiStatsView({ theme }: Props) {
             type: 'bar',
             itemStyle: { color: '#3B82F6', borderRadius: [5, 5, 0, 0] }
         }]
-    } : {};
+    } : {}, [stats, isDark]);
 
     // 사용자/토큰 사용량 차트 옵션
-    const userOption = stats ? {
+    const userOption = useMemo(() => stats ? {
         backgroundColor: 'transparent',
         tooltip: { trigger: 'item' },
         legend: { bottom: '0%', textStyle: { color: isDark ? '#94a3b8' : '#64748b' } },
@@ -160,9 +166,9 @@ export default function OpenApiStatsView({ theme }: Props) {
                 itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
             }
         }]
-    } : {};
+    } : {}, [stats, isDark]);
 
-    const labelToolOption = {
+    const labelToolOption = useMemo(() => ({
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis' },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -182,18 +188,18 @@ export default function OpenApiStatsView({ theme }: Props) {
             data: labelToolStats.map(s => s.cnt).reverse(),
             itemStyle: { color: '#6366f1', borderRadius: [0, 5, 5, 0] }
         }]
-    };
+    }), [labelToolStats, isDark]);
 
     // Heatmap Options
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const hours = Array.from({ length: 24 }, (_, i) => `${i}시`);
-    const heatmapData = (stats?.heatmapStats || []).map(item => [
+    const days = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'], []);
+    const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => `${i}시`), []);
+    const heatmapData = useMemo(() => (stats?.heatmapStats || []).map(item => [
         parseInt(item.hour),
         parseInt(item.dow),
         item.cnt
-    ]);
+    ]), [stats]);
 
-    const heatmapOption = {
+    const heatmapOption = useMemo(() => ({
         backgroundColor: 'transparent',
         tooltip: { position: 'top' },
         grid: { height: '70%', top: '10%' },
@@ -211,7 +217,7 @@ export default function OpenApiStatsView({ theme }: Props) {
         },
         visualMap: {
             min: 0,
-            max: Math.max(...(heatmapData.map(d => d[2] as number) || [10])),
+            max: Math.max(1, ...(heatmapData.map(d => d[2] as number) || [])),
             calculable: true,
             orient: 'horizontal',
             left: 'center',
@@ -222,7 +228,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             }
         },
         series: [{
-            name: '사용량',
+            name: '사용 횟수',
             type: 'heatmap',
             data: heatmapData,
             label: { show: false },
@@ -230,7 +236,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                 itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' }
             }
         }]
-    };
+    }), [hours, days, heatmapData, isDark]);
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6 animate-in fade-in duration-500 font-pretendard">
@@ -239,7 +245,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
                         <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard uppercase italic tracking-wider">OpenAPI Statistics</h2>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard uppercase tracking-wider">OpenAPI 사용 통계</h2>
                 </div>
                 <button
                     onClick={() => { fetchStats(); fetchLogs(1); if (selectedLabel) fetchLabelToolStats(selectedLabel); }}
@@ -256,10 +262,10 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 flex items-center font-pretendard">
                         <BarChart className="w-4 h-4 mr-2 text-indigo-500" /> 시간대별/요일별 사용 패턴
                     </h3>
-                    <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">7x24 Usage Heatmap</span>
+                    <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">7x24 사용량 히트맵</span>
                 </div>
                 <div className="h-[250px]">
-                    <ReactECharts theme={isDark ? 'dark' : undefined} option={heatmapOption} style={{ height: '100%' }} />
+                    {mounted && <ReactECharts key={`heatmap-${theme}`} theme={isDark ? 'dark' : undefined} option={heatmapOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
                 </div>
             </div>
 
@@ -298,7 +304,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                         <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" /> 성공/실패 비율
                     </h3>
                     <div className="h-[250px]">
-                        <ReactECharts theme={isDark ? 'dark' : undefined} option={successOption} style={{ height: '100%' }} />
+                        {mounted && <ReactECharts key={`success-${theme}`} theme={isDark ? 'dark' : undefined} option={successOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
                     </div>
                 </div>
 
@@ -307,7 +313,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                         <Globe className="w-4 h-4 mr-2 text-blue-500" /> 도구별 사용량 (Top 10)
                     </h3>
                     <div className="h-[250px]">
-                        <ReactECharts theme={isDark ? 'dark' : undefined} option={toolOption} style={{ height: '100%' }} />
+                        {mounted && <ReactECharts key={`tool-${theme}`} theme={isDark ? 'dark' : undefined} option={toolOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
                     </div>
                 </div>
 
@@ -316,15 +322,20 @@ export default function OpenApiStatsView({ theme }: Props) {
                         <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 flex items-center font-pretendard">
                             <Users className="w-4 h-4 mr-2 text-indigo-500" /> 사용자/토큰별 사용량
                         </h3>
-                        <span className="text-[10px] text-indigo-500 font-bold uppercase">Clickable</span>
+                        <span className="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">분석하려면 클릭</span>
                     </div>
                     <div className="h-[250px]">
-                        <ReactECharts 
-                            theme={isDark ? 'dark' : undefined} 
-                            option={userOption} 
-                            onEvents={{ 'click': onUserChartClick }}
-                            style={{ height: '100%' }} 
-                        />
+                        {mounted && (
+                            <ReactECharts
+                                key={`user-${theme}`}
+                                theme={isDark ? 'dark' : undefined}
+                                option={userOption}
+                                onEvents={{ 'click': onUserChartClick }}
+                                style={{ height: '100%' }}
+                                notMerge={true}
+                                lazyUpdate={true}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -340,11 +351,11 @@ export default function OpenApiStatsView({ theme }: Props) {
                         {selectedLabel ? <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">[{selectedLabel}]</span> : "사용자/토큰"} 상세 분석
                     </h3>
                     {selectedLabel && (
-                        <button 
+                        <button
                             onClick={() => setSelectedLabel(null)}
                             className="text-xs text-gray-400 hover:text-indigo-500 underline decoration-dotted underline-offset-4"
                         >
-                            Reset Selection
+                            선택 초기화
                         </button>
                     )}
                 </div>
@@ -361,7 +372,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                 ) : labelToolStats.length > 0 ? (
                     <div className="h-[200px]">
                         <div className="text-[10px] text-gray-400 uppercase mb-2">주 사용 OpenAPI TOP 5</div>
-                        <ReactECharts theme={isDark ? 'dark' : undefined} option={labelToolOption} style={{ height: '170px' }} />
+                        {mounted && <ReactECharts key={`label-tool-${selectedLabel}-${theme}`} theme={isDark ? 'dark' : undefined} option={labelToolOption} style={{ height: '170px' }} notMerge={true} lazyUpdate={true} />}
                     </div>
                 ) : (
                     <div className="h-[200px] flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 space-y-1">

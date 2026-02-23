@@ -40,16 +40,19 @@ def init_db():
     ''')
     
     # 3. MCP Tool 사용 이력 테이블
+    # - (26.02.24) token_id 컬럼 추가
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_usage (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_uid INTEGER,
+        token_id INTEGER,
         tool_nm TEXT NOT NULL,
         tool_params TEXT,
         tool_success TEXT,
         tool_result TEXT,
         reg_dt TEXT NOT NULL,
-        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid),
+        FOREIGN KEY (token_id) REFERENCES h_access_token (id)
     )
     ''')
     

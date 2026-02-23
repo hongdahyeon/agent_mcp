@@ -113,26 +113,11 @@ async def handle_sse(request: Request, token: str = Query(None)):
     try:
         if token:
             try:
-                # 1. JWT Check
-                payload = None
-                try:
-                    payload = verify_token(token)
-                except Exception:
-                    payload = None
-
-                if payload:
-                     user_id = payload.get("sub")
-                     user = get_user(user_id)
-                     if user: print(f"*** Valid JWT: {user['user_id']} ***")
-                else:
-                     # 2. Access Token Check
-                     access_token_data = get_access_token(token)
-                     if access_token_data:
-                         print(f"*** Valid Access Token: {access_token_data['name']} ***")
-                         user = get_user('external')
-                         if not user: user = get_user('admin')
-                     else:
-                         user = None
+                # JWT 및 sk_... 토큰 통합 검증 함수 사용
+                from src.db.access_token import get_user_by_active_token
+                user = get_user_by_active_token(token)
+                if user:
+                    print(f"*** Authenticated: {user['user_id']} (Token: {user.get('_token_nm', 'JWT')}) ***")
             except Exception as e:
                 logger.error(f"Token validation error: {e}")
                 user = None
@@ -158,7 +143,7 @@ async def handle_sse(request: Request, token: str = Query(None)):
         traceback.print_exc()
         raise e
 
-""" 
+"""
     # 'FastAPI가 이미 완료된 요청에 대해 중복으로 응답을 보내려다 에러가 나는 것을 막기 위한 "가짜 응답 객체'
     - /messages POST 요청을 받아서 SSE로 전달
     - NoOpResponse를 사용하여 중복 응답 방지

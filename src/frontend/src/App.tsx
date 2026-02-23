@@ -425,7 +425,7 @@ function App() {
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 relative">
-          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} onRefresh={refreshStats} />}
+          {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} role={user.role} onRefresh={refreshStats} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
           {activeView === 'logs' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}

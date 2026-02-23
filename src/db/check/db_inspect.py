@@ -2,22 +2,21 @@ import sqlite3
 import sys
 import os
 
-# 프로젝트 루트 (agent_mcp)를 path에 추가
-# src/db/check/db_inspect.py -> check -> db -> src -> agent_mcp (4 levels)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+# 프로젝트 루트 (agent_mcp)를 path에 추가하여 src 패키지를 찾을 수 있게 함
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# src 패키지 자체를 path에 추가
+src_dir = os.path.join(project_root, "src")
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
 
 try:
-    from src.db.connection import get_db_connection
+    from db.connection import get_db_connection
 except ImportError as e:
-    # 폴백: 개별 디렉토리를 path에 추가 (개발 환경 및 직접 실행 대응)
-    DB_DIR = os.path.join(ROOT_DIR, "src", "db")
-    if DB_DIR not in sys.path:
-        sys.path.append(DB_DIR)
-    try:
-        from connection import get_db_connection
-    except ImportError:
         print(f"[FATAL] Import failed: {e}")
         sys.exit(1)
 
