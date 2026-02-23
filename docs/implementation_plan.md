@@ -996,3 +996,28 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. 새로고침 버튼 클릭 시 네트워크 탭에서 `/api/mcp/stats` 호출 및 데이터 갱신 확인.
 2. 도구 실행 후 대시보드로 돌아와 새로고침 시 즉각적으로 차트의 수치가 업데이트됨을 확인.
 3. 다크 모드 환경에서도 버튼 및 헤더 디자인이 조화롭게 표시됨을 확인.
+
+---
+
+## Phase 38: 대시보드 시각화 확장 (Heatmap & 상세 분석) [Completed]
+
+### 목표
+메인 대시보드 및 OpenAPI 통계 화면에 사용 패턴을 한눈에 파악할 수 있는 Heatmap 차트를 도입하고, 특정 사용자/토큰 클릭 시 Top 5 사용 도구를 보여주는 상세 분석 기능을 추가하여 데이터 가독성과 인터랙션을 강화합니다.
+
+### 구현 내용
+
+#### 1. Backend (Database & API)
+- **DB 확장**: `get_mcp_hourly_daily_stats`, `get_openapi_hourly_daily_stats` 함수를 구현하여 요일/시간대별 집계 데이터를 제공합니다.
+- **상세 분석**: `get_mcp_user_tool_detail`, `get_openapi_user_tool_detail` 함수를 통해 특정 대상의 최다 사용 도구 5개를 추출합니다.
+- **API 라우터**: `/api/mcp/stats`, `/api/openapi/stats`에 `heatmapStats` 필드를 추가하고, 상세 조회를 위한 `/api/mcp/user-tool-stats`, `/api/openapi/user-tool-stats` 엔드포인트를 신설했습니다.
+
+#### 2. Frontend (UI/UX)
+- **Heatmap 구현**: ECharts의 `heatmap` 타입을 활용하여 메인 및 OpenAPI 대시보드 상단에 시각적 패턴 분석 영역을 배치했습니다.
+- **2단 레이아웃 (Dashboard)**: 사용자별 요청 횟수 파이 차트 옆에 '상세 분석' 영역을 배치하여, 차트 항목 클릭 시 해당 유저의 Top 5 도구가 즉시 렌더링되도록 구현했습니다.
+- **OpenAPI 상세 분석**: OpenAPI 통계 화면에서도 유저/토큰 클릭 시 상세 도구 사용 순위가 나타나는 인터랙션을 동일하게 적용했습니다.
+- **편의 기능**: 유저 선택 해제 버튼(`Clear Selection`), 데이터 로딩 상태 표시, 데이터 없을 시 폴백 메시지 처리를 완료했습니다.
+
+### 검증 결과
+1. **API 무결성**: `/api/mcp/stats` 호출 시 `heatmapStats` 배열(dow, hour, cnt)이 정상 포함됨을 확인.
+2. **인터랙션**: 차트 클릭 시 `user_id` 또는 `label`을 파라미터로 하여 상세 API가 호출되고 결과가 화면에 반영됨을 확인.
+3. **오류 해결**: `mcp.py` 내 신규 함수 임포트 누락으로 인한 `NameError`를 수정하여 백엔드 구동 안정성을 확보했습니다.

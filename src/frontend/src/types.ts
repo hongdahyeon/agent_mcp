@@ -27,6 +27,7 @@ export interface ToolStats {
 export interface UsageStats {
     tools: Record<string, ToolStats>;
     users?: Record<string, number>;
+    heatmapStats?: { dow: string; hour: string; cnt: number }[];
 }
 
 // 서버와 통신시 사용하는 JSON-RPC 프로토콜 메시지 규격

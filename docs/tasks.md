@@ -604,3 +604,15 @@
 - [x] Backend: `src/routers/system.py` health & scheduler API 구현
 - [x] Frontend: `SchedulerManager.tsx` 구현 및 대시보드 UI 연동
 - [x] 최종 기능 검증 및 문서 업데이트
+
+## 65. 대시보드 시각화 확정 (Heatmap & 사용자 상세 분석) (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: 시간대별/요일별 사용 통계 DB 함수 구현 (`mcp_tool_usage.py`, `openapi_usage.py`)
+- [x] 2. Backend: 특정 유저의 Top 5 도구 사용량 조회 함수 구현
+- [x] 3. Backend: API 엔드포인트 확장 (`/mcp/stats`, `/mcp/user-tool-stats`, `/openapi/stats`, `/openapi/user-tool-stats`)
+- [x] 4. Frontend: UsageStats 및 OpenApiStats 타입 정의 업데이트
+- [x] 5. Frontend: 메인 대시보드 Heatmap 차트 및 2단 레이아웃 사용자 상세 분석 구현
+- [x] 6. Frontend: OpenAPI 통계 Heatmap 차트 및 사용자/토큰 상세 분석 구현
+- [x] 7. 최종 검증 및 버그 수정 (`mcp.py` 임포트 오류 해결)
+- [ ] 8. UI, 데이터 조회 부분 이상한지 체크 필요
