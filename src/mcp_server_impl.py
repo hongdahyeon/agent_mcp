@@ -1,3 +1,39 @@
+"""
+mcp_server_impl.py
+==================
+
+이 파일은 MCP(Model Context Protocol) 서버의 핵심 구현부로, 
+정적(Static) 도구와 DB기반 동적(Dynamic) 도구를 통합하여 관리하고 실행하는 역할을 합니다.
+
+# 주요 기능:
+1. 도구 통합 관리: 정적 도구 목록과 DB(h_custom_tool)에서 로드한 동적 도구를 합쳐서 에이전트에게 제공합니다.
+2. 실행 제어 및 보안 (call_tool):
+   - 공통: 모든 도구 실행 시 유효한 토큰(token) 및 사용자 인증 상태를 체크합니다.
+   - 사용량 제한: 사용자의 일일 도구 사용량을 체크하여 제한을 적용합니다.
+   - 실행 이력: 모든 도구 호출 결과와 성공 여부를 DB에 기록합니다.
+
+# 도구 유형별 처리 방식:
+1. 정적 도구 (Static Tools):
+   - 미리 정의된 파이썬 함수를 직접 호출합니다.
+   - 권한 체크: 특정 도구(예: get_user_info)는 ROLE_ADMIN과 같은 특정 역할이 필요합니다.
+   - 파라미터 처리: 입력받은 인자로 연산을 수행하거나 메일 발송, 시간 조회 등을 처리합니다.
+   - 로그 기록: 성공/실패 여부와 결과를 DB에 로그로 남깁니다.
+
+2. 동적 도구 (Dynamic Tools):
+   - DB에 등록된 SQL 또는 PYTHON 코드를 실행합니다.
+   - 유형 체크: 실행 시 도구의 타입(SQL vs PYTHON)을 확인하여 적절한 Executor를 호출합니다.
+   - 에러 처리: 코드 실행 중 발생하는 예외를 잡아내어 에러 메시지를 반환하고 로그로 기록합니다.
+
+# 등록된 정적 도구 목록:
+(1) add: 두 숫자를 더합니다.
+(2) subtract: 두 숫자를 뺍니다.
+(3) hellouser: 사용자 이름을 입력받아 인사말을 반환합니다.
+(4) get_user_info: (Admin 전용) 사용자 ID로 상세 정보를 조회합니다.
+(5) get_current_time: 시스템의 현재 날짜와 시간을 조회합니다.
+(6) send_email: 이메일을 즉시 또는 예약 발송합니다.
+(7) get_tool_analysis: OpenAPI 도구의 규격을 분석하고 샘플 호출 보고서를 생성합니다.
+"""
+
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 import logging
@@ -22,10 +58,6 @@ except ImportError:
     from utils.context import get_current_user
     from utils.mailer import EmailSender
     from scheduler import add_scheduled_job
-
-"""
-    MCP 서버 인스턴스 및 Tool 정의
-"""
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +147,17 @@ async def list_tools():
                 "required": ["recipient", "content"]
             }
         ),
-        # get_user_tokens removed
+        Tool(
+            name="get_tool_analysis",
+            description="분석 대상 OpenAPI 도구(tool_id)의 명세와 샘플 호출 결과를 분석하여 보고서를 제공합니다.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tool_id": {"type": "string", "description": "분석할 OpenAPI 도구 ID (ex: 'get_info')"}
+                },
+                "required": ["tool_id"]
+            }
+        ),
     ]
     
     for t in static_tools:
@@ -296,7 +338,23 @@ async def call_tool(name: str, arguments: dict):
                 log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
-        # Custom logic for get_user_tokens (if needed, but it was removed from tool list) or other admin tools can go here
+        if name == "get_tool_analysis":
+            try:
+                from src.utils.openapi_analyzer import analyze_openapi_tool
+            except ImportError:
+                from utils.openapi_analyzer import analyze_openapi_tool
+            
+            tool_id_to_analyze = tool_args.get("tool_id")
+            if not tool_id_to_analyze:
+                result_val = "Error: Missing tool_id parameter"
+            else:
+                analysis_result = await analyze_openapi_tool(tool_id_to_analyze)
+                result_val = json.dumps(analysis_result, ensure_ascii=False, indent=2)
+                is_success = True
+            
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
+            return [TextContent(type="text", text=result_val)]
 
         if name == "add":
             a = tool_args.get("a", 0)

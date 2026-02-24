@@ -19,6 +19,7 @@ interface Props {
 
 export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const [selectedTool, setSelectedTool] = useState<string>('');
+    const [openapiToolId, setOpenapiToolId] = useState<string>('');
     const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
     // Result handling (Local state for display control)
@@ -158,6 +159,18 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                         <RefreshCw className="w-5 h-5" />
                                     </button>
                                 )}
+                                <button
+                                    onClick={() => {
+                                        if (selectedTool) {
+                                            sendRpc('tools/call', { name: 'get_tool_analysis', arguments: { tool_id: selectedTool } }, 'analyze-' + selectedTool);
+                                        }
+                                    }}
+                                    disabled={!selectedTool}
+                                    className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-800/60 transition-all border border-indigo-200 dark:border-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-pretendard h-[42px]"
+                                    title="도구 연동 분석 (AI 에이전트용 정보 추출)"
+                                >
+                                    <span className="whitespace-nowrap">분석 (Analyze)</span>
+                                </button>
                             </div>
                         </div>
 
@@ -178,22 +191,58 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                     </div>
                                 )
                             }) : (
-                                <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-slate-500 font-pretendard">
+                                <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-slate-500 font-pretendard">
                                     <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
                                     <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex-shrink-0">
+                        <div className="flex-shrink-0 flex space-x-2">
                             <button
                                 onClick={handleExecute}
                                 disabled={!selectedTool}
-                                className="w-full bg-blue-600 dark:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-500 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group font-pretendard"
+                                className="flex-1 bg-blue-600 dark:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-500 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group font-pretendard"
                             >
                                 <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
                                 실행 (Execute)
                             </button>
+                        </div>
+
+                        {/* OpenAPI Manual Analysis Section */}
+                        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-800 flex-shrink-0">
+                            <h4 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 flex items-center font-pretendard">
+                                <span className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2"></span>
+                                OpenAPI 도구 분석 (Manual Analysis)
+                            </h4>
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="text"
+                                    placeholder="분석할 OpenAPI Tool ID 입력 (예: get_info)"
+                                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard text-sm h-[42px]"
+                                    value={openapiToolId}
+                                    onChange={(e) => setOpenapiToolId(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && openapiToolId.trim()) {
+                                            sendRpc('tools/call', { name: 'get_tool_analysis', arguments: { tool_id: openapiToolId.trim() } }, 'analyze-' + openapiToolId.trim());
+                                        }
+                                    }}
+                                />
+                                <button
+                                    onClick={() => {
+                                        if (openapiToolId.trim()) {
+                                            sendRpc('tools/call', { name: 'get_tool_analysis', arguments: { tool_id: openapiToolId.trim() } }, 'analyze-' + openapiToolId.trim());
+                                        }
+                                    }}
+                                    disabled={!openapiToolId.trim()}
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-pretendard h-[42px] whitespace-nowrap text-sm"
+                                >
+                                    분석 실행
+                                </button>
+                            </div>
+                            <p className="mt-2 text-xs text-gray-400 dark:text-slate-500 font-pretendard">
+                                * OpenAPI 관리 메뉴에 등록된 도구 ID를 입력하여 분석 보고서를 생성합니다.
+                            </p>
                         </div>
                     </div>
 
