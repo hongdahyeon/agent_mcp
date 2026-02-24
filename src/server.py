@@ -194,6 +194,13 @@ async def get_tool_analysis(tool_id: str) -> str:
     
     import json
     result = await analyze_openapi_tool(tool_id)
+    
+    # 도구 분석 결과에 오류가 포함된 경우
+    if result.get("status") == "error":
+        error_msg = f"Error: {result.get('message', 'Unknown error')}"
+        logger.warning(error_msg)
+        return error_msg
+    
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 

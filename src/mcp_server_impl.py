@@ -350,7 +350,8 @@ async def call_tool(name: str, arguments: dict):
             else:
                 analysis_result = await analyze_openapi_tool(tool_id_to_analyze)
                 result_val = json.dumps(analysis_result, ensure_ascii=False, indent=2)
-                is_success = True
+                # 도구 분석 결과의 status가 success인 경우에만 성공으로 처리
+                is_success = (analysis_result.get("status") == "success")
             
             if user_uid or token_id:
                 log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
