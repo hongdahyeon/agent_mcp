@@ -69,7 +69,7 @@ def subtract(a: int, b: int) -> int:
 def hellouser(a: str) -> str:
     """
         사용자 이름을 입력받아 인사말을 반환합니다.
-        '인사'라는 키워드로 사용하더라도 호출됩니다.
+        '인사' 혹은 '안녕'이라는 키워드로 사용하더라도 호출됩니다.
     """
     return f"Hello {a}"
 
@@ -174,6 +174,27 @@ def send_email(recipient: str, content: str, subject: str = "", scheduled_at: st
         return f"이메일 처리 중 오류 발생: {str(e)}"
 
 
+
+
+@mcp.tool()
+@audit_log
+async def get_tool_analysis(tool_id: str) -> str:
+    """
+    입력된 OpenAPI 도구(tool_id)에 대한 상세 정보를 분석하고, 샘플 호출을 통해 응답 규격을 확인합니다.
+    AI 에이전트가 도구 사용 방법을 이해하고 직접 테스트 결과(파라미터, 응답 예시)를 받아보기 위해 사용합니다.
+    (1) 도구 상세 정보 및 파라미터 규격 조회
+    (2) 실제 API 샘플 호출 수행 (인증 포함)
+    (3) 결과 분석 및 응답 규격 정리
+    (*) 자세한 내용은 docs/open_api.md 참고
+    """
+    try:
+        from src.utils.openapi_analyzer import analyze_openapi_tool
+    except ImportError:
+        from utils.openapi_analyzer import analyze_openapi_tool
+    
+    import json
+    result = await analyze_openapi_tool(tool_id)
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 if __name__ == "__main__":
