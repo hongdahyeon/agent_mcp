@@ -634,3 +634,12 @@
 - [x] 4. Integration: 회원가입 시 이메일 OTP 필수 검증 로직 연동
 - [x] 5. Admin UI: OTP 발송 및 인증 이력 조회 화면 구현 (OtpHistory.tsx)
 - [x] 6. 최종 검증 및 테스트 완료
+
+## 68. User Email 통합 및 고도화 (New)
+
+- [x] 1. DB: `h_user` 테이블 `user_email` 컬럼 추가 및 마이그레이션 (`src/db/migrate_user_email.py`)
+- [x] 2. Backend: `user_email` 기반 중복 체크 API 익스포트 및 가입 로직 연동
+- [x] 3. Frontend: 사용자 관리(Users.tsx) 내 이메일 필드 추가 및 인증 프로세스 통합
+- [x] 4. Frontend: 회원가입 시 이메일 인증 필수화 및 UI 개선
+- [x] 5. Frontend: 내 정보(MyPage.tsx) 이메일 정보 노출
+- [x] 6. 최종 검증 및 테스트 완료

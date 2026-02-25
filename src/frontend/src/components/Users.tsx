@@ -35,6 +35,7 @@ export function Users() {
         user_id: '',
         password: '',
         user_nm: '',
+        user_email: '',
         role: 'ROLE_USER',
         is_enable: 'Y',
         is_locked: 'N',
@@ -42,6 +43,15 @@ export function Users() {
     });
 
     const [idCheckStatus, setIdCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    const [emailCheckStatus, setEmailCheckStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+    
+    // OTP 관련 상태
+    const [otpCode, setOtpCode] = useState('');
+    const [isOtpSent, setIsOtpSent] = useState(false);
+    const [isOtpVerified, setIsOtpVerified] = useState(false);
+    const [isEmailEditing, setIsEmailEditing] = useState(false);
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
     const fetchUsers = useCallback(async (pageNum: number = 1) => {
         setLoading(true);
@@ -83,12 +93,18 @@ export function Users() {
             user_id: '',
             password: '',
             user_nm: '',
+            user_email: '',
             role: 'ROLE_USER',
             is_enable: 'Y',
             is_locked: 'N',
             login_fail_count: 0
         });
         setIdCheckStatus('idle');
+        setEmailCheckStatus('idle');
+        setOtpCode('');
+        setIsOtpSent(false);
+        setIsOtpVerified(false);
+        setIsEmailEditing(true);
         setIsModalOpen(true);
     };
 
@@ -99,11 +115,17 @@ export function Users() {
             user_id: user.user_id,
             password: '', // Not editable here
             user_nm: user.user_nm,
+            user_email: user.user_email || '',
             role: user.role,
             is_enable: user.is_enable || 'Y',
             is_locked: user.is_locked || 'N',
             login_fail_count: user.login_fail_count || 0
         });
+        setEmailCheckStatus('idle');
+        setOtpCode('');
+        setIsOtpSent(false);
+        setIsOtpVerified(false);
+        setIsEmailEditing(false);
         setIsModalOpen(true);
     };
 
@@ -122,6 +144,76 @@ export function Users() {
         }
     };
 
+    // user_email 중복 체크
+    const checkEmail = async () => {
+        if (!formData.user_email) return;
+        setEmailCheckStatus('checking');
+        try {
+            const res = await fetch(`/api/users/check-email?user_email=${formData.user_email}`, {
+                headers: getAuthHeaders()
+            });
+            const data = await res.json();
+            setEmailCheckStatus(data.exists ? 'taken' : 'available');
+        } catch {
+            setEmailCheckStatus('idle');
+        }
+    };
+
+    // OTP 발송
+    const sendOtp = async () => {
+        if (!formData.user_email || emailCheckStatus !== 'available') {
+            alert('이메일 중복 확인을 먼저 완료해주세요.');
+            return;
+        }
+        setIsSendingOtp(true);
+        try {
+            const res = await fetch('/auth/otp/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.user_email, otp_type: 'MANAGEMENT' })
+            });
+            if (res.ok) {
+                setIsOtpSent(true);
+                alert('인증 코드가 이메일로 발송되었습니다.');
+            } else {
+                const data = await res.json();
+                alert(data.detail || 'OTP 발송 실패');
+            }
+        } catch {
+            alert('OTP 발송 중 오류가 발생했습니다.');
+        } finally {
+            setIsSendingOtp(false);
+        }
+    };
+
+    // OTP 검증
+    const verifyOtp = async () => {
+        if (!otpCode) return;
+        setIsVerifyingOtp(true);
+        try {
+            const res = await fetch('/auth/otp/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.user_email,
+                    otp_type: 'MANAGEMENT',
+                    otp_code: otpCode
+                })
+            });
+            if (res.ok) {
+                setIsOtpVerified(true);
+                alert('이메일 인증이 완료되었습니다.');
+            } else {
+                const data = await res.json();
+                alert(data.detail?.message || '인증 코드 확인 실패');
+            }
+        } catch {
+            alert('인증 코드 확인 중 오류가 발생했습니다.');
+        } finally {
+            setIsVerifyingOtp(false);
+        }
+    };
+
     // 사용자 저장, 수정
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,9 +223,30 @@ export function Users() {
                 alert('아이디 중복 확인이 필요합니다.');
                 return;
             }
+            if (!formData.user_email || emailCheckStatus !== 'available') {
+                alert('이메일 중복 확인이 필요합니다.');
+                return;
+            }
+            if (!isOtpVerified) {
+                alert('이메일 인증이 필요합니다.');
+                return;
+            }
             if (!formData.password) {
                 alert('비밀번호를 입력해주세요.');
                 return;
+            }
+        } else {
+            // 수정 모드에서 이메일이 변경된 경우
+            const currentUser = users.find(u => u.user_id === formData.user_id);
+            if (currentUser && currentUser.user_email !== formData.user_email) {
+                if (emailCheckStatus !== 'available') {
+                    alert('변경된 이메일 중복 확인이 필요합니다.');
+                    return;
+                }
+                if (!isOtpVerified) {
+                    alert('변경된 이메일에 대한 인증이 필요합니다.');
+                    return;
+                }
             }
         }
 
@@ -250,6 +363,7 @@ export function Users() {
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">ID / 이름</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이메일</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">권한</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">잠금</th>
@@ -265,6 +379,9 @@ export function Users() {
                                             <span className="text-sm font-medium text-gray-900 dark:text-slate-100">{user.user_nm}</span>
                                             <span className="text-xs text-gray-500 dark:text-slate-400">{user.user_id}</span>
                                         </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className="text-sm text-gray-600 dark:text-slate-400">{user.user_email}</span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={clsx(
@@ -367,7 +484,7 @@ export function Users() {
                         </header>
 
                         <form onSubmit={handleSubmit} className="flex flex-col">
-                            <div className="p-6 space-y-4">
+                            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <UserIcon className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
@@ -398,6 +515,91 @@ export function Users() {
                                             </button>
                                         )}
                                     </div>
+                                    {idCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">사용 가능한 아이디입니다.</p>}
+                                    {idCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">이미 사용 중인 아이디입니다.</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
+                                        <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
+                                        이메일
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="email"
+                                            value={formData.user_email}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, user_email: e.target.value });
+                                                setEmailCheckStatus('idle');
+                                                setIsOtpSent(false);
+                                                setIsOtpVerified(false);
+                                            }}
+                                            disabled={modalMode === 'update' && !isEmailEditing}
+                                            className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${
+                                                (modalMode === 'update' && !isEmailEditing)
+                                                    ? 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed border-gray-200 dark:border-slate-800'
+                                                    : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100'
+                                            }`}
+                                            placeholder="example@email.com"
+                                            required
+                                        />
+                                        {modalMode === 'update' && !isEmailEditing ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsEmailEditing(true)}
+                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors"
+                                            >
+                                                이메일 수정
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={checkEmail}
+                                                disabled={!formData.user_email || emailCheckStatus === 'checking'}
+                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                            >
+                                                {emailCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                            </button>
+                                        )}
+                                    </div>
+                                    {emailCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">사용 가능한 이메일입니다.</p>}
+                                    {emailCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">이미 사용 중인 이메일입니다.</p>}
+                                    
+                                    {/* OTP flow */}
+                                    {emailCheckStatus === 'available' && (
+                                        <div className="mt-3 space-y-2">
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={otpCode}
+                                                    onChange={(e) => setOtpCode(e.target.value)}
+                                                    placeholder="인증코드"
+                                                    disabled={isOtpVerified}
+                                                    className="flex-1 px-4 py-2 text-sm border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                                                />
+                                                {!isOtpSent ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={sendOtp}
+                                                        disabled={isSendingOtp}
+                                                        className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                                    >
+                                                        {isSendingOtp ? '발송중...' : '인증코드 발송'}
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={verifyOtp}
+                                                        disabled={isVerifyingOtp || isOtpVerified || !otpCode}
+                                                        className={`px-3 py-2 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${isOtpVerified ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'}`}
+                                                    >
+                                                        {isOtpVerified ? '인증완료' : isVerifyingOtp ? '확인중...' : '인증확인'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {isOtpSent && !isOtpVerified && <p className="text-[10px] text-indigo-500 ml-1">이메일로 발송된 인증코드를 입력해주세요.</p>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {modalMode === 'create' && (
