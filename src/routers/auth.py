@@ -7,7 +7,7 @@ import logging
 try:
     from src.db import (
         get_user, verify_password, log_login_attempt, get_login_history,
-        check_user_id, create_user, increment_login_fail_count,
+        check_user_id, check_user_email, create_user, increment_login_fail_count,
         reset_login_fail_count, set_user_locked
     )
     from src.utils.auth import create_access_token as create_jwt_token
@@ -15,7 +15,7 @@ try:
 except ImportError:
     from db import (
         get_user, verify_password, log_login_attempt, get_login_history,
-        check_user_id, create_user, increment_login_fail_count,
+        check_user_id, check_user_email, create_user, increment_login_fail_count,
         reset_login_fail_count, set_user_locked
     )
     from utils.auth import create_access_token as create_jwt_token
@@ -36,6 +36,7 @@ class LoginRequest(BaseModel):
 class SignupRequest(BaseModel):
     user_id: str
     user_nm: str
+    user_email: str # 이메일 필드 반영
     password: str
     otp_code: str # OTP 코드 추가
 
@@ -140,6 +141,13 @@ async def api_check_id(user_id: str = Query(...)):
     is_exists = check_user_id(user_id)
     return {"exists": is_exists}
 
+# 이메일 중복 체크
+# -> 로그인 필요 여부 x (비인증)
+@router.get("/check-email")
+async def api_check_email(user_email: str = Query(...)):
+    is_exists = check_user_email(user_email)
+    return {"exists": is_exists}
+
 # OTP 발송
 @router.post("/otp/send")
 async def api_send_otp(req: OtpSendRequest):
@@ -165,8 +173,11 @@ async def api_signup(req: SignupRequest):
     if check_user_id(req.user_id):
         raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
     
-    # OTP 검증 (회원가입시 필수 체크)
-    otp_success, status_code, otp_message = verify_management_otp(req.user_id, 'SIGNUP', req.otp_code)
+    if check_user_email(req.user_email):
+        raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
+    
+    # OTP 검증 (회원가입시 필수 체크, user_id 대신 user_email로 검증)
+    otp_success, status_code, otp_message = verify_management_otp(req.user_email, 'SIGNUP', req.otp_code)
     if not otp_success:
         raise HTTPException(status_code=400, detail=f"이메일 인증 실패: {otp_message}")
     
@@ -174,6 +185,7 @@ async def api_signup(req: SignupRequest):
         user_data = {
             "user_id": req.user_id,
             "user_nm": req.user_nm,
+            "user_email": req.user_email, # 이메일 추가
             "password": req.password,
             "role": "ROLE_USER",
             "is_enable": "N"

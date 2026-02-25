@@ -83,6 +83,10 @@ export function MyPage() {
                             <span className="text-gray-500 dark:text-slate-400 text-sm">아이디</span>
                             <span className="font-medium text-gray-900 dark:text-slate-200">{user.user_id}</span>
                         </div>
+                        <div className="flex justify-between border-b border-gray-50 dark:border-slate-800 pb-3">
+                            <span className="text-gray-500 dark:text-slate-400 text-sm">이메일</span>
+                            <span className="font-medium text-gray-900 dark:text-slate-200">{user.user_email || '-'}</span>
+                        </div>
                         <div className="flex justify-between items-center border-b border-gray-50 dark:border-slate-800 pb-3">
                             <span className="text-gray-500 dark:text-slate-400 text-sm">권한</span>
                             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${user.role === 'ROLE_ADMIN' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'}`}>

@@ -18,6 +18,7 @@ def init_db():
         user_id TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         user_nm TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         role TEXT DEFAULT 'ROLE_USER',
         last_cnn_dt TEXT,
         is_enable TEXT DEFAULT 'Y',

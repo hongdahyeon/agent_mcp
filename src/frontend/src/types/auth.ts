@@ -5,6 +5,7 @@ export interface User {
     uid?: number;
     user_id: string;
     user_nm: string;
+    user_email: string;
     role: string;
     is_enable?: string;
     is_locked?: string;
@@ -35,4 +36,5 @@ export interface SessionUser {
     uid: number;
     user_id: string;
     user_nm: string;
+    user_email?: string;
 }

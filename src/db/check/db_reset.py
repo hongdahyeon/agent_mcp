@@ -99,13 +99,13 @@ def reset_and_seed():
         # 3.3. 유저 계정 (admin/user)
         hashed_pw = get_password_hash("1234")
         cursor.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-            VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('admin', hashed_pw, '관리자', 'ROLE_ADMIN', timestamp))
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable)
+            VALUES (?, ?, ?, ?, ?, ?, 'Y')
+        ''', ('admin', hashed_pw, '관리자', 'admin@naver.com', 'ROLE_ADMIN', timestamp))
         cursor.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, role, last_cnn_dt, is_enable)
-            VALUES (?, ?, ?, ?, ?, 'Y')
-        ''', ('user', hashed_pw, '사용자', 'ROLE_USER', timestamp))
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable)
+            VALUES (?, ?, ?, ?, ?, ?, 'Y')
+        ''', ('user', hashed_pw, '사용자', 'user@naver.com', 'ROLE_USER', timestamp))
         print(" - Seeded: Default users (admin, user / password: 1234)")
 
         conn.commit()

@@ -64,9 +64,8 @@ def verify_management_otp(email: str, otp_type: str, input_code: str):
     if not otp_record:
         return False, "NOT_FOUND", "발송된 인증 번호를 찾을 수 없습니다."
     
-    # 2. 이미 확인된 경우 (보통은 새로 발송하겠지만, 보안상 체크)
-    if otp_record['is_verified'] == 'Y':
-        return False, "INVALID_CODE", "이미 확인된 인증 번호입니다. 새로 발송해 주세요."
+    # 2. 이미 확인된 경우라도, 코드 값이 일치하고 만료되지 않았다면 유효한 것으로 간주 (회원가입 최종 단계 대비)
+    is_already_verified = (otp_record['is_verified'] == 'Y')
 
     # 3. 만료 여부 확인
     expires_at = datetime.strptime(otp_record['expires_at'], '%Y-%m-%d %H:%M:%S')
@@ -77,7 +76,9 @@ def verify_management_otp(email: str, otp_type: str, input_code: str):
     if otp_record['otp_code'] != input_code:
         return False, "INVALID_CODE", "인증 번호가 일치하지 않습니다."
     
-    # 5. 성공 시 확인 처리
-    verify_otp_record(otp_record['id'])
+    # 5. 성공 시 확인 처리 (아직 확인 안 된 경우만)
+    # => 회원가입의 경우 이미 확인 처리 후, 여기를 타게 됨
+    if not is_already_verified:
+        verify_otp_record(otp_record['id'])
     
     return True, "SUCCESS", "인증에 성공하였습니다."
