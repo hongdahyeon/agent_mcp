@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { OtpHistory } from './components/OtpHistory';
 import { AccessTokenManager } from './components/AccessTokenManager';
 import clsx from 'clsx';
 import { useMcp } from './hooks/useMcp';
@@ -29,7 +30,7 @@ import {
   Activity, Terminal, FileText, Clock,
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe, Tag,
-  Menu, Sun, Moon
+  Menu, Sun, Moon, ShieldCheck
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -91,7 +92,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler' | 'otp-history';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -260,7 +261,8 @@ function App() {
       items: [
         { id: 'history', label: '접속 이력', icon: History },
         { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true },
-        { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true }
+        { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true },
+        { id: 'otp-history', label: 'OTP 인증 이력', icon: ShieldCheck, adminOnly: true }
       ]
     },
     {
@@ -446,6 +448,7 @@ function App() {
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
           {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
           {activeView === 'scheduler' && user.role === 'ROLE_ADMIN' && <SchedulerManager />}
+          {activeView === 'otp-history' && user.role === 'ROLE_ADMIN' && <OtpHistory />}
         </div>
       </main>
     </div>

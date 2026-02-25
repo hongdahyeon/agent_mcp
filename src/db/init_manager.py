@@ -250,6 +250,19 @@ def init_db():
         FOREIGN KEY (tag_id) REFERENCES h_openapi_tag (id) ON DELETE CASCADE
     )
     ''')
+    
+    # 18. 이메일 OTP 관리 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_email_otp (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        otp_type TEXT NOT NULL,
+        otp_code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        is_verified TEXT DEFAULT 'N',
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
 
     conn.commit()
     conn.close()

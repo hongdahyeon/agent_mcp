@@ -625,3 +625,12 @@
 - [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
 - [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
 - [x] 6. 최종 검증 및 문서 업데이트
+
+## 67. Email OTP 모듈 구현 (New)
+
+- [x] 1. DB: h_email_otp 테이블 생성 및 관리 로직 구현 (db/email_otp.py)
+- [x] 2. Backend: OTP 생성, 발송, 검증 비즈니스 로직 구현 (utils/otp_manager.py)
+- [x] 3. API: OTP 발송 및 검증 전용 엔드포인트 구현 (routers/auth.py)
+- [x] 4. Integration: 회원가입 시 이메일 OTP 필수 검증 로직 연동
+- [x] 5. Admin UI: OTP 발송 및 인증 이력 조회 화면 구현 (OtpHistory.tsx)
+- [x] 6. 최종 검증 및 테스트 완료
