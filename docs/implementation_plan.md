@@ -1052,3 +1052,35 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 2. **Stats**: Heatmap 차트를 통해 사용량이 높은 시간대 식별 가능.
 3. **Security**: 일반 유저 계정으로 접속 시 상세 분석 버튼 및 데이터가 노출되지 않음을 확인.
 4. **Proxy**: 필수 파라미터 누락 없이 DB 설정값으로 정상 실행됨을 확인.
+
+---
+
+## Phase 40: Email OTP 모듈 구현 [Completed]
+
+### Goal
+보안 강화를 위해 회원가입 시 이메일 인증(OTP)을 필수화하고, 발송된 OTP의 생명주기를 관리하며 관리자 화면에서 인증 이력을 모니터링할 수 있는 기능을 구현합니다.
+
+### Implemented Changes
+
+#### 1. Database & Layer
+- **Schema**: `h_email_otp` 테이블 신규 생성 (email, otp_type, otp_code, expires_at, is_verified).
+- **DB Module**: `src/db/email_otp.py` 추가 (OTP 생성, 최신 번호 조회, 인증 상태 업데이트, 이력 조회).
+
+#### 2. Business Logic & Utils
+- **OTP Manager**: `src/utils/otp_manager.py` 추가.
+    - 6자리 랜덤 숫자 생성 및 DB 저장.
+    - `EmailSender` 연동을 통한 인증 메일 발송.
+    - 만료 시간(5분) 및 코드 일치 여부 검증.
+
+#### 3. API & Auth Integration
+- **Endpoints**: `src/routers/auth.py`에 `/otp/send`, `/otp/verify` 추가.
+- **Signup 연동**: `POST /api/auth/signup` 시 이메일과 인증번호를 매칭하여 `is_verified='Y'`인 유효한 기록이 있는 경우에만 가입을 승인하도록 로직 강화.
+
+#### 4. Admin UI
+- **Component**: `src/frontend/src/components/OtpHistory.tsx` 구현.
+- **Visuals**: 인증 대기(노란색), 인증 완료(초록색), 만료됨(회색) 상태를 배지와 아이콘으로 구분.
+- **Integration**: 어드민 사이드바 '이력' 메뉴에 'OTP 인증 이력' 추가.
+
+### Verification Results
+1. **Flow Test**: 테스트 스크립트(`tests/verify_otp.py`)를 통해 생성 -> 발송(DB기록) -> 틀린 코드(실패) -> 맞는 코드(성공) -> 가입 연동 확인.
+2. **Admin UI**: 관리자 계정으로 접속하여 실시간 발송 내역 및 상태값 변동 확인 완료.

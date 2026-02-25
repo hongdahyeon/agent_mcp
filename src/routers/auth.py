@@ -11,6 +11,7 @@ try:
         reset_login_fail_count, set_user_locked
     )
     from src.utils.auth import create_access_token as create_jwt_token
+    from src.utils.otp_manager import send_management_otp, verify_management_otp
 except ImportError:
     from db import (
         get_user, verify_password, log_login_attempt, get_login_history,
@@ -18,6 +19,7 @@ except ImportError:
         reset_login_fail_count, set_user_locked
     )
     from utils.auth import create_access_token as create_jwt_token
+    from utils.otp_manager import send_management_otp, verify_management_otp
 
 
 """
@@ -35,6 +37,16 @@ class SignupRequest(BaseModel):
     user_id: str
     user_nm: str
     password: str
+    otp_code: str # OTP 코드 추가
+
+class OtpSendRequest(BaseModel):
+    email: str
+    otp_type: str = 'SIGNUP'
+
+class OtpVerifyRequest(BaseModel):
+    email: str
+    otp_type: str = 'SIGNUP'
+    otp_code: str
 
 # 유저 로그인
 @router.post("/login")
@@ -128,6 +140,22 @@ async def api_check_id(user_id: str = Query(...)):
     is_exists = check_user_id(user_id)
     return {"exists": is_exists}
 
+# OTP 발송
+@router.post("/otp/send")
+async def api_send_otp(req: OtpSendRequest):
+    success, error_msg = await send_management_otp(req.email, req.otp_type)
+    if not success:
+        raise HTTPException(status_code=500, detail=f"OTP 발송 실패: {error_msg}")
+    return {"success": True, "message": "인증 번호가 발송되었습니다."}
+
+# OTP 검증 (단독 검증이 필요한 경우)
+@router.post("/otp/verify")
+async def api_verify_otp(req: OtpVerifyRequest):
+    success, status_code, message = verify_management_otp(req.email, req.otp_type, req.otp_code)
+    if not success:
+        raise HTTPException(status_code=400, detail={"status": status_code, "message": message})
+    return {"success": True, "message": message}
+
 # 회원가입
 @router.post("/signup")
 async def api_signup(req: SignupRequest):
@@ -136,6 +164,11 @@ async def api_signup(req: SignupRequest):
     
     if check_user_id(req.user_id):
         raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
+    
+    # OTP 검증 (회원가입시 필수 체크)
+    otp_success, status_code, otp_message = verify_management_otp(req.user_id, 'SIGNUP', req.otp_code)
+    if not otp_success:
+        raise HTTPException(status_code=400, detail=f"이메일 인증 실패: {otp_message}")
     
     try:
         user_data = {
