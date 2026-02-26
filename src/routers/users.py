@@ -21,6 +21,8 @@ class UserCreateRequest(BaseModel):
     role: str = "ROLE_USER"
     is_enable: str = "Y"
     is_locked: str = "N"
+    is_approved: str = "N"
+    is_delete: str = "N"
     login_fail_count: int = 0
 
 class UserUpdateRequest(BaseModel):
@@ -28,8 +30,16 @@ class UserUpdateRequest(BaseModel):
     user_email: str | None = None # 추가
     role: str | None = None
     is_enable: str | None = None
+    is_approved: str | None = None
     is_locked: str | None = None
+    is_delete: str | None = None
     login_fail_count: int | None = None
+
+# 현재 사용자 정보 조회 (Session 대용, 최신 DB 값 반환)
+@router.get("/me")
+async def api_get_my_profile(current_user: dict = Depends(get_current_user_jwt)):
+    """현재 로그인한 사용자의 전체 프로필 조회 (DB 연동)."""
+    return current_user
 
 # 모든 사용자 조회
 @router.get("")

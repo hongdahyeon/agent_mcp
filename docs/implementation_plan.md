@@ -1084,3 +1084,50 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 ### Verification Results
 1. **Flow Test**: 테스트 스크립트(`tests/verify_otp.py`)를 통해 생성 -> 발송(DB기록) -> 틀린 코드(실패) -> 맞는 코드(성공) -> 가입 연동 확인.
 2. **Admin UI**: 관리자 계정으로 접속하여 실시간 발송 내역 및 상태값 변동 확인 완료.
+
+---
+
+## Phase 41: 계정 잠금 로직 개선 (Login Lock Logic Refinement) [Completed]
+
+### Goal
+5회 이상 로그인 실패 시 계정이 잠겼음에도 불구하고 UI에서 '비활성화'로 오인되는 현상을 수정하여 명확한 상태를 사용자에게 전달합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/auth.py`)**: 
+    - 잠금된 계정으로 로그인 시도 시 반환되는 에러 메시지에 `Account is locked (잠금)` 키워드를 추가하여 프론트엔드가 명확히 구분할 수 있도록 보완했습니다.
+- **Frontend (`src/frontend/src/components/Login.tsx`)**: 
+    - 에러 핸들링 로직에서 `locked` 뿐만 아니라 한국어 `잠금` 키워드도 체크하도록 정규화 및 강화했습니다.
+
+### Verification Results
+1. 6회 이상 로그인 시도 시 '계정이 잠겼습니다. 관리자에게 문의하세요.' 메시지가 정확히 노출됨을 확인.
+
+---
+
+## Phase 42: 프로필 정보 DB 연동 리팩토링 (Profile DB Fetch) [Completed]
+
+### Goal
+'내 정보' 화면에서 세션(localStorage)에 저장된 정적 데이터를 사용하는 대신, 매번 DB에서 최신 정보를 조회하도록 개선하여 정보 변경 사항이 즉각 반영되도록 합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/users.py`)**: 
+    - 현재 인증된 사용자의 전체 정보를 DB에서 조회하여 반환하는 `/api/users/me` 엔드포인트를 신설했습니다.
+- **Frontend (`src/frontend/src/components/MyPage.tsx`)**: 
+    - 컴포넌트 마운트 시 `/api/users/me` API를 호출하여 상태(`user`)를 최신화하는 로직을 추가했습니다.
+
+### Verification Results
+1. 관리자 화면에서 이메일 등 개인 정보를 변경한 후, 해당 유저의 '내 정보' 화면에서 즉시 변경된 이메일이 반영됨을 확인 (로그아웃 불필요).
+
+---
+
+## Phase 43: 사용자 삭제(Soft Delete) 및 승인 기능 수정 [Completed]
+
+### Goal
+관리자 페이지에서 사용자 삭제(Soft Delete) 및 승인/미승인 토글이 정상적으로 동작하지 않는 문제를 해결합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/users.py`)**: 
+    - `UserUpdateRequest` 및 `UserCreateRequest` 모델에 `is_delete`, `is_approved` 필드를 추가하여 프론트엔드에서 보낸 플래그가 DB 레이어까지 전달되도록 수정했습니다.
+
+### Verification Results
+1. 사용자 관리 페이지에서 특정 사용자 '삭제' 버튼 클릭 시 목록에서 즉시 사라지며 DB 상 `is_delete = 'Y'` 임을 확인.
+2. 승인/비승인 토글이 정상적으로 반영되어 상태 관리가 가능함을 확인.

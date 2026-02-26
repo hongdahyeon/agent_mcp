@@ -42,12 +42,18 @@ def get_all_users(page: int = 1, size: int = 20):
     conn = get_db_connection()
     offset = (page - 1) * size
     
-    # 전체 개수 조회
-    cursor = conn.execute('SELECT COUNT(*) FROM h_user')
+    # 전체 개수 조회 (삭제되지 않은 사용자만)
+    cursor = conn.execute("SELECT COUNT(*) FROM h_user WHERE is_delete = 'N'")
     total = cursor.fetchone()[0]
 
     # 보안을 위해 비밀번호 제외
-    query = 'SELECT uid, user_id, user_nm, user_email, role, is_enable, is_locked, login_fail_count, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
+    query = """
+        SELECT uid, user_id, user_nm, user_email, role, is_enable, is_locked, 
+               is_delete, is_approved, login_fail_count, last_cnn_dt 
+        FROM h_user 
+        WHERE is_delete = 'N'
+        ORDER BY uid ASC LIMIT ? OFFSET ?
+    """
     users = conn.execute(query, (size, offset)).fetchall()
     conn.close()
     
@@ -88,8 +94,8 @@ def create_user(user_data: dict):
 
     try:
         conn.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, user_email, role, is_enable, is_locked, login_fail_count, last_cnn_dt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, is_enable, is_locked, is_delete, is_approved, login_fail_count, last_cnn_dt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
         ''', (
             user_data['user_id'],
             password_hash,
@@ -98,6 +104,8 @@ def create_user(user_data: dict):
             user_data.get('role', 'ROLE_USER'),
             user_data.get('is_enable', 'Y'),
             user_data.get('is_locked', 'N'),
+            user_data.get('is_delete', 'N'),
+            user_data.get('is_approved', 'N'),
             user_data.get('login_fail_count', 0)
         ))
         conn.commit()
@@ -136,6 +144,14 @@ def update_user(user_id: str, update_data: dict):
     if 'is_locked' in update_data:
         fields.append("is_locked = ?")
         values.append(update_data['is_locked'])
+
+    if 'is_delete' in update_data:
+        fields.append("is_delete = ?")
+        values.append(update_data['is_delete'])
+
+    if 'is_approved' in update_data:
+        fields.append("is_approved = ?")
+        values.append(update_data['is_approved'])
     
     if 'login_fail_count' in update_data:
         fields.append("login_fail_count = ?")

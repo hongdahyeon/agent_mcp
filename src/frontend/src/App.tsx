@@ -275,11 +275,16 @@ function App() {
       ]
     },
     {
+      label: 'DB 관리',
+      items: [
+        { id: 'schema', label: 'DB 테이블 관리', icon: Database, adminOnly: true },
+        { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true }
+      ]
+    },
+    {
       label: '설정 및 관리',
       items: [
         { id: 'limits', label: '사용제한 관리', icon: Shield, adminOnly: true },
-        { id: 'schema', label: 'DB 관리', icon: Database, adminOnly: true },
-        { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true },
         { id: 'scheduler', label: '스케줄러 관리', icon: Clock, adminOnly: true },
         { id: 'custom-tools', label: '도구 생성', icon: Wrench, adminOnly: true },
         { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true },

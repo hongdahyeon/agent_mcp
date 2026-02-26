@@ -5,7 +5,7 @@ import {
     Lock,
     RefreshCw,
     Shield,
-    ToggleLeft, ToggleRight, Unlock, UserIcon, UserPlus,
+    ToggleLeft, ToggleRight, Trash2, Unlock, UserIcon, UserPlus,
     Users as UsersIcon,
     X
 } from 'lucide-react';
@@ -39,6 +39,7 @@ export function Users() {
         role: 'ROLE_USER',
         is_enable: 'Y',
         is_locked: 'N',
+        is_approved: 'N',
         login_fail_count: 0
     });
 
@@ -97,6 +98,7 @@ export function Users() {
             role: 'ROLE_USER',
             is_enable: 'Y',
             is_locked: 'N',
+            is_approved: 'N',
             login_fail_count: 0
         });
         setIdCheckStatus('idle');
@@ -119,6 +121,7 @@ export function Users() {
             role: user.role,
             is_enable: user.is_enable || 'Y',
             is_locked: user.is_locked || 'N',
+            is_approved: user.is_approved || 'Y',
             login_fail_count: user.login_fail_count || 0
         });
         setEmailCheckStatus('idle');
@@ -127,6 +130,36 @@ export function Users() {
         setIsOtpVerified(false);
         setIsEmailEditing(false);
         setIsModalOpen(true);
+    };
+
+    // 사용자 삭제 (Soft Delete)
+    const handleDeleteUser = async (user: UserType) => {
+        if (!window.confirm(`${user.user_nm} (${user.user_id}) 사용자를 삭제하시겠습니까? \n삭제된 사용자는 더 이상 로그인이 불가능합니다.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/users/${user.user_id}`, {
+                method: 'PUT',
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ is_delete: 'Y' })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.detail || 'Failed to delete user');
+            }
+
+            alert('사용자가 삭제되었습니다.');
+            fetchUsers(page);
+        } catch (err: unknown) {
+            console.error("Error in handleDeleteUser:", err);
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            alert(`사용자 삭제 실패: ${message}`);
+        }
     };
 
     // user_id 중복 체크
@@ -278,9 +311,9 @@ export function Users() {
 
     // is_enable 토글 수정
     const toggleEnable = async (user: UserType) => {
-        if (!confirm(`${user.user_nm} 님의 상태를 변경하시겠습니까?`)) return;
-
         const newStatus = user.is_enable === 'Y' ? 'N' : 'Y';
+        const actionText = newStatus === 'Y' ? '활성화' : '비활성화';
+        if (!confirm(`${user.user_nm} 님의 상태를 ${actionText} 하시겠습니까?`)) return;
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
                 method: 'PUT',
@@ -301,8 +334,8 @@ export function Users() {
     // is_locked 토글 수정
     const toggleLock = async (user: UserType) => {
         const newStatus = user.is_locked === 'Y' ? 'N' : 'Y';
-        const actionText = newStatus === 'Y' ? '잠금' : '해제';
-        if (!confirm(`${user.user_nm} 님을 계정 ${actionText} 하시겠습니까?`)) return;
+        const actionText = newStatus === 'Y' ? '계정 잠금' : '계정 풀림';
+        if (!confirm(`${user.user_nm} 님을 ${actionText} 하시겠습니까?`)) return;
 
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
@@ -366,6 +399,7 @@ export function Users() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이메일</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">권한</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">승인상태</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">잠금</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">마지막 접속</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">관리</th>
@@ -401,34 +435,44 @@ export function Users() {
                                             {user.is_enable === 'Y' ? (
                                                 <>
                                                     <ToggleRight className="w-8 h-8 text-green-500 group-hover:text-green-600" />
-                                                    <span className="text-sm text-green-600 font-medium">활성</span>
+                                                    <span className="text-sm text-green-600 font-medium">활성화</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <ToggleLeft className="w-8 h-8 text-gray-400 group-hover:text-gray-500" />
-                                                    <span className="text-sm text-gray-500">비활성</span>
+                                                    <span className="text-sm text-gray-500">비활성화</span>
                                                 </>
                                             )}
                                         </button>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={clsx(
+                                            "px-2 py-1 rounded-full text-xs font-medium border transition-colors",
+                                            user.is_approved === 'Y'
+                                                ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/50"
+                                                : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/50"
+                                        )}>
+                                            {user.is_approved === 'Y' ? '승인' : '미승인'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2">
                                             {user.is_locked === 'Y' ? (
                                                 <>
                                                     <span className="flex items-center gap-1 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded text-xs font-medium border border-red-100 dark:border-red-800/50 transition-colors">
-                                                        <Lock className="w-3 h-3" /> 잠금 ({user.login_fail_count})
+                                                        <Lock className="w-3 h-3" /> 계정 잠금 ({user.login_fail_count})
                                                     </span>
                                                     <button
                                                         onClick={() => toggleLock(user)}
                                                         className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                                                        title="잠금 해제"
+                                                        title="계정 풀림"
                                                     >
                                                         <Unlock className="w-4 h-4" />
                                                     </button>
                                                 </>
                                             ) : (
                                                 <span className="flex items-center gap-1 text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 px-2 py-0.5 rounded text-xs border border-gray-100 dark:border-slate-800 transition-colors">
-                                                    <Unlock className="w-3 h-3" /> 정상
+                                                    <Unlock className="w-3 h-3" /> 계정 풀림
                                                 </span>
                                             )}
                                         </div>
@@ -437,13 +481,22 @@ export function Users() {
                                         {user.last_cnn_dt || '-'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            onClick={() => handleOpenUpdate(user)}
-                                            className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="정보 수정"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <button
+                                                onClick={() => handleOpenUpdate(user)}
+                                                className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="정보 수정"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(user)}
+                                                className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="사용자 삭제"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -651,16 +704,31 @@ export function Users() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
+                                        <Shield className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
+                                        승인 활성화 여부
+                                    </label>
+                                    <select
+                                        value={formData.is_approved}
+                                        onChange={(e) => setFormData({ ...formData, is_approved: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                                    >
+                                        <option value="Y">활성화 (Y)</option>
+                                        <option value="N">비활성화 (N)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        상태
+                                        활성화 여부
                                     </label>
                                     <select
                                         value={formData.is_enable}
                                         onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                     >
-                                        <option value="Y">활성 (Y)</option>
-                                        <option value="N">비활성 (N)</option>
+                                        <option value="Y">활성화 (Y)</option>
+                                        <option value="N">비활성화 (N)</option>
                                     </select>
                                 </div>
 
@@ -669,15 +737,15 @@ export function Users() {
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                                 <Lock className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                                계정 잠금
+                                                계정 잠금 여부
                                             </label>
                                             <select
                                                 value={formData.is_locked}
                                                 onChange={(e) => setFormData({ ...formData, is_locked: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                             >
-                                                <option value="N">정상 (N)</option>
-                                                <option value="Y">잠금 (Y)</option>
+                                                <option value="N">계정 풀림 (N)</option>
+                                                <option value="Y">계정 잠금 (Y)</option>
                                             </select>
                                         </div>
                                         <div className="flex-1">

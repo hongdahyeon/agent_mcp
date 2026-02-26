@@ -9,6 +9,8 @@ export interface User {
     role: string;
     is_enable?: string;
     is_locked?: string;
+    is_delete?: string;
+    is_approved?: string;
     login_fail_count?: number;
     last_cnn_dt?: string;
     login_ts?: number; // 세션 로그인 timestamp

@@ -68,19 +68,30 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 1. 잠금 여부 확인 (403)
-    # => 가장 먼저 유저의 잠금 여부 체크
-    if dict(user).get('is_locked', 'N') == 'Y':
+    user_dict = dict(user)
+    
+    # 1. 삭제 여부 확인
+    if user_dict.get('is_delete', 'N') == 'Y':
+        log_login_attempt(user['uid'], ip_addr, False, "Terminated Account")
+        raise HTTPException(status_code=403, detail="사용이 불가능한 계정입니다 (deleted).")
+
+    # 2. 승인 여부 확인
+    if user_dict.get('is_approved', 'Y') == 'N': # DEFAULT 'N' for new signups
+        log_login_attempt(user['uid'], ip_addr, False, "Not Approved")
+        raise HTTPException(status_code=403, detail="아직 미승인된 계정입니다 (unapproved). 관리자 승인 후 로그인 가능합니다.")
+
+    # 3. 활성화 여부 확인
+    if user_dict.get('is_enable', 'Y') == 'N':
+        log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
+        raise HTTPException(status_code=403, detail="비활성화된 유저입니다. 관리자에게 문의하세요.")
+
+    # 4. 잠금 여부 확인
+    if user_dict.get('is_locked', 'N') == 'Y':
         log_login_attempt(user['uid'], ip_addr, False, "Account Locked")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is locked due to multiple failed attempts. Please contact admin.",
+            detail="Account is locked (잠금). 비밀번호 5회 오류로 인해 잠금되었습니다. 관리자에게 문의하세요.",
         )
-
-    # 2. 비활성화 여부 확인 (403)
-    if dict(user).get('is_enable', 'Y') == 'N':
-        log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
-        raise HTTPException(status_code=403, detail="Account is disabled")
 
     # 3. 비밀번호 검증
     if verify_password(form_data.password, user['password']):
@@ -123,7 +134,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
         log_login_attempt(user['uid'], ip_addr, False, f"Invalid Credentials (Fail: {fail_count}/5)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Incorrect username or password. ({fail_count}/5 attempts)",
+            detail=f"비밀번호가 일치하지 않습니다. ({fail_count}/5 시도)",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -185,10 +196,11 @@ async def api_signup(req: SignupRequest):
         user_data = {
             "user_id": req.user_id,
             "user_nm": req.user_nm,
-            "user_email": req.user_email, # 이메일 추가
+            "user_email": req.user_email,
             "password": req.password,
             "role": "ROLE_USER",
-            "is_enable": "N"
+            "is_enable": "Y",
+            "is_approved": "N"
         }
         create_user(user_data)
         return {"success": True, "message": "회원가입이 완료되었습니다. 관리자 승인 후 로그인 가능합니다."}
