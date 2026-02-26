@@ -3,10 +3,14 @@ import logging
 from datetime import datetime
 try:
     from src.db.email_otp import create_otp, get_latest_otp, verify_otp_record
+    from src.db.email_manager import log_email, update_email_status
     from src.utils.mailer import EmailSender
+    from src.utils.context import get_current_user
 except ImportError:
     from db.email_otp import create_otp, get_latest_otp, verify_otp_record
+    from db.email_manager import log_email, update_email_status
     from utils.mailer import EmailSender
+    from utils.context import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +46,33 @@ async def send_management_otp(email: str, otp_type: str = 'SIGNUP'):
                 감사합니다.
                 """
     
+    # 2.5 Email Logging (New)
+    user = get_current_user()
+    user_uid = user['uid'] if user else None
+    
+    log_id = None
+    try:
+        log_id = log_email(
+            user_uid=user_uid,
+            recipient=email,
+            subject=subject,
+            content=content
+        )
+    except Exception as e:
+        logger.error(f"Failed to log OTP email: {e}")
+
+    # 3. 이메일 발송
     sender = EmailSender()
     success, error_msg = sender.send_immediate(email, subject, content)
     
+    # 4. 로그 상태 업데이트 (New)
+    if log_id:
+        try:
+            new_status = 'SENT' if success else 'FAILED'
+            update_email_status(log_id, new_status, error_msg)
+        except Exception as e:
+            logger.error(f"Failed to update OTP email status: {e}")
+
     if not success:
         logger.error(f"Failed to send OTP email to {email}: {error_msg}")
         return False, error_msg

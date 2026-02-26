@@ -12,7 +12,7 @@ import { Terminal } from 'lucide-react';
  * + OpenAPI 사용량도 표시합니다.
  */
 export function MyPage() {
-    const [user] = useState<SessionUser | null>(() => {
+    const [user, setUser] = useState<SessionUser | null>(() => {
         const userStr = localStorage.getItem('user_session');
         return userStr ? JSON.parse(userStr) : null;
     }); // 사용자 세션 정보
@@ -20,6 +20,21 @@ export function MyPage() {
     const [usage, setUsage] = useState<MyOpenApiUsage | null>(null);
     const [mcpUsage, setMcpUsage] = useState<MyMcpUsage | null>(null);
     const [loadingUsage, setLoadingUsage] = useState(false);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch('/api/users/me', { headers: getAuthHeaders() });
+                if (res.ok) {
+                    const data = await res.json();
+                    setUser(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch profile:', err);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     useEffect(() => {
         const fetchUsage = async () => {

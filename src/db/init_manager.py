@@ -23,6 +23,8 @@ def init_db():
         last_cnn_dt TEXT,
         is_enable TEXT DEFAULT 'Y',
         is_locked TEXT DEFAULT 'N',
+        is_delete TEXT DEFAULT 'N' NOT NULL,
+        is_approved TEXT DEFAULT 'N' NOT NULL,
         login_fail_count INTEGER DEFAULT 0
     )
     ''')
