@@ -115,7 +115,7 @@ export default function SchedulerManager() {
 
       {/* Status Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className={clsx(
               "p-3 rounded-full",
