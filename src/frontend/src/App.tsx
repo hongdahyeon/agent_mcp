@@ -24,13 +24,15 @@ import OpenApiStats from './components/OpenApiStats';
 import OpenApiLimit from './components/OpenApiLimit';
 import DbBackupManager from './components/DbBackupManager';
 import SchedulerManager from './components/SchedulerManager';
+import { NotificationManagement } from './components/NotificationManagement';
+import { NotificationBell } from './components/NotificationBell';
 import type { User } from './types/auth';
 import { useTheme } from './hooks/useTheme';
 import {
   Activity, Terminal, FileText, Clock,
   CheckCircle2, XCircle, History, LogOut,
   User as UserIcon, Users as UsersIcon, BarChart4, Database, Shield, Wrench, Settings, Send, File, Globe, Tag,
-  Menu, Sun, Moon, ShieldCheck
+  Menu, Sun, Moon, ShieldCheck, Bell
 } from 'lucide-react';
 import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
@@ -92,7 +94,7 @@ function App() {
   type ActiveView = 'dashboard' | 'tester' | 'logs' | 'history' | 'users'
     | 'usage-history' | 'email-history' | 'schema' | 'limits' | 'mypage'
     | 'custom-tools' | 'access-tokens' | 'config' | 'email' | 'file-manager'
-    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler' | 'otp-history';
+    | 'openapi' | 'openapi-meta' | 'openapi-stats' | 'openapi-limits' | 'db-backup' | 'scheduler' | 'otp-history' | 'notifications';
 
   // 화면 상태 (View State)
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
@@ -262,7 +264,8 @@ function App() {
         { id: 'history', label: '접속 이력', icon: History },
         { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true },
         { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true },
-        { id: 'otp-history', label: 'OTP 인증 이력', icon: ShieldCheck, adminOnly: true }
+        { id: 'otp-history', label: 'OTP 인증 이력', icon: ShieldCheck, adminOnly: true },
+        { id: 'notifications', label: '알림 관리', icon: Bell, adminOnly: true }
       ]
     },
     {
@@ -412,6 +415,9 @@ function App() {
             </h2>
           </div>
           <div className="flex items-center space-x-4 flex-shrink-0">
+            {/* Notification Bell */}
+            <NotificationBell />
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
@@ -453,7 +459,8 @@ function App() {
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
           {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
           {activeView === 'scheduler' && user.role === 'ROLE_ADMIN' && <SchedulerManager />}
-          {activeView === 'otp-history' && user.role === 'ROLE_ADMIN' && <OtpHistory />}
+          { activeView === 'otp-history' && user.role === 'ROLE_ADMIN' && <OtpHistory />}
+          { activeView === 'notifications' && user.role === 'ROLE_ADMIN' && <NotificationManagement />}
         </div>
       </main>
     </div>

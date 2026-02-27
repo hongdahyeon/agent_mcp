@@ -666,3 +666,14 @@
 - [x] 상세 구현 계획 추가 (`docs/implementation_plan.md`)
 - [x] `db_reset.py` 수정: `admin`, `user` 계정 생성 시 상태 플래그(`is_enable`, `is_locked`, `is_delete`, `is_approved`) 설정 로직 추가
 - [x] 기능 검증 및 문서 업데이트 완료
+
+## 73. 실시간 알림 시스템 구현 및 UI 개선 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: SSE(Server-Sent Events) 기반 실시간 알림 스트리밍 구현 (`NotificationManager`)
+- [x] 2. Backend: 알림 생성, 조회, 읽음, 삭제 API 구현 및 SSE 연동
+- [x] 3. Frontend: `useNotifications` 훅 및 `NotificationBell`, `NotificationModal` 컴포넌트 개발
+- [x] 4. UX: 알림 보낸 이(Sender) 정보 표시 및 모달 내 버튼 즉시 전환 로직 적용
+- [x] 5. UI: 스케줄러 관리 화면 버튼 넘침(Overflow) 현상 수정
+- [x] 6. Security: 일반 사용자의 시스템 헬스 API 접근 차단 및 UI 숨김 처리
+- [x] 최종 검증 및 문서 업데이트 완료
