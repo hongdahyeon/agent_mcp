@@ -645,15 +645,24 @@
 - [x] 6. 최종 검증 및 테스트 완료
 
 ## 69. 계정 잠금 로직 개선 (Bug Fix)
+
 - [x] 1. Backend: `auth.py` 에러 메시지 개선 (프론트엔드 인식용 '잠금' 키워드 추가)
 - [x] 2. Frontend: `Login.tsx` 내 계정 잠금 상태 인식 로직 강화 (KOR/ENG 키워드 지원)
 - [x] 3. 기능 검증 및 테스트 완료
 
 ## 70. 내 정보 조회 로직 개선 (Session -> DB)
+
 - [x] 1. Backend: `/api/users/me` 엔드포인트 신설 (DB 연동 최신 정보 반환)
 - [x] 2. Frontend: `MyPage.tsx`에서 세션 대신 `/me` API를 통한 최신 프로필 정보 조회
 - [x] 3. 기능 검증 및 테스트 완료
 
 ## 71. 사용자 삭제 및 승인 관리 기능 오류 수정
+
 - [x] 1. Backend: `UserUpdateRequest` 모델 필드 보완 (`is_delete`, `is_approved`)
 - [x] 2. 기능 검증 (삭제 및 승인 토글 정상 동작 확인)
+
+## 72. 사용자 초기화 플래그 설정 고도화 (New)
+
+- [x] 상세 구현 계획 추가 (`docs/implementation_plan.md`)
+- [x] `db_reset.py` 수정: `admin`, `user` 계정 생성 시 상태 플래그(`is_enable`, `is_locked`, `is_delete`, `is_approved`) 설정 로직 추가
+- [x] 기능 검증 및 문서 업데이트 완료
