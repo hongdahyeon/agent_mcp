@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 try:
-    from src.db import get_all_users, create_user, update_user, check_user_id
+    from src.db import get_all_users, create_user, update_user, check_user_id, check_user_email
     from src.dependencies import get_current_user_jwt
 except ImportError:
-    from db import get_all_users, create_user, update_user, check_user_id
+    from db import get_all_users, create_user, update_user, check_user_id, check_user_email
     from dependencies import get_current_user_jwt
 
 """
@@ -17,17 +17,29 @@ class UserCreateRequest(BaseModel):
     user_id: str
     password: str
     user_nm: str
+    user_email: str # 추가
     role: str = "ROLE_USER"
     is_enable: str = "Y"
     is_locked: str = "N"
+    is_approved: str = "N"
+    is_delete: str = "N"
     login_fail_count: int = 0
 
 class UserUpdateRequest(BaseModel):
     user_nm: str | None = None
+    user_email: str | None = None # 추가
     role: str | None = None
     is_enable: str | None = None
+    is_approved: str | None = None
     is_locked: str | None = None
+    is_delete: str | None = None
     login_fail_count: int | None = None
+
+# 현재 사용자 정보 조회 (Session 대용, 최신 DB 값 반환)
+@router.get("/me")
+async def api_get_my_profile(current_user: dict = Depends(get_current_user_jwt)):
+    """현재 로그인한 사용자의 전체 프로필 조회 (DB 연동)."""
+    return current_user
 
 # 모든 사용자 조회
 @router.get("")
@@ -38,6 +50,7 @@ async def api_get_users(request: Request, page: int = 1, size: int = 20, current
     return get_all_users(page, size)
 
 # 사용자 생성
+# - id, email 중복 체크
 @router.post("")
 async def api_create_user(req: UserCreateRequest, current_user: dict = Depends(get_current_user_jwt)):
     """새 사용자 생성."""
@@ -45,6 +58,8 @@ async def api_create_user(req: UserCreateRequest, current_user: dict = Depends(g
         raise HTTPException(status_code=403, detail="Admin access required")
     if check_user_id(req.user_id):
         raise HTTPException(status_code=400, detail="User ID already exists")
+    if check_user_email(req.user_email):
+        raise HTTPException(status_code=400, detail="Email already exists")
     create_user(req.dict())
     return {"success": True}
 
@@ -64,3 +79,12 @@ async def api_check_user_id(user_id: str, current_user: dict = Depends(get_curre
     if current_user['role'] != 'ROLE_ADMIN':
         raise HTTPException(status_code=403, detail="Admin access required")
     return {"exists": check_user_id(user_id)}
+
+# 사용자 이메일 존재 여부 체크
+# -> 로그인 필요 여부 o (인증 필수)
+@router.get("/check-email")
+async def api_check_email_exists(user_email: str, current_user: dict = Depends(get_current_user_jwt)):
+    """사용자 이메일 존재 여부 확인."""
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return {"exists": check_user_email(user_email)}

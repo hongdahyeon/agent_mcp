@@ -48,31 +48,25 @@ async def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
         
     return dict(user)
 
-# 통합 인증 의존성: JWT(Header) 및 외부 토큰(Header/Query) 지원
+# 통합 인증 의존성: JWT(Header) 및 외부 토큰(Header) 지원
 async def get_current_active_user(
     request: Request,
-    token: Optional[str] = Query(None),
     authorization: Optional[str] = Header(None)
 ):
     """
     1. Authorization 헤더 (Bearer <token>)
-    2. token 쿼리 파라미터
-    순서로 토큰을 찾아 검증합니다.
+    방식으로 토큰을 찾아 검증합니다. (Query Parameter 방식은 보안상 비권장되어 제거됨 26.02.27)
     """
     final_token = None
     
     # 1. 헤더 확인
     if authorization and authorization.startswith("Bearer "):
         final_token = authorization.split(" ")[1]
-    
-    # 2. 쿼리 파라미터 확인 (헤더가 없을 경우)
-    if not final_token:
-        final_token = token
         
     if not final_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication token required",
+            detail="Authentication token required via Authorization Header",
             headers={"WWW-Authenticate": "Bearer"},
         )
         

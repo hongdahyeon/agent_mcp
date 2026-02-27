@@ -18,10 +18,13 @@ def init_db():
         user_id TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         user_nm TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         role TEXT DEFAULT 'ROLE_USER',
         last_cnn_dt TEXT,
         is_enable TEXT DEFAULT 'Y',
         is_locked TEXT DEFAULT 'N',
+        is_delete TEXT DEFAULT 'N' NOT NULL,
+        is_approved TEXT DEFAULT 'N' NOT NULL,
         login_fail_count INTEGER DEFAULT 0
     )
     ''')
@@ -250,6 +253,46 @@ def init_db():
         FOREIGN KEY (tag_id) REFERENCES h_openapi_tag (id) ON DELETE CASCADE
     )
     ''')
+    
+    # 18. 이메일 OTP 관리 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_email_otp (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        otp_type TEXT NOT NULL,
+        otp_code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        is_verified TEXT DEFAULT 'N',
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
+    )
+    ''')
+    
+    # 19. 알림 센터 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_notification (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        receive_user_uid INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime')),
+        is_read TEXT DEFAULT 'N',
+        read_dt TEXT,
+        delete_at TEXT,
+        send_user_uid INTEGER,
+        FOREIGN KEY (receive_user_uid) REFERENCES h_user (uid),
+        FOREIGN KEY (send_user_uid) REFERENCES h_user (uid)
+    )
+    ''')
+    # 인덱스 추가 (조회 성능 최적화)
+    # - 시스템의 응답 속도와 조회 성능을 최적화하기 위함
+    # (1) receive_user_uid 인덱스: 특정 사용자의 알림 목록을 불러올 때 사용
+    #  => 사용자가 로그인하거나 알림 센터를 열때마다 검색을 해오게 되면, 매전 테이블 전체를 훑어야 하는 문제 발생
+    #  => 인덱스가 있으면 해당 유저의 알림만 즉시 찾아낼 수 있어 사용자가 많아져도 속도 유지
+    # (2) reg_dt 인덱스: 알림을 최신순으로 정렬해서 보여줄 때 사용
+    #  => 알림 센터의 모든 쿼리는 항상 'ORDER BY reg_dt DESC'를 사용하기 때문에 인덱스가 있으면 정렬 속도 향상
+    #  => 인덱스가 있으면 DB가 별도의 정렬 연산이 없어도 인덱스를 따라 최신 데이터를 매우 빠르게 가져온다.
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_notify_receive_user ON h_notification (receive_user_uid)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_notify_reg_dt ON h_notification (reg_dt)')
 
     conn.commit()
     conn.close()

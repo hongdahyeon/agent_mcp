@@ -7,17 +7,19 @@ import logging
 try:
     from src.db import (
         get_user, verify_password, log_login_attempt, get_login_history,
-        check_user_id, create_user, increment_login_fail_count,
+        check_user_id, check_user_email, create_user, increment_login_fail_count,
         reset_login_fail_count, set_user_locked
     )
     from src.utils.auth import create_access_token as create_jwt_token
+    from src.utils.otp_manager import send_management_otp, verify_management_otp
 except ImportError:
     from db import (
         get_user, verify_password, log_login_attempt, get_login_history,
-        check_user_id, create_user, increment_login_fail_count,
+        check_user_id, check_user_email, create_user, increment_login_fail_count,
         reset_login_fail_count, set_user_locked
     )
     from utils.auth import create_access_token as create_jwt_token
+    from utils.otp_manager import send_management_otp, verify_management_otp
 
 
 """
@@ -34,7 +36,18 @@ class LoginRequest(BaseModel):
 class SignupRequest(BaseModel):
     user_id: str
     user_nm: str
+    user_email: str # 이메일 필드 반영
     password: str
+    otp_code: str # OTP 코드 추가
+
+class OtpSendRequest(BaseModel):
+    email: str
+    otp_type: str = 'SIGNUP'
+
+class OtpVerifyRequest(BaseModel):
+    email: str
+    otp_type: str = 'SIGNUP'
+    otp_code: str
 
 # 유저 로그인
 @router.post("/login")
@@ -55,19 +68,30 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # 1. 잠금 여부 확인 (403)
-    # => 가장 먼저 유저의 잠금 여부 체크
-    if dict(user).get('is_locked', 'N') == 'Y':
+    user_dict = dict(user)
+    
+    # 1. 삭제 여부 확인
+    if user_dict.get('is_delete', 'N') == 'Y':
+        log_login_attempt(user['uid'], ip_addr, False, "Terminated Account")
+        raise HTTPException(status_code=403, detail="사용이 불가능한 계정입니다 (deleted).")
+
+    # 2. 승인 여부 확인
+    if user_dict.get('is_approved', 'Y') == 'N': # DEFAULT 'N' for new signups
+        log_login_attempt(user['uid'], ip_addr, False, "Not Approved")
+        raise HTTPException(status_code=403, detail="아직 미승인된 계정입니다 (unapproved). 관리자 승인 후 로그인 가능합니다.")
+
+    # 3. 활성화 여부 확인
+    if user_dict.get('is_enable', 'Y') == 'N':
+        log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
+        raise HTTPException(status_code=403, detail="비활성화된 유저입니다. 관리자에게 문의하세요.")
+
+    # 4. 잠금 여부 확인
+    if user_dict.get('is_locked', 'N') == 'Y':
         log_login_attempt(user['uid'], ip_addr, False, "Account Locked")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is locked due to multiple failed attempts. Please contact admin.",
+            detail="Account is locked (잠금). 비밀번호 5회 오류로 인해 잠금되었습니다. 관리자에게 문의하세요.",
         )
-
-    # 2. 비활성화 여부 확인 (403)
-    if dict(user).get('is_enable', 'Y') == 'N':
-        log_login_attempt(user['uid'], ip_addr, False, "Account Disabled")
-        raise HTTPException(status_code=403, detail="Account is disabled")
 
     # 3. 비밀번호 검증
     if verify_password(form_data.password, user['password']):
@@ -110,7 +134,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Reque
         log_login_attempt(user['uid'], ip_addr, False, f"Invalid Credentials (Fail: {fail_count}/5)")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Incorrect username or password. ({fail_count}/5 attempts)",
+            detail=f"비밀번호가 일치하지 않습니다. ({fail_count}/5 시도)",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -128,6 +152,29 @@ async def api_check_id(user_id: str = Query(...)):
     is_exists = check_user_id(user_id)
     return {"exists": is_exists}
 
+# 이메일 중복 체크
+# -> 로그인 필요 여부 x (비인증)
+@router.get("/check-email")
+async def api_check_email(user_email: str = Query(...)):
+    is_exists = check_user_email(user_email)
+    return {"exists": is_exists}
+
+# OTP 발송
+@router.post("/otp/send")
+async def api_send_otp(req: OtpSendRequest):
+    success, error_msg = await send_management_otp(req.email, req.otp_type)
+    if not success:
+        raise HTTPException(status_code=500, detail=f"OTP 발송 실패: {error_msg}")
+    return {"success": True, "message": "인증 번호가 발송되었습니다."}
+
+# OTP 검증 (단독 검증이 필요한 경우)
+@router.post("/otp/verify")
+async def api_verify_otp(req: OtpVerifyRequest):
+    success, status_code, message = verify_management_otp(req.email, req.otp_type, req.otp_code)
+    if not success:
+        raise HTTPException(status_code=400, detail={"status": status_code, "message": message})
+    return {"success": True, "message": message}
+
 # 회원가입
 @router.post("/signup")
 async def api_signup(req: SignupRequest):
@@ -137,13 +184,23 @@ async def api_signup(req: SignupRequest):
     if check_user_id(req.user_id):
         raise HTTPException(status_code=400, detail="이미 존재하는 아이디입니다.")
     
+    if check_user_email(req.user_email):
+        raise HTTPException(status_code=400, detail="이미 사용 중인 이메일입니다.")
+    
+    # OTP 검증 (회원가입시 필수 체크, user_id 대신 user_email로 검증)
+    otp_success, status_code, otp_message = verify_management_otp(req.user_email, 'SIGNUP', req.otp_code)
+    if not otp_success:
+        raise HTTPException(status_code=400, detail=f"이메일 인증 실패: {otp_message}")
+    
     try:
         user_data = {
             "user_id": req.user_id,
             "user_nm": req.user_nm,
+            "user_email": req.user_email,
             "password": req.password,
             "role": "ROLE_USER",
-            "is_enable": "N"
+            "is_enable": "Y",
+            "is_approved": "N"
         }
         create_user(user_data)
         return {"success": True, "message": "회원가입이 완료되었습니다. 관리자 승인 후 로그인 가능합니다."}

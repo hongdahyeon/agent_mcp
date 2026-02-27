@@ -220,16 +220,21 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
   }, []);
 
   useEffect(() => {
-    fetchHealth();
-    const timer = setInterval(fetchHealth, 30000); // 30초마다 갱신
-    return () => clearInterval(timer);
-  }, [fetchHealth]);
+    // health check 경우 ADMIN 권한만
+    if (role === 'ROLE_ADMIN') {
+      fetchHealth();
+      const timer = setInterval(fetchHealth, 30000); // 30초마다 갱신
+      return () => clearInterval(timer);
+    }
+  }, [fetchHealth, role]);
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
     setIsRefreshing(true);
     try {
-      await Promise.all([onRefresh(), fetchHealth()]);
+      const tasks: Promise<any>[] = [onRefresh()];
+      if (role === 'ROLE_ADMIN') tasks.push(fetchHealth());
+      await Promise.all(tasks);
       if (selectedUser) fetchUserToolStats(selectedUser);
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);

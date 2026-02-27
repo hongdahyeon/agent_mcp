@@ -1,22 +1,28 @@
 # Implementation Plan - Agent MCP Project
 
 ## Phase 1: MCP Server Implementation [Completed]
+
 ### Goal
+
 - 기본 MCP Server 구축
 - `add`, `subtract` Tool 구현
 
 ### Implemented Changes
+
 - `src/server.py`: FastMCP 기반 서버 구현
 - `docs/rules.md`, `docs/tasks.md`: 프로젝트 규칙 및 작업 관리 문서
 
 ---
 
 ## Phase 2: Web Interface (Basic) [Completed]
+
 ### Goal
+
 - MCP Server의 Tool을 웹 브라우저에서 테스트할 수 있는 인터페이스 구축
 - HTTP + SSE (Server-Sent Events) 방식 적용
 
 ### Implemented Changes
+
 - `src/sse_server.py`: FastAPI를 이용한 SSE 및 JSON-RPC 엔드포인트 구현
 - `src/web/index.html`: 기본 테스트 UI (HTML/CSS)
 - `src/web/client.js`: SSE 연결 및 Tool 호출 로직
@@ -24,11 +30,14 @@
 ---
 
 ## Phase 3: Web Interface Refactor [Completed]
+
 ### Goal
+
 - 웹 인터페이스를 현대적인 대시보드 형태로 전면 개편
 - Tailwind CSS, ECharts 도입 및 레이아웃 개선
 
 ### Implemented Changes
+
 - `src/web/index.html`: Tailwind CSS 적용, 대시보드/테스터 뷰 분리, Result 영역 추가
 - `src/web/client.js`: ECharts 차트 연동, 상태 관리 로직, 한국어 주석 추가
 - `src/web/favicon.svg`: 파비콘 추가
@@ -36,22 +45,29 @@
 ---
 
 ## Phase 4: 26-01-14 Todo Execution [Completed]
+
 ### Goal
+
 `docs/todo.md`에 정의된 4가지 요구사항을 순차적으로 구현하여 웹 인터페이스와 서버 기능을 고도화합니다.
 
 ### Implemented Changes
+
 #### 1. Dashboard Chart Update
+
 - `usageStats` 구조 변경 및 Stacked Bar Chart 적용
 
 #### 2. Server-side Logging
+
 - `logs/yyyy-mm-dd.txt` 포맷으로 일별 로그 파일 누적 생성
 - `logging` 핸들러 설정을 통해 Uvicorn 간섭 방지
 
 #### 3. Dynamic Tool Tester
+
 - `hellouser` Tool 추가
 - `tools/list` 기반 동적 입력 폼 생성 및 JSON 결과 뷰어 구현
 
 #### 4. Log Viewer Menu
+
 - `GET /logs` 및 `GET /logs/{filename}` API 구현
 - 웹 UI에서 로그 파일 목록 및 내용 조회 기능 구현
 
@@ -60,63 +76,74 @@
 ## Phase 5: React + TypeScript Migration [Completed]
 
 ### Goal
+
 기존 HTML/JS 기반의 프론트엔드를 **React + TypeScript** 환경으로 이관하여 유지보수성, 타입 안정성, 확장성을 확보합니다.
 
 ### Implemented Changes
 
 #### 1. Project Initialization
+
 - **Directory**: `src/frontend`
 - **Stack**: Vite, React, TypeScript, TailwindCSS v4
 - **Dependencies**: `echarts-for-react`, `lucide-react`, `clsx`
 
 #### 2. Architecture & State Management
+
 - **Hooks**:
-    - `useMcp`: **[Refactored]** SSE 연결, endpoint 관리, JSON-RPC 메시지 전송, 상태 관리를 모두 통합하여 단일 SSE 연결을 보장하도록 구현.
+  - `useMcp`: **[Refactored]** SSE 연결, endpoint 관리, JSON-RPC 메시지 전송, 상태 관리를 모두 통합하여 단일 SSE 연결을 보장하도록 구현.
 - **Components**:
-    - `App.tsx`: 메인 레이아웃 및 View 상태 관리
-    - `Dashboard.tsx`: ECharts 통계 및 실시간 로그 뷰어
-    - `Tester.tsx`: 도구 목록 조회, 동적 Form 생성, 실행 결과 뷰 (ID 타입 호환성 개선)
-    - `LogViewer.tsx`: 로그 파일 목록 및 컨텐츠 조회
+  - `App.tsx`: 메인 레이아웃 및 View 상태 관리
+  - `Dashboard.tsx`: ECharts 통계 및 실시간 로그 뷰어
+  - `Tester.tsx`: 도구 목록 조회, 동적 Form 생성, 실행 결과 뷰 (ID 타입 호환성 개선)
+  - `LogViewer.tsx`: 로그 파일 목록 및 컨텐츠 조회
 
 #### 3. Python Server Update
+
 - **[MODIFY] `src/sse_server.py`**
-    - CORS 설정 추가 (`localhost:5173`)
-    - `src/frontend/dist` 정적 파일 서빙 우선순위 설정
+  - CORS 설정 추가 (`localhost:5173`)
+  - `src/frontend/dist` 정적 파일 서빙 우선순위 설정
 
 ### Debugging Report & Fixes
+
 마이그레이션 후 발생한 주요 이슈와 해결 방법을 기록합니다.
 
 #### 1. SSE Connection Deadlock & Split Brain
+
 - **증상**: 로그가 뜨지 않거나, 초기화(`init_req`) 후 도구 목록(`list_tools`) 요청이 전송되지 않음.
 - **원인**: `useSSE`와 `useMcp`가 각각 `EventSource`를 생성하여 두 개의 세션이 열림. 서버는 A 세션에 endpoint를 보냈으나, 클라이언트는 B 세션으로 RPC를 시도하여 실패.
 - **해결**: 모든 SSE 연결 및 메시지 처리 로직을 `useMcp.ts`로 통합하여 단일 연결 보장.
 
 #### 2. 'No postEndpoint' Error (Stale Closure)
+
 - **증상**: 연결은 되었으나 RPC 전송 시 "No postEndpoint" 에러 발생.
 - **원인**: `useEffect` 내의 `sendRpc` 클로저가 초기 `postEndpoint` (null) 값을 캡처하고 있어, 실제 값이 업데이트되어도 이를 인지하지 못함.
 - **해결**: `useRef`를 사용하여 `postEndpoint`의 최신 값을 항상 참조하도록 수정.
 
 #### 3. Tool Execution ID Mismatch
+
 - **증상**: 도구 실행 요청은 성공했으나 결과 화면에 반영되지 않음.
 - **원인**: `Tester.tsx`는 도구 이름(String)을 ID로 사용했으나, `useMcp.ts`는 응답 처리 시 숫자(Number) ID만 허용함.
 - **해결**: `useMcp.ts`의 ID 타입 체크 조건을 문자열도 허용하도록 완화 (`typeof data.id === 'string'`).
 
 ### Verification Results
+
 1. **Build**: `npm run build` 성공 (Chunk size warning 존재하나 동작 무관)
 2. **Integration**: Python 서버 구동 후 Dashboard, Tester, LogViewer 정상 로딩 확인.
 3. **Features**:
-    - **Dashboard**: 실시간 로그 및 차트 업데이트 확인.
-    - **Tester**: 도구 목록 정상 로딩 (`list_tools`), `add`/`hellouser` 정상 실행 및 JSON 결과 표시 확인.
-    - **LogViewer**: 로그 파일 목록 및 내용 조회 정상 확인.
+   - **Dashboard**: 실시간 로그 및 차트 업데이트 확인.
+   - **Tester**: 도구 목록 정상 로딩 (`list_tools`), `add`/`hellouser` 정상 실행 및 JSON 결과 표시 확인.
+   - **LogViewer**: 로그 파일 목록 및 내용 조회 정상 확인.
 
 ---
 
 ## Phase 6: Database & Authentication [Completed]
 
 ### Goal
+
 Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메모리(또는 파일 기반) DB를 구축하고, 사용자 인증(로그인) 및 이력 관리 기능을 구현합니다.
 
 ### Implemented Changes
+
 - **[NEW] `src/db_manager.py`**: SQLite DB 연동 및 사용자/이력 관리 함수 구현
 - **[MODIFY] `src/sse_server.py`**: 로그인/이력 API 구현
 - **[NEW] `src/frontend` Components**: 로그인 페이지, 이력 조회 페이지 및 인증 상태 관리 구현
@@ -126,9 +153,11 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 ## Phase 7: User Table Schema Update [Completed]
 
 ### Goal
+
 `h_user` 테이블에 계정 활성화 여부를 제어하는 `is_enable` 컬럼을 추가하고, 로그인 시 이를 검증하는 로직을 추가합니다. 테스트 편의를 위해 비활성화된 테스트 유저를 자동 시딩합니다.
 
 ### Implemented Changes
+
 - **Schema**: `is_enable` check & migration. (Default 'Y')
 - **Policy**: `is_enable = 'N'` login block with "Account is disabled" error.
 - **Data Seeding**: Auto-created `user` / `1234` with `is_enable='N'`.
@@ -139,9 +168,11 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 ## Phase 8: User Management Page (Admin Only) [Completed]
 
 ### Goal
+
 시스템 관리자가 사용자를 관리할 수 있는 전용 페이지를 구현합니다. 사용자 목록 조회, 추가, 수정, 활성/비활성 제어 기능을 포함합니다.
 
 ### Implemented Changes
+
 - **Backend API**: `get_all_users`, `create_user`, `update_user` API 구현 및 Admin 권한 체크 적용.
 - **Frontend**: `Users.tsx` 컴포넌트 구현 (목록, 모달, 토글).
 - **Navigation**: Admin Only 메뉴 및 라우팅 가드 적용.
@@ -151,7 +182,9 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 ## Phase 9: Login Session Persistence [Completed]
 
 ### Goal
+
 ### Requirement Analysis
+
 1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
 2. **List**: ID, 이름, 권한, 활성상태 표시.
 3. **Add**: ID(중복체크), PW, 이름, 권한 선택.
@@ -161,71 +194,80 @@ Python 내장 `sqlite3`를 사용하여 별도 설치 없이 동작하는 인메
 ### Proposed Changes
 
 #### 1. Backend API (`src/sse_server.py`, `src/db_manager.py`)
+
 - **DB Manager**:
-    - `get_all_users()`: 전체 사용자 목록 (PW 제외)
-    - `create_user(user_data)`: INSERT 쿼리 (PW 해싱)
-    - `update_user(user_id, update_data)`: UPDATE 쿼리 (Dynamic)
-    - `check_user_id(user_id)`: 존재 여부 확인
+  - `get_all_users()`: 전체 사용자 목록 (PW 제외)
+  - `create_user(user_data)`: INSERT 쿼리 (PW 해싱)
+  - `update_user(user_id, update_data)`: UPDATE 쿼리 (Dynamic)
+  - `check_user_id(user_id)`: 존재 여부 확인
 - **Server API** (prefix: `/api/users`):
-    - `GET /`: 목록 조회 (Admin check)
-    - `POST /`: 사용자 생성
-    - `PUT /{user_id}`: 사용자 정보 수정
-    - `GET /check/{user_id}`: ID 중복 체크
+  - `GET /`: 목록 조회 (Admin check)
+  - `POST /`: 사용자 생성
+  - `PUT /{user_id}`: 사용자 정보 수정
+  - `GET /check/{user_id}`: ID 중복 체크
 
 #### 2. Frontend (`src/frontend`)
+
 - **Type**: `User` 타입 확장 (목록 조회용)
 - **Component**: `src/components/Users.tsx`
-    - **Header**: "사용자 추가" 버튼.
-    - **Table**: 사용자 목록 표시 (Tailwind Styled).
-        - Columns: ID, 이름, 권한(Badge), 상태(Toggle/Badge), 가입일/접속일.
-    - **Modal (Add/Edit)**:
-        - Mode: Create / Update
-        - Fields: ID(Create only + Check btn), PW(Create only), Name, Role(Select), Enable(Select/Toggle).
+  - **Header**: "사용자 추가" 버튼.
+  - **Table**: 사용자 목록 표시 (Tailwind Styled).
+    - Columns: ID, 이름, 권한(Badge), 상태(Toggle/Badge), 가입일/접속일.
+  - **Modal (Add/Edit)**:
+    - Mode: Create / Update
+    - Fields: ID(Create only + Check btn), PW(Create only), Name, Role(Select), Enable(Select/Toggle).
 - **Route**: `App.tsx`에서 `/users` 라우트 추가 및 `RoleGuard` 적용 (Admin only).
 - **Navigation**: Sidebar에 "사용자 관리" 메뉴 추가 (`ROLE_ADMIN`일 때만 표시).
 
 ### Verification Plan
+
 1. **Access Control**: `user` 계정(비활성 풀고)으로 로그인 -> 메뉴 안보임 / URL 접근 시 차단 확인. `admin` 계정 -> 메뉴 보임 / 접근 가능.
 2. **CRUD Flow**:
-    - 사용자 추가 (ID 중복 체크) -> 목록 갱신 확인.
-    - 사용자 정보 수정 (이름 변경) -> 확인.
-    - 상태 토글 (활성 <-> 비활성) -> 해당 유저 로그인 시도하여 반영 확인.
-
+   - 사용자 추가 (ID 중복 체크) -> 목록 갱신 확인.
+   - 사용자 정보 수정 (이름 변경) -> 확인.
+   - 상태 토글 (활성 <-> 비활성) -> 해당 유저 로그인 시도하여 반영 확인.
 
 ---
 
 ## Phase 10: MCP Tool Usage Tracking [Completed]
 
 ### Goal
+
 MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 활용 통계 및 감사 로그(Audit Log)로 활용할 수 있도록 합니다.
 
 ### Implemented Changes
+
 - **Schema**: `h_mcp_tool_usage` 테이블 생성.
 - **Backend**: `call_tool` 핸들러에 `user_id` 전달 및 로깅 로직(`log_tool_usage`) 추가.
 - **Frontend**: Tool 호출 시 사용자 정보 주입 로직 추가.
+
 #### 1. Database Schema (`src/db_manager.py`)
+
 - **[MODIFY] `init_db()`**: `h_mcp_tool_usage` 테이블 생성 쿼리 추가.
-    - `id` (PK, Auto Increment)
-    - `user_uid` (FK, `h_user.uid`)
-    - `tool_nm` (Text)
-    - `tool_params` (Text)
-    - `tool_success` (Text - 'SUCCESS'/'FAIL')
-    - `tool_result` (Text)
-    - `reg_dt` (Text - Timestamp)
+  - `id` (PK, Auto Increment)
+  - `user_uid` (FK, `h_user.uid`)
+  - `tool_nm` (Text)
+  - `tool_params` (Text)
+  - `tool_success` (Text - 'SUCCESS'/'FAIL')
+  - `tool_result` (Text)
+  - `reg_dt` (Text - Timestamp)
 - **[NEW] `log_tool_usage(...)`**: Tool 사용 이력을 INSERT 하는 함수 구현.
 
 #### 2. Backend Logic (`src/sse_server.py`)
+
 - **[MODIFY] `call_tool` handler**:
-    - `arguments`에서 `user_id` (또는 `uid`) 추출 로직 추가.
-    - Tool 실행 전후에 DB 조회 및 로깅 함수(`log_tool_usage`) 호출.
-    - 예외 발생 시에도 'FAIL' 상태와 에러 메시지로 로깅.
+  - `arguments`에서 `user_id` (또는 `uid`) 추출 로직 추가.
+  - Tool 실행 전후에 DB 조회 및 로깅 함수(`log_tool_usage`) 호출.
+  - 예외 발생 시에도 'FAIL' 상태와 에러 메시지로 로깅.
 
 #### 3. Frontend Implementation (`src/frontend/src/hooks/useMcp.ts`)
+
 - **[MODIFY] `useMcp.ts`** or related logic:
-    - Tool 호출 메시지(JSON-RPC `tools/call`)를 보낼 때, `arguments`에 현재 로그인한 사용자 정보를 주입하는 로직 추가. 
-    - (참고: 로그인한 사용자의 `uid`를 찾아서 `_user_uid` 필드로 전송)
+  - Tool 호출 메시지(JSON-RPC `tools/call`)를 보낼 때, `arguments`에 현재 로그인한 사용자 정보를 주입하는 로직 추가.
+  - (참고: 로그인한 사용자의 `uid`를 찾아서 `_user_uid` 필드로 전송)
 
 ### Verification Plan
+
 1. **DB Table Check**: 서버 재시작 후 `h_mcp_tool_usage` 테이블 생성 여부 확인.
 2. **Tool Execution**: 웹 인터페이스에서 `add` 또는 `hellouser` 툴 실행.
 3. **Log Retrieval**: DB를 조회하여 정상적으로 Insert 되었는지 확인.
@@ -235,50 +277,59 @@ MCP Tool 실행 이력을 사용자별로 추적하고 기록하여, 시스템 �
 ## Phase 11: MCP Tool Usage History (Admin) [Completed]
 
 ### Goal
+
 관리자가 사용자들의 Tool 사용 이력을 조회할 수 있는 기능을 구현한다.
 
 ### Implemented Changes
+
 - **Backend**: `GET /mcp/usage-history` API 구현 및 페이징 처리.
 - **Frontend**: `UsageHistory.tsx` 구현 (테이블, 페이징).
 
 #### [MODIFY] [sse_server.py](src/sse_server.py)
+
 - **API 추가**: `GET /mcp/usage-history`
-    - Query Params: `page`, `size`
-    - Response: `{ total: number, items: UsageLog[] }`
+  - Query Params: `page`, `size`
+  - Response: `{ total: number, items: UsageLog[] }`
 
 #### [MODIFY] [db_manager.py](src/db_manager.py)
+
 - **Function 추가**: `get_tool_usage_logs(page, size)`
-    - `h_mcp_tool_usage`와 `h_user` 테이블 조인 조회
-    - 최신순 정렬
+  - `h_mcp_tool_usage`와 `h_user` 테이블 조인 조회
+  - 최신순 정렬
 
 ### Frontend Changes
 
 #### [NEW] [UsageHistory.tsx](src/frontend/src/components/UsageHistory.tsx)
+
 - 관리자 전용 사용 이력 조회 컴포넌트
 - 테이블 형태로 데이터 표시 (Time, User, Tool, Success, Params, Result)
 - 간단한 페이징 (더보기 또는 페이지네이션)
 
 #### [MODIFY] [App.tsx](src/frontend/src/App.tsx)
+
 - 라우팅 및 메뉴 추가 ('usage-history', '사용 이력')
 - `ROLE_ADMIN` 체크하여 접근 제어
-
 
 ---
 
 ## Phase 12: DB Integration Tool (User Info)
 
 ### Goal
+
 LLM(모델)이 내부 데이터베이스의 사용자 정보에 접근할 수 있도록 `get_user_info` 도구를 추가합니다.
 이를 통해 "user의 정보 알려줘" 같은 자연어 질의에 대해 실제 DB 데이터를 기반으로 응답할 수 있게 합니다.
 
 ### Security Requirement
+
 - **비밀번호 필드 제외**: 조회 결과에서 `password` 해시 값은 절대 노출되지 않도록 제거해야 합니다.
 
 ### Proposed Changes
 
 #### 1. Backend (`src/server.py`)
+
 - **[MODIFY] Import**: `src/db_manager.py` import 추가.
 - **[NEW] Tool Implementation**:
+
 ```python
 @mcp.tool()
 def get_user_info(user_id: str) -> str:
@@ -289,75 +340,88 @@ def get_user_info(user_id: str) -> str:
     user = db_manager.get_user(user_id)
     if not user:
         return f"User not found with ID: {user_id}"
-    
+
     # dict 변환 및 password 제거
     user_dict = dict(user)
     if 'password' in user_dict:
         del user_dict['password']
-        
+
     return str(user_dict)
 ```
 
 ### Verification Plan
-1. **Web Tester**:
-    - `get_user_info` 도구가 목록에 뜨는지 확인.
-    - `user_id`로 `admin` 입력 후 실행.
-    - 결과 JSON에 `password` 필드가 없는지 확인.
-    - 결과에 `user_nm`, `role` 등이 잘 나오는지 확인.
 
+1. **Web Tester**:
+   - `get_user_info` 도구가 목록에 뜨는지 확인.
+   - `user_id`로 `admin` 입력 후 실행.
+   - 결과 JSON에 `password` 필드가 없는지 확인.
+   - 결과에 `user_nm`, `role` 등이 잘 나오는지 확인.
 
 # Phase 1: 사용자 토큰 관리 (Completed)
 
 ## 1. 개요
+
 MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(On-Demand User Token)** 시스템을 구축합니다. 사용자는 웹 인터페이스에서 직접 API 키를 발급받고 관리할 수 있습니다.
 
 ## 2. 변경 사항
 
 ### A. DB 스키마 설계
+
 #### [NEW] h_user_token 테이블
+
 - 사용자별 토큰 발급 이력을 관리합니다.
 - 컬럼: `id`, `user_uid` (FK), `token_value` (Unique), `expired_at`, `is_active`
 
 ### B. Backend 구현
+
 #### [NEW] src/db_manager.py
+
 - `create_user_token(user_uid, days_valid=365)`: 안전한 랜덤 토큰 생성, 기존 토큰 만료 처리, 새 토큰 저장
 - `get_user_token(user_uid)`: 현재 유효한 토큰 조회
 
 #### [MODIFY] src/sse_server.py
+
 - `POST /api/user/token`: 토큰 발급 요청 (로그인 필수)
 - `GET /api/user/token`: 토큰 조회 요청
 
 ### C. Frontend 구현
+
 #### [NEW] src/frontend/src/components/MyPage.tsx
+
 - 내 정보 컴포넌트 신규 추가
 - 토큰이 없으면 [토큰 발급받기] 버튼 표시
 - 토큰이 있으면 토큰 값, 만료일, 복사/재발급 버튼 표시
 
 #### [MODIFY] src/frontend/src/App.tsx
-- 사이드바 하단 프로필 영역 클릭 시 'mypage' 뷰로 전환 기능 추가
 
+- 사이드바 하단 프로필 영역 클릭 시 'mypage' 뷰로 전환 기능 추가
 
 ---
 
 # Phase 2: 도구 실행 보안 적용 (Security Implementation)
 
 ## 1. 개요
+
 현재 MCP 서버는 인증 없이 누구나 접근 가능하며, 도구 실행 시 사용자 식별을 클라이언트가 보낸 인자(`_user_uid`)에 의존하고 있습니다. Phase 2에서는 **토큰 기반 인증**을 도입하고, **서버 측 세션 바인딩(User Binding)**을 통해 보안을 강화합니다.
 
 ## 2. 변경 사항
 
 ### A. Context 관리 (New)
+
 요청(Request) 스코프 내에서 인증된 사용자 정보를 저장하고 접근하기 위한 `ContextVar` 유틸리티를 추가합니다.
 
 #### [NEW] src/utils/context.py
+
 - `user_context: ContextVar[dict]`: 현재 요청의 사용자 정보를 담는 컨텍스트 변수
 - `set_current_user(user: dict)`: 사용자 정보 설정
 - `get_current_user() -> dict`: 사용자 정보 조회 (없으면 None)
 
 ### B. SSE 연결 인증 (Modify)
+
 `src/sse_server.py`의 `/sse` 엔드포인트를 수정하여 토큰 검증 로직을 추가합니다.
 
 #### [MODIFY] src/sse_server.py
+
 1.  `handle_sse` 함수 수정:
     - `token` 쿼리 파라미터 수신
     - `db_manager.get_user_by_active_token(token)` 호출 (함수 신규 추가 필요)
@@ -365,27 +429,34 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
     - 유효하지 않으면 `HTTP 401 Unauthorized` 반환
 
 ### C. DB Manager 확장 (Modify)
+
 토큰으로 사용자 정보를 조회하는 함수를 추가합니다.
 
 #### [MODIFY] src/db_manager.py
+
 - `get_user_by_active_token(token: str) -> dict`: 활성 토큰으로 사용자 정보 조회 (만료일 체크 포함)
 
 ### D. 도구 실행 로직 개선 (Modify)
+
 도구 핸들러(`handle_call_tool`)에서 인자(`arguments`) 대신 컨텍스트(`get_current_user`)를 사용하도록 변경합니다.
 
 #### [MODIFY] src/sse_server.py (@mcp.call_tool)
+
 - 기존: `user_uid = arguments.get("_user_uid")`
 - 변경: `user = get_current_user(); user_uid = user['uid'] if user else None`
 - 인자 정리 로직 유지 (`_user_uid`가 들어오더라도 무시하거나 제거)
 
 ### E. 관리자 권한 체크 (Modify)
+
 관리자 전용 도구(`get_user_info`) 실행 시 권한을 검증합니다.
 
 #### [MODIFY] src/sse_server.py
+
 - `get_user_info` 블록 내에서 `user['role'] == 'ROLE_ADMIN'` 체크 추가
 - 권한 부족 시 에러 메시지 반환 또는 실행 거부
 
 ## 3. 검증 계획 (Verification Plan)
+
 1.  **인증 실패 테스트**: 토큰 없이 `/sse` 접근 시 401 에러 확인
 2.  **인증 성공 테스트**: 유효한 토큰으로 `/sse` 접근 시 연결 성공 확인
 3.  **User Binding 테스트**: 도구 실행 시 `h_mcp_tool_usage` 테이블에 올바른 `user_uid`가 기록되는지 확인 (클라이언트가 `_user_uid`를 보내지 않아도)
@@ -396,29 +467,35 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 # Phase 13: Bugfix - DB Connection & Initialization
 
 ## 1. Issue Description
+
 사용자가 `get_user_info` 도구 실행 시 `no such table: h_user` 에러 발생.
+
 - **Cause 1**: `db_manager.py`에서 상대 경로(`"agent_mcp.db"`) 사용으로 인해 실행 컨텍스트에 따라 DB 파일 위치가 달라짐.
 - **Cause 2**: `server.py` 실행 시 `init_db()`가 호출되지 않아 테이블이 생성되지 않음.
 
 ## 2. Fix Details
+
 - **[MODIFY] src/db_manager.py**: `DB_PATH`를 `os.path.abspath(__file__)` 기반의 절대 경로로 변경.
 - **[MODIFY] src/server.py**: 서버 시작 시 `init_db()` 호출 추가.
 
 ## 3. Verification
+
 - 서버 재시작 후 `get_user_info` 실행 시 정상적으로 DB 조회 및 결과 반환 확인 필요.
 
 # Phase 14: Admin 기능 강화: 도구 사용 제한 관리
 
 ## 목표
+
 관리자(Admin)가 사용자의 도구 사용 제한 정책(h_mcp_tool_limit)을 직접 조회하고 수정할 수 있는 기능을 제공합니다. 이를 통해 특정 사용자에게 추가 사용량을 할당하거나, 등급별 정책을 조정할 수 있습니다.
 
 ## 핵심 요구사항
+
 1. **Access Control**: 오직 `ROLE_ADMIN` 권한을 가진 사용자만 접근 가능.
 2. **Limit List**: 현재 적용된 모든 제한 정책(User별/Role별)을 조회.
-3. **Limit Upsert**: 
-    - 대상 타입(USER/ROLE)과 대상 ID(user_id/role_name) 선택.
-    - 제한 횟수 설정 (-1: 무제한).
-    - 기존 정책이 있으면 업데이트, 없으면 생성.
+3. **Limit Upsert**:
+   - 대상 타입(USER/ROLE)과 대상 ID(user_id/role_name) 선택.
+   - 제한 횟수 설정 (-1: 무제한).
+   - 기존 정책이 있으면 업데이트, 없으면 생성.
 4. **Limit Delete**: 적용된 제한 정책 삭제.
 
 ## 변경 사항
@@ -426,16 +503,18 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ### Backend (`src/db/mcp_tool_limit.py`, `src/sse_server.py`)
 
 #### 1. DB Logic (`src/db/mcp_tool_limit.py`)
-- **[NEW] `get_limit_list(page, size)`**: 
-    - `h_mcp_tool_limit` 테이블 전체 조회.
-    - 페이징 처리.
+
+- **[NEW] `get_limit_list(page, size)`**:
+  - `h_mcp_tool_limit` 테이블 전체 조회.
+  - 페이징 처리.
 - **[NEW] `upsert_limit(limit_data)`**:
-    - `target_type`, `target_id` 조합으로 기존 레코드 확인.
-    - 존재하면 `UPDATE`, 없으면 `INSERT`.
+  - `target_type`, `target_id` 조합으로 기존 레코드 확인.
+  - 존재하면 `UPDATE`, 없으면 `INSERT`.
 - **[NEW] `delete_limit(limit_id)`**:
-    - 해당 ID의 정책 삭제.
+  - 해당 ID의 정책 삭제.
 
 #### 2. API Endpoints (`src/sse_server.py`)
+
 - **Prefix**: `/api/mcp/limits`
 - **`GET /`**: 제한 정책 목록 조회.
 - **`POST /`**: 제한 정책 추가/수정 (Body: `{target_type, target_id, max_count, description}`).
@@ -444,20 +523,23 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ### Frontend (`src/frontend`)
 
 #### 1. Components
+
 - **[NEW] `LimitManagement.tsx`**
-    - **Header**: "제한 정책 관리" 타이틀 및 "정책 추가" 버튼.
-    - **Table**: 정책 목록 (Type, Target, Limit, Description).
-    - **Modal**: 정책 추가/수정 폼.
-        - Target Type: Select (USER / ROLE).
-        - Target ID: Input (User ID or Role Name).
-        - Limit Count: Input (Number).
-        - Description: Input (Text).
+  - **Header**: "제한 정책 관리" 타이틀 및 "정책 추가" 버튼.
+  - **Table**: 정책 목록 (Type, Target, Limit, Description).
+  - **Modal**: 정책 추가/수정 폼.
+    - Target Type: Select (USER / ROLE).
+    - Target ID: Input (User ID or Role Name).
+    - Limit Count: Input (Number).
+    - Description: Input (Text).
 
 #### 2. Navigation
+
 - **`App.tsx`**: 라우트 추가 (`/limits`).
 - **Sidebar**: "사용 제한 관리" 메뉴 추가 (Admin Only).
 
 ## 검증 계획
+
 1. **기본 정책 확인**: 페이지 접속 시 초기 시딩된 `ROLE_USER` (50), `ROLE_ADMIN` (-1) 정책이 보이는지 확인.
 2. **Role 정책 수정**: `ROLE_USER`의 제한을 100으로 수정 후 저장 -> 목록 갱신 확인 -> 실제 유저(`user`) 계정으로 `/api/mcp/my-usage` 조회 시 Limit이 100으로 변경되었는지 확인.
 3. **User 정책 추가**: `user` 계정에 대해 별도 제한(200) 추가 -> 저장 -> 실제 유저 계정에서 Limit 200 적용 확인 (Role보다 우선순위 확인).
@@ -466,64 +548,72 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 # Phase 16: 동적 Tool 생성 기능 (Dynamic Tool Creation) (important)
 
 ## Goal
+
 관리자가 웹 UI를 통해 SQL 쿼리나 간단한 Python 로직을 수행하는 Tool을 동적으로 생성하고, 서버 재배포 없이 Agent가 즉시 사용할 수 있도록 합니다.
 
 ## Implementation Steps
 
 ### Phase 1: Database Schema & Init
+
 - **[MODIFY] `src/db/init_manager.py`**:
-    - `h_custom_tool` 테이블 생성 (name, type, definition 등)
-    - `h_custom_tool_param` 테이블 생성 (param_name, type, required 등)
+  - `h_custom_tool` 테이블 생성 (name, type, definition 등)
+  - `h_custom_tool_param` 테이블 생성 (param_name, type, required 등)
 
 ### Phase 2: Dynamic Tool Loader & Handler
+
 - **[NEW] `src/dynamic_loader.py`**:
-    - DB에서 활성 Tool 목록 로드.
-    - `pydantic.create_model`을 사용하여 인자 모델 동적 생성.
-    - `fastmcp.tool` 데코레이터에 함수 바인딩.
+  - DB에서 활성 Tool 목록 로드.
+  - `pydantic.create_model`을 사용하여 인자 모델 동적 생성.
+  - `fastmcp.tool` 데코레이터에 함수 바인딩.
 - **[NEW] `src/tool_executor.py`**:
-    - **SQL Executor**: `connection.py` 활용하여 파라미터 바인딩 및 쿼리 실행.
-    - **Python Executor**: `simpleeval` 등을 활용한 샌드박스 실행.
+  - **SQL Executor**: `connection.py` 활용하여 파라미터 바인딩 및 쿼리 실행.
+  - **Python Executor**: `simpleeval` 등을 활용한 샌드박스 실행.
 
 ### Phase 3: Frontend Tool Builder
+
 - **[NEW] `src/frontend/src/components/CustomTools.tsx`**:
-    - Tool 목록 조회 및 활성/비활성 토글.
-    - Tool 생성/수정 모달 (Step-by-step UI 권장).
-    - 파라미터 추가/삭제 UI.
-    - 로직 작성 에디터 (CodeMirror 등 활용 가능성 검토).
+  - Tool 목록 조회 및 활성/비활성 토글.
+  - Tool 생성/수정 모달 (Step-by-step UI 권장).
+  - 파라미터 추가/삭제 UI.
+  - 로직 작성 에디터 (CodeMirror 등 활용 가능성 검토).
 
 ### Phase 4: Integration & Testing
+
 - Server 시작 시 로드 및 주기적 리로드(Optional) 또는 API 호출 시 리로드 구현.
 - 생성된 Tool이 Client(Agent)에서 정상 호출되는지 테스트.
 - SQL Injection 및 Code Injection 보안 테스트.
 
-
 # Phase 17: Dynamic Tool Tester Integration
 
 ## Goal
+
 동적으로 생성된 도구를 실제 Agent(Tester)가 바로 조회하고 실행할 수 있도록 통합합니다. 서버 재시작 없이 목록을 갱신하고, 실행 결과를 직관적으로 확인할 수 있어야 합니다.
 
 ## Implemented Changes
 
 ### 1. Backend Integration (`src/sse_server.py`)
-- **`list_tools` Handler Update**: 
-    - 정적 도구 목록 외에 DB(`h_custom_tool`)에서 활성 상태인 동적 도구를 조회하여 합침.
-    - JSON Schema 동적 생성 (Params 정보 기반).
+
+- **`list_tools` Handler Update**:
+  - 정적 도구 목록 외에 DB(`h_custom_tool`)에서 활성 상태인 동적 도구를 조회하여 합침.
+  - JSON Schema 동적 생성 (Params 정보 기반).
 - **`call_tool` Handler Update**:
-    - 요청된 도구 이름이 정적 도구에 없으면 동적 도구 목록에서 검색.
-    - `ToolExecutor` (SQL/Python)를 호출하여 결과 반환.
-    - 실행 이력(`h_mcp_tool_usage`) 저장 로직 공유.
+  - 요청된 도구 이름이 정적 도구에 없으면 동적 도구 목록에서 검색.
+  - `ToolExecutor` (SQL/Python)를 호출하여 결과 반환.
+  - 실행 이력(`h_mcp_tool_usage`) 저장 로직 공유.
 
 ### 2. Frontend Tester Refinement (`src/frontend`)
+
 - **[MODIFY] `useMcp.ts`**:
-    - `refreshTools()` 함수 추가: `tools/list` RPC를 명시적으로 재호출하여 도구 목록 갱신.
+  - `refreshTools()` 함수 추가: `tools/list` RPC를 명시적으로 재호출하여 도구 목록 갱신.
 - **[MODIFY] `App.tsx`**:
-    - `refreshTools` 함수를 `Tester` 컴포넌트로 전달.
+  - `refreshTools` 함수를 `Tester` 컴포넌트로 전달.
 - **[MODIFY] `Tester.tsx`**:
-    - **Refresh Button**: 도구 선택 셀렉트 박스 옆에 새로고침 버튼 배치.
-    - **Auto Reset**: 도구 변경 시 기존 입력 폼 및 실행 결과 초기화.
-    - **Smart JSON View**: 실행 결과(`content[0].text`)가 JSON 문자열인 경우, 파싱하여 구조화된 형태로 표시.
+  - **Refresh Button**: 도구 선택 셀렉트 박스 옆에 새로고침 버튼 배치.
+  - **Auto Reset**: 도구 변경 시 기존 입력 폼 및 실행 결과 초기화.
+  - **Smart JSON View**: 실행 결과(`content[0].text`)가 JSON 문자열인 경우, 파싱하여 구조화된 형태로 표시.
 
 ## Verification Plan
+
 1. **Frontend Build**: `npm run build` 수행 (React App 배포).
 2. **Dynamic Load**: Admin 메뉴에서 새 도구 생성 후, Tester 화면에서 '새로고침' 클릭 시 목록에 뜨는지 확인.
 3. **Execution**: 생성한 동적 도구 실행 및 결과(JSON Parsing) 확인.
@@ -532,111 +622,125 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 # Phase 18: Tool Output JSONization
 
 ## Goal
+
 사용자가 도구의 출력을 더 쉽게 파악하고(JSON 구조화), 도구의 출처(시스템 vs 동적)를 명확히 구별할 수 있도록 개선합니다.
 
 ## Requirements
+
 1. **JSON Output**: `get_user_info`, `get_user_tokens` 등 객체를 반환하는 도구는 Python `dict` 문자열(`{'k': 'v'}`) 대신 표준 `JSON` 문자열(`{"k": "v"}`)을 반환해야 합니다. Frontend의 Smart JSON View가 이를 인식하여 구조화해서 보여줄 수 있습니다.
 2. **Source Distinction**: 도구 목록에서 이 도구가 `server.py`에 정의된 정적 도구인지, Admin이 생성한 동적 도구인지 구분되어야 합니다.
 
 ## Proposed Changes
 
 ### 1. Backend (`src/sse_server.py`)
+
 - **JSON Serialization**: `get_user_info`, `get_user_tokens` 결과 반환 시 `str(dict)` 대신 `json.dumps(dict, ensure_ascii=False)` 사용.
 - **Description Tagging**: `list_tools` 반환 시,
-    - Static Tools: Description 앞에 `[System]` 태그 추가.
-    - Dynamic Tools: Description 앞에 `[Dynamic]` 태그 추가.
+  - Static Tools: Description 앞에 `[System]` 태그 추가.
+  - Dynamic Tools: Description 앞에 `[Dynamic]` 태그 추가.
 
 ### 2. Frontend (`src/frontend/src/components/Tester.tsx`)
+
 - **Dropdown UI**: 도구 선택 옵션 렌더링 시 Description의 태그를 확인.
-    - `[System]` -> 도구명 뒤에 `(System)` 표시.
-    - `[Dynamic]` -> 도구명 뒤에 `(Dynamic)` 표시.
-    - 태그 자체는 툴팁이 아닌 이상 UI에 노출되지 않도록 처리하거나, 이름 옆에만 표기.
+  - `[System]` -> 도구명 뒤에 `(System)` 표시.
+  - `[Dynamic]` -> 도구명 뒤에 `(Dynamic)` 표시.
+  - 태그 자체는 툴팁이 아닌 이상 UI에 노출되지 않도록 처리하거나, 이름 옆에만 표기.
 - **Copy Button**: 실행 결과(JSON) 영역 우측 상단에 복사 아이콘(또는 버튼) 추가. 클릭 시 클립보드에 전체 결과 텍스트 복사.
 
 ## Verification Plan
+
 1. **Tool List**: Tester 화면 진입 시 도구 목록에 `(System)` / `(Dynamic)` 라벨이 붙어있는지 확인.
-2. **Execution**: 
-    - `get_user_info` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
-    - `get_user_tokens` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+2. **Execution**:
+   - `get_user_info` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
+   - `get_user_tokens` 실행 -> 결과가 JSON 형태로 예쁘게 나오는지 확인.
 
 # Phase 19: System Config Management UI [Refactor]
 
 ## Goal
+
 기존 단순 Key-Value 구조의 설정을 **그룹화된 JSON 설정 관리** 방식으로 변경합니다.
 예: "Gmail Settings"라는 이름 하에 `host`, `port`, `auth` 정보를 JSON 형태로 한 번에 관리.
 
 ## Requirements
+
 1.  **Database Refactor**:
-    -   Existing `h_system_config` table MUST be dropped and recreated.
-    -   **Columns**:
-        -   `name` (PK, Text): 설정 그룹명 (예: `gmail_config`)
-        -   `configuration` (Text/JSON): 설정 값들의 JSON 문자열
-        -   `description` (Text): 설명
-        -   `reg_dt` (Text): 등록일시
+    - Existing `h_system_config` table MUST be dropped and recreated.
+    - **Columns**:
+      - `name` (PK, Text): 설정 그룹명 (예: `gmail_config`)
+      - `configuration` (Text/JSON): 설정 값들의 JSON 문자열
+      - `description` (Text): 설명
+      - `reg_dt` (Text): 등록일시
 2.  **Backend API**:
-    -   Update APIs to handle JSON content.
-    -   Validation checks for valid JSON format.
+    - Update APIs to handle JSON content.
+    - Validation checks for valid JSON format.
 3.  **Frontend UI**:
-    -   **List**: Show `name`, `description`. `configuration` might be too long, show preview or hidden.
-    -   **Add/Edit**:
-        -   `name` (Input)
-        -   `configuration` (Textarea - JSON format validation required)
-        -   `description` (Input)
+    - **List**: Show `name`, `description`. `configuration` might be too long, show preview or hidden.
+    - **Add/Edit**:
+      - `name` (Input)
+      - `configuration` (Textarea - JSON format validation required)
+      - `description` (Input)
 
 ## Proposed Changes
 
 ### 1. Database Schema (`src/db/init_manager.py`)
--   Logic to DROP `h_system_config` if schema doesn't match or force drop for this transition.
--   Create new table with `name`, `configuration`, `description`.
--   Seed default:
-    ```json
-    {
-        "name": "gmail_config",
-        "configuration": {
-            "mail.host": "smtp.gmail.com",
-            "mail.port": 587,
-            "mail.username": "",
-            "mail.password": ""
-        },
-        "description": "Gmail SMTP Settings"
-    }
-    ```
+
+- Logic to DROP `h_system_config` if schema doesn't match or force drop for this transition.
+- Create new table with `name`, `configuration`, `description`.
+- Seed default:
+  ```json
+  {
+    "name": "gmail_config",
+    "configuration": {
+      "mail.host": "smtp.gmail.com",
+      "mail.port": 587,
+      "mail.username": "",
+      "mail.password": ""
+    },
+    "description": "Gmail SMTP Settings"
+  }
+  ```
 
 ### 2. Backend Logic (`src/db/system_config.py`)
--   Update `get_config(name)` logic.
--   Update `set_config` logic to store JSON string.
+
+- Update `get_config(name)` logic.
+- Update `set_config` logic to store JSON string.
 
 ### 3. Frontend (`SystemConfig.tsx`)
--   Update table columns.
--   Update Form:
-    -   Use a textarea for `configuration`.
-    -   Add "Beautify JSON" or simple validation before submit.
+
+- Update table columns.
+- Update Form:
+  - Use a textarea for `configuration`.
+  - Add "Beautify JSON" or simple validation before submit.
 
 ## Phase 20: Gmail 연동 및 메일 발송 기능 (Items 32, 34-37) [Completed]
 
 ### 1. 개요
+
 시스템 설정을 통해 SMTP 정보를 관리하고, 사용자가 웹 UI에서 즉시 또는 예약 메일을 발송할 수 있는 기능을 구현했습니다.
 
 ### 2. 구현 내용
+
 - **Mailer Utility (`src/utils/mailer.py`)**: `smtplib`와 `email.mime`을 사용하여 실제 메일 발송 로직을 구현했습니다. `h_system_config`의 Gmail 설정을 동적으로 불러옵니다.
 - **Database Layer (`src/db/email_manager.py`)**: 메일 발송 이력 저장(`h_email_log`), 상태 업데이트(SENT, FAILED, PENDING), 발송 취소 기능을 구현했습니다.
-- **Backend API (`src/sse_server.py`)**: 
-    - `POST /api/email/send`: 메일 발송 요청 접수 (즉시/예약 분기)
-    - `GET /api/email/logs`: 발송 이력 조회
-    - `POST /api/email/cancel/{log_id}`: 예약된 메일 발송 취소
-- **Frontend UI (`EmailSender.tsx`)**: 
-    - 수신자, 제목, 내용 입력 폼
-    - 예약 발송 설정 (현재 시간 기준 미래 시간 선택)
-    - 발송 이력 테이블 및 '취소' 버튼 (PENDING 상태 전용)
+- **Backend API (`src/sse_server.py`)**:
+  - `POST /api/email/send`: 메일 발송 요청 접수 (즉시/예약 분기)
+  - `GET /api/email/logs`: 발송 이력 조회
+  - `POST /api/email/cancel/{log_id}`: 예약된 메일 발송 취소
+- **Frontend UI (`EmailSender.tsx`)**:
+  - 수신자, 제목, 내용 입력 폼
+  - 예약 발송 설정 (현재 시간 기준 미래 시간 선택)
+  - 발송 이력 테이블 및 '취소' 버튼 (PENDING 상태 전용)
 
 ---
 
 ## Phase 21: 자동 예약 발송 스케줄러 (Item 38) [Completed]
 
 ### 1. 개요
+
 사용자가 설정한 예약 시간에 맞춰 PENDING 상태인 메일을 자동으로 발송하는 백그라운드 스케줄러를 구현했습니다.
 
 ### 2. 구현 내용
+
 - **Scheduler (`src/scheduler.py`)**: `APScheduler` 라이브러리를 사용하여 1분마다 `process_scheduled_emails`를 실행합니다.
 - **발송 로직**: 현재 시간(`now`)보다 이전에 예약된 `PENDING` 건을 조회하여 순차적으로 발송하고 결과를 DB에 업데이트합니다.
 - **통합**: `sse_server.py`의 Lifespan 핸들러에 스케줄러 시작/종료 로직을 포함하여 서버 생명주기와 동기화했습니다.
@@ -646,34 +750,38 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ## Phase 22: JWT Authentication Implementation [Completed]
 
 ### Goal
+
 기존의 단순 토큰 방식을 **JWT (JSON Web Token)** 기반 인증으로 교체하여 보안성 및 표준성을 강화합니다.
 관리자 페이지 접근 시 토큰 검증 및 권한 체크를 수행하며, 로그인 지속 시간은 **12시간**으로 설정합니다.
 **[Update]**: 사용자 토큰 시스템(`h_user_token`)은 제거되었으며, 모든 인증은 **로그인 기반의 JWT**로 통일되었습니다.
 
 ### Requirements
+
 1.  **Tech Stack**:
-    -   `python-jose` (JWT 생성 및 검증)
-    -   `passlib[bcrypt]` (비밀번호 해싱 및 검증)
-    -   `python-multipart` (OAuth2PasswordRequestForm 지원)
+    - `python-jose` (JWT 생성 및 검증)
+    - `passlib[bcrypt]` (비밀번호 해싱 및 검증)
+    - `python-multipart` (OAuth2PasswordRequestForm 지원)
 2.  **Auth Flow**:
-    -   **Login**: OAuth2 Password Flow (`username`/`password`) -> 검증 -> JWT Access Token 발급 (12h).
-    -   **MCP Connection**: MyPage -> '토큰 발급' -> JWT Access Token 발급 (365 days).
-    -   **Verification**: 요청 헤더 `Authorization: Bearer {token}` -> JWT 디코딩 -> 사용자 식별 & 권한 체크.
+    - **Login**: OAuth2 Password Flow (`username`/`password`) -> 검증 -> JWT Access Token 발급 (12h).
+    - **MCP Connection**: MyPage -> '토큰 발급' -> JWT Access Token 발급 (365 days).
+    - **Verification**: 요청 헤더 `Authorization: Bearer {token}` -> JWT 디코딩 -> 사용자 식별 & 권한 체크.
 3.  **Token Policy**:
-    -   Algorithm: `HS256`
-    -   Expiration: 12시간 (Login), 1년 (MCP Key)
-    -   Payload: `sub` (user_id), `role` (권한), `type` (api_key/login)
+    - Algorithm: `HS256`
+    - Expiration: 12시간 (Login), 1년 (MCP Key)
+    - Payload: `sub` (user_id), `role` (권한), `type` (api_key/login)
 4.  **Admin Protection**:
-    -   관리자 전용 API 접근 시, JWT의 `role`이 `ROLE_ADMIN`인지 확인.
+    - 관리자 전용 API 접근 시, JWT의 `role`이 `ROLE_ADMIN`인지 확인.
 
 ### Implemented Changes
--   **Dependencies**: `python-jose`, `passlib`, `python-multipart` 추가.
--   **Auth Utility**: `src/utils/auth.py` (JWT Creation/Verification, Bcrypt).
--   **User Token**: `src/db/user_token.py` 수정 (Random String -> Long-lived JWT).
--   **Server Refactor**: `src/sse_server.py`의 `handle_sse` 및 API 의존성을 JWT 기반으로 변경.
--   **Frontend**: `App.tsx`, `MyPage.tsx` 등에서 `Authorization: Bearer` 헤더 사용.
+
+- **Dependencies**: `python-jose`, `passlib`, `python-multipart` 추가.
+- **Auth Utility**: `src/utils/auth.py` (JWT Creation/Verification, Bcrypt).
+- **User Token**: `src/db/user_token.py` 수정 (Random String -> Long-lived JWT).
+- **Server Refactor**: `src/sse_server.py`의 `handle_sse` 및 API 의존성을 JWT 기반으로 변경.
+- **Frontend**: `App.tsx`, `MyPage.tsx` 등에서 `Authorization: Bearer` 헤더 사용.
 
 ### Verification Results
+
 1.  **Login**: JWT 발급 및 로그인 성공.
 2.  **MCP Token**: MyPage에서 Long-lived JWT 발급 확인.
 3.  **Validation**: `curl` 및 Frontend API 호출 테스트 완료.
@@ -683,26 +791,31 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ## Phase 23 작업 결과 및 워크스루 (Walkthrough)
 
 ### 1. Database Layer 수정
+
 - **`src/db/access_token.py`**: `get_user_by_active_token(token)` 함수를 구현했습니다.
-    - JWT 토큰인 경우 디코딩하여 해당 유저 정보를 반환합니다.
-    - 외부 액세스 토큰(`sk_...`)인 경우 `h_access_token` 테이블 확인 후, 유효하다면 시스템 연동용 유저인 `external` 계정 정보를 반환합니다.
+  - JWT 토큰인 경우 디코딩하여 해당 유저 정보를 반환합니다.
+  - 외부 액세스 토큰(`sk_...`)인 경우 `h_access_token` 테이블 확인 후, 유효하다면 시스템 연동용 유저인 `external` 계정 정보를 반환합니다.
 - **`src/db/__init__.py`**: 위 함수를 외부 모듈에서 `db.get_user_by_active_token`으로 접근할 수 있도록 노출했습니다.
 
 ### 2. Stdio Server (`server.py`) 수정
-- **`get_user_info` 도구**: 
-    - 조회 결과 반환 시 `json.dumps`를 사용하여 SSE 버전과 동일하게 JSON 문자열 형식을 갖추도록 수정했습니다.
-    - `ROLE_ADMIN` 권한 체크 및 오류 메시지 형식을 통일했습니다.
+
+- **`get_user_info` 도구**:
+  - 조회 결과 반환 시 `json.dumps`를 사용하여 SSE 버전과 동일하게 JSON 문자열 형식을 갖추도록 수정했습니다.
+  - `ROLE_ADMIN` 권한 체크 및 오류 메시지 형식을 통일했습니다.
 
 ### 3. 오류 수정 및 성능 개선
+
 - **`sqlite3.Row` 오류 해결**: `db.get_user_by_active_token`이 `sqlite3.Row` 객체를 반환하여 `server.py`에서 `.get()` 메서드를 사용할 수 없던 문제를 `dict()` 변환을 통해 해결했습니다.
 - **응답 형식 일치**: `get_user_info` 실행 시 사용자 정보가 SSE 서버와 동일한 JSON 포맷으로 응답됩니다.
 - **데이터 시딩 중단**: `src/db/init_manager.py`에서 서버 시작 시 마다 데이터가 초기화되는 로직을 주석 처리하여 데이터 보존성을 높였습니다.
 
 ### 4. 동적 도구(Dynamic Tool) 감사 로그 추가
+
 - **`src/utils/server_audit.py`**: `audit_log` 데코레이터가 `async` 함수(Coroutine)를 지원하도록 수정했습니다.
 - **`src/dynamic_loader.py`**: 동적으로 생성된 도구 핸들러에 `@audit_log`를 적용하여, Claude Desktop 등 Stdio 방식을 사용할 때도 동적 도구 실행 이력이 DB에 정상적으로 기록되도록 했습니다.
 
 ## Phase 24: UI/UX 고도화 및 편의 기능 (Items 33-37, 43-48) [Completed]
+
 - **메뉴 구조 개편**: 기능별 그룹화 및 사이드바 레이아웃 개선 (Item 33)
 - **메일 발송 관리**: 발송 이력 기록, 취소 기능 및 UI 보강 (Items 34-37)
 - **대시보드 개선**: 사용자별 통계 차트(Donut) 및 결과 통계 레이아웃 최적화 (Items 43-44)
@@ -712,6 +825,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ---
 
 ## Phase 25: OpenAPI Proxy Management (Item 49) [Completed]
+
 - **데이터베이스 연동**: `h_openapi` 테이블 구축 및 CRUD 로직 구현
 - **프록시 서버**: 외부 API를 호출하고 결과를 JSON으로 변환하여 반환하는 엔드포인트 구현
 - **XML 변환**: `xmltodict`를 사용하여 공공데이터 등의 XML 응답을 자동 JSON 변환 처리
@@ -720,6 +834,7 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ---
 
 ## Phase 26: OpenAPI Proxy 보안 강화 (Item 50) [Completed]
+
 - **통합 인증 도입**: JWT와 외부 액세스 토큰(`sk_...`)을 모두 지원하는 `get_current_active_user` 의존성 구현
 - **보안 적용**: 프록시 실행 엔드포인트에 인증 체크를 추가하여 무분별한 외부 호출 차단
 - **인증 유연성**: `Authorization: Bearer` 헤더 및 `token` 쿼리 파라미터 방식 지원
@@ -729,30 +844,35 @@ MCP 도구 사용을 위한 인증 수단으로 **온디맨드 사용자 토큰(
 ## Phase 27: OpenAPI 사용 통계 및 사용량 제한 구현 [Completed]
 
 ### 목표
+
 OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용자, 권한, 그리고 **외부 접속 토큰별**로 일일리 사용량을 제한하는 기능을 구현합니다. 사용 이력은 **차트와 그래프**를 통해 시각화하여 관리 편의성을 높입니다.
 
 ### Proposed Changes
 
 #### 1. Database Layer
-*   **[MODIFY] `src/db/init_manager.py`**: 
-    *   `h_openapi_usage`: `user_uid` (Nullable), `token_id` (Nullable, 외부 토큰 식별용) 포함하여 생성.
-    *   `h_openapi_limit`: `target_type`에 `TOKEN` 추가.
-*   **[NEW] `src/db/openapi_usage.py`**: 사용 이력 저장 및 **ECharts 연동용 통계 데이터** 반환 함수 구현.
-*   **[NEW] `src/db/openapi_limit.py`**: TOKEN > USER > ROLE 순으로 적용되는 사용량 제한 조회 로직 구현.
-*   **[MODIFY] `src/db/__init__.py`**: 신규 함수들 Expose.
+
+- **[MODIFY] `src/db/init_manager.py`**:
+  - `h_openapi_usage`: `user_uid` (Nullable), `token_id` (Nullable, 외부 토큰 식별용) 포함하여 생성.
+  - `h_openapi_limit`: `target_type`에 `TOKEN` 추가.
+- **[NEW] `src/db/openapi_usage.py`**: 사용 이력 저장 및 **ECharts 연동용 통계 데이터** 반환 함수 구현.
+- **[NEW] `src/db/openapi_limit.py`**: TOKEN > USER > ROLE 순으로 적용되는 사용량 제한 조회 로직 구현.
+- **[MODIFY] `src/db/__init__.py`**: 신규 함수들 Expose.
 
 #### 2. Backend API Layer
-*   **[MODIFY] `src/routers/openapi.py`**:
-    *   `api_execute_openapi` 핸들러 수정: 호출 전 토큰/유저별 제한 체크 및 호출 후 결과(성공/실패/IP 등) 로깅.
-    *   신규 API 추가: `/api/openapi/stats` (차트용 데이터), `/api/openapi/limits` (토큰 포함 관리), `/api/openapi/my-usage`.
+
+- **[MODIFY] `src/routers/openapi.py`**:
+  - `api_execute_openapi` 핸들러 수정: 호출 전 토큰/유저별 제한 체크 및 호출 후 결과(성공/실패/IP 등) 로깅.
+  - 신규 API 추가: `/api/openapi/stats` (차트용 데이터), `/api/openapi/limits` (토큰 포함 관리), `/api/openapi/my-usage`.
 
 #### 3. Frontend Layer
-*   **[NEW] `types/openapi.ts`**: 관련 타입 정의.
-*   **[NEW] `OpenApiStats.tsx`**: 사용 통계 대시보드 (ECharts를 활용한 시각화).
-*   **[NEW] `OpenApiLimit.tsx`**: 사용 제한 관리 UI (토큰 선택 기능 포함).
-*   **[MODIFY] `App.tsx`**: 라우팅 및 메뉴 추가.
+
+- **[NEW] `types/openapi.ts`**: 관련 타입 정의.
+- **[NEW] `OpenApiStats.tsx`**: 사용 통계 대시보드 (ECharts를 활용한 시각화).
+- **[NEW] `OpenApiLimit.tsx`**: 사용 제한 관리 UI (토큰 선택 기능 포함).
+- **[MODIFY] `App.tsx`**: 라우팅 및 메뉴 추가.
 
 #### Implemented Changes
+
 - **통계 대시보드**: ECharts를 활용한 호출 통계 시각화 구현
 - **사용량 제한**: TOKEN > USER > ROLE 순위의 제한 로직 적용
 - **표시 개선**: 사용 제한 목록에서 ID 대신 실제 이름(사용자명/토큰명) 표시 (`target_name` 추가)
@@ -760,6 +880,7 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
 ---
 
 ## Phase 28: 사이드바 반응형 및 레이아웃 개선 [Completed]
+
 - **접이식 사이드바**: `isSidebarCollapsed` 상태를 통한 레이아웃 너비 조정 (w-64 <-> w-20)
 - **반응형 디자인**: 1024px 미만 화면에서 사이드바 자동 접힘 처리
 - **UI 최적화**: 접힘 상태에서 아이콘 중심 정렬 및 라벨 숨김 처리
@@ -767,117 +888,155 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
 ---
 
 ## Phase 29: OpenAPI 가이드 에디터 고도화 [Completed]
+
 - **에디터 UI**: 마크다운 편집과 실시간 미리보기를 전환할 수 있는 **탭 방식** 도입
 - **데이터 모델**: `h_openapi` 테이블 및 Pydantic 모델에 `description_info` 필드 반영 및 저장 오류 수정
 - **렌더링 지원**:
-    - `rehype-raw` 적용으로 마크다운 내 HTML 태그(`<b>` 등) 지원
-    - `remark-gfm` 적용으로 표, 링크 등 풍부한 서식 지원
+  - `rehype-raw` 적용으로 마크다운 내 HTML 태그(`<b>` 등) 지원
+  - `remark-gfm` 적용으로 표, 링크 등 풍부한 서식 지원
 - **사용자 경험**: 목록의 '눈' 아이콘을 통해 깔끔한 `prose` 테마 모달로 가이드 제공
-
 
 ---
 
 ## Phase 30: Account Locking & Admin Unlocking Logic (New)
 
 ### Goal
+
 보안 강화를 위해 5회 이상 로그인 실패 시 계정을 자동으로 잠금 처리하고, 관리자가 이를 확인하고 해제할 수 있는 기능을 구현합니다.
 
 ### Proposed Changes
 
 #### 1. Database Layer
+
 - **[MODIFY] `src/db/init_manager.py`**:
-    - `h_user` 테이블에 `is_locked` (TEXT, 'N'/'Y'), `login_fail_count` (INTEGER, Default 0) 컬럼 추가.
-    - 기존 DB를 위한 ALTER TABLE 마이그레이션 로직 추가.
+  - `h_user` 테이블에 `is_locked` (TEXT, 'N'/'Y'), `login_fail_count` (INTEGER, Default 0) 컬럼 추가.
+  - 기존 DB를 위한 ALTER TABLE 마이그레이션 로직 추가.
 - **[MODIFY] `src/db/user.py`**:
-    - `increment_login_fail_count(user_id)`: 실패 횟수 증가 및 현재 횟수 반환.
-    - `reset_login_fail_count(user_id)`: 실패 횟수 0으로 초기화 및 잠금 해제.
-    - `set_user_locked(user_id, is_locked)`: 잠금 상태 직접 변경.
+  - `increment_login_fail_count(user_id)`: 실패 횟수 증가 및 현재 횟수 반환.
+  - `reset_login_fail_count(user_id)`: 실패 횟수 0으로 초기화 및 잠금 해제.
+  - `set_user_locked(user_id, is_locked)`: 잠금 상태 직접 변경.
 
 #### 2. Backend API
+
 - **[MODIFY] `src/routers/auth.py`**:
-    - 로그인 시도 시 `is_locked` 체크.
-    - 비밀번호 불일치 시 `login_fail_count` 증가, 5회 도달 시 `is_locked='Y'`.
-    - 로그인 성공 시 `login_fail_count` 초기화.
+  - 로그인 시도 시 `is_locked` 체크.
+  - 비밀번호 불일치 시 `login_fail_count` 증가, 5회 도달 시 `is_locked='Y'`.
+
+---
+
+## Phase 31: 사용자 초기화 플래그 설정 고도화 [Completed]
+
+### 목표
+
+데이터베이스 리셋(`db_reset.py`) 시 기본적으로 생성되는 `admin` 및 `user` 계정의 상태 플래그를 정확하게 설정하여 계정 상태 관리의 일관성을 확보합니다.
+
+### 변경 사항
+
+- **[MODIFY] `src/db/check/db_reset.py`**:
+  - `admin` 및 `user` 계정 INSERT 쿼리에 `is_locked`, `is_delete`, `is_approved` 컬럼 추가.
+  - 초기값 설정:
+    - `is_enable`: 'Y' (활성화)
+    - `is_locked`: 'N' (잠금 해제)
+    - `is_delete`: 'N' (삭제 안 함)
+    - `is_approved`: 'Y' (승인됨)
+
+### 검증 결과
+
+1. `db_reset.py` 실행 시 초기 데이터가 새로운 플래그와 함께 정상적으로 입력됨을 확인.
+
 - **[MODIFY] `src/routers/users.py`**:
-    - 사용자 정보 수정 API에서 `is_locked` 필드 처리 지원.
+  - 사용자 정보 수정 API에서 `is_locked` 필드 처리 지원.
 
 #### 3. Frontend Layer
+
 - **[MODIFY] `src/frontend/src/components/Login.tsx`**:
-    - 403 에러 발생 시 'locked' 포함 여부에 따라 잠금 메시지 표시.
+  - 403 에러 발생 시 'locked' 포함 여부에 따라 잠금 메시지 표시.
 - **[MODIFY] `src/frontend/src/components/Users.tsx`**:
-    - 사용자 목록에 '잠금 상태' 컬럼 추가.
-    - 모달 또는 목록에서 잠금 해제 기능 제공.
+  - 사용자 목록에 '잠금 상태' 컬럼 추가.
+  - 모달 또는 목록에서 잠금 해제 기능 제공.
 
 ### Verification Plan
+
 1. 잘못된 비번으로 5회 로그인 시도 -> 계정 잠금 메시지 확인.
 2. DB 상에서 `is_locked='Y'`, `login_fail_count=5` 확인.
 3. 관리자 계정으로 로그인하여 '사용자 관리' 메뉴 접속.
 4. 해당 유저의 잠금 상태 확인 및 '해제' 버튼 클릭.
 5. 유저가 다시 정상 로그인 가능한지 확인 (실패 횟수 초기화 여부 포함).
- 
- ---
- 
- ## Phase 31: OpenAPI PDF Export [Completed]
- 
- ### Goal
- 등록된 OpenAPI의 상세 정보를 PDF 파일로 내보내는 기능을 구현하여 사용자가 문서를 오프라인으로 보관하거나 공유하기 쉽게 합니다.
- 
- ### Implemented Changes
- - **PDF Generator**: `fpdf2` 라이브러리를 기반으로 한 `src/utils/pdf_generator.py`를 구현했습니다.
-     - 한국어 지원을 위해 `Malgun Gothic` 폰트를 시스템 또는 프로젝트 경로에서 로드합니다.
-     - 사용자 가이드 내 HTML 태그(`<b>` 등)를 제거하여 텍스트만 깔끔하게 출력합니다.
-     - `fpdf2`의 최신 테이블 기능을 사용하여 URL, 서비스 키 등 길이가 긴 데이터도 셀 높이가 자동 조절되도록 최적화했습니다.
- - **Backend API**: `src/routers/openapi.py`에 `/api/openapi/{tool_id}/export` 엔드포인트를 추가했습니다.
-     - 다운로드하는 사용자가 `ROLE_ADMIN`일 경우에만 서비스 키 정보를 포함하여 생성합니다.
-     - 파일명 인코딩을 처리하여 한글 파일명이 깨지지 않도록 구현했습니다.
- - **Frontend**: `OpenApiManager.tsx` 목록 화면의 '작업' 컬럼에 PDF 다운로드 아이콘 및 핸들러를 추가했습니다.
- 
- ### Verification Results
- 1. OpenAPI 목록에서 PDF 아이콘 클릭 시 파일 다운로드 확인.
- 2. 관리자 계정으로 다운로드 시 서비스 키 포함 확인.
- 3. 일반 사용자 계정으로 다운로드 시 서비스 키 제외 확인.
- 4. 긴 텍스트 및 한글 깨짐 없이 레이아웃이 깔끔하게 유지됨을 확인.
- 
- ---
- 
- ## Phase 32: Dark Mode Implementation [Planned]
- 
- ### Goal
- 사용자 경험(UX) 개선을 위해 시스템 전반에 다크 모드(Dark Mode)를 지원합니다. 사용자는 헤더의 버튼을 통해 테마를 전환할 수 있으며, 설정은 브라우저에 저장되어 유지됩니다.
- 
- ### Proposed Changes
- - **Styles**: Tailwind CSS의 `darkMode: 'class'` 설정을 활성화하고 전역 테마 변수를 정의합니다.
- - **State Logic**: `localStorage`와 연동되는 `useTheme` 커스텀 훅을 통해 테마 상태를 관리합니다.
- - **UI Components**:
-     - **Header**: 테마 전환(Sun/Moon) 버튼 추가.
-     - **Common**: `dark:` 클래스 접두사를 사용하여 배경, 텍스트, 보더 색상을 어두운 톤으로 조정합니다.
-     - **ECharts**: 테마 변경 시 차트 테마(Dark/Light)도 동적으로 전환되도록 처리합니다.
- 
- ### Verification Plan
- 1. 테마 토글 버튼 작동 여부 및 즉각적인 UI 반영 확인.
- 2. 새로고침 시 테마 유지 확인.
- 3. 전반적인 UI 컴포넌트(모달, 테이블, 차트) 시인성 검토.
+
+---
+
+## Phase 31: OpenAPI PDF Export [Completed]
+
+### Goal
+
+등록된 OpenAPI의 상세 정보를 PDF 파일로 내보내는 기능을 구현하여 사용자가 문서를 오프라인으로 보관하거나 공유하기 쉽게 합니다.
+
+### Implemented Changes
+
+- **PDF Generator**: `fpdf2` 라이브러리를 기반으로 한 `src/utils/pdf_generator.py`를 구현했습니다.
+  - 한국어 지원을 위해 `Malgun Gothic` 폰트를 시스템 또는 프로젝트 경로에서 로드합니다.
+  - 사용자 가이드 내 HTML 태그(`<b>` 등)를 제거하여 텍스트만 깔끔하게 출력합니다.
+  - `fpdf2`의 최신 테이블 기능을 사용하여 URL, 서비스 키 등 길이가 긴 데이터도 셀 높이가 자동 조절되도록 최적화했습니다.
+- **Backend API**: `src/routers/openapi.py`에 `/api/openapi/{tool_id}/export` 엔드포인트를 추가했습니다.
+  - 다운로드하는 사용자가 `ROLE_ADMIN`일 경우에만 서비스 키 정보를 포함하여 생성합니다.
+  - 파일명 인코딩을 처리하여 한글 파일명이 깨지지 않도록 구현했습니다.
+- **Frontend**: `OpenApiManager.tsx` 목록 화면의 '작업' 컬럼에 PDF 다운로드 아이콘 및 핸들러를 추가했습니다.
+
+### Verification Results
+
+1.  OpenAPI 목록에서 PDF 아이콘 클릭 시 파일 다운로드 확인.
+2.  관리자 계정으로 다운로드 시 서비스 키 포함 확인.
+3.  일반 사용자 계정으로 다운로드 시 서비스 키 제외 확인.
+4.  긴 텍스트 및 한글 깨짐 없이 레이아웃이 깔끔하게 유지됨을 확인.
+
+---
+
+## Phase 32: Dark Mode Implementation [Planned]
+
+### Goal
+
+사용자 경험(UX) 개선을 위해 시스템 전반에 다크 모드(Dark Mode)를 지원합니다. 사용자는 헤더의 버튼을 통해 테마를 전환할 수 있으며, 설정은 브라우저에 저장되어 유지됩니다.
+
+### Proposed Changes
+
+- **Styles**: Tailwind CSS의 `darkMode: 'class'` 설정을 활성화하고 전역 테마 변수를 정의합니다.
+- **State Logic**: `localStorage`와 연동되는 `useTheme` 커스텀 훅을 통해 테마 상태를 관리합니다.
+- **UI Components**:
+  - **Header**: 테마 전환(Sun/Moon) 버튼 추가.
+  - **Common**: `dark:` 클래스 접두사를 사용하여 배경, 텍스트, 보더 색상을 어두운 톤으로 조정합니다.
+  - **ECharts**: 테마 변경 시 차트 테마(Dark/Light)도 동적으로 전환되도록 처리합니다.
+
+### Verification Plan
+
+1.  테마 토글 버튼 작동 여부 및 즉각적인 UI 반영 확인.
+2.  새로고침 시 테마 유지 확인.
+3.  전반적인 UI 컴포넌트(모달, 테이블, 차트) 시인성 검토.
+
 ---
 
 ## Phase 32: Dark Mode Implementation [Completed]
 
 ### Goal
+
 사용자가 라이트 모드와 다크 모드를 자유롭게 전환할 수 있도록 시스템 전반에 테마 기능을 도입합니다. 사용자 설정은 저장되어 새로고침 후에도 유지되어야 합니다.
 
 ### Implemented Changes
 
 #### 1. Configuration & Utilities
+
 - **Tailwind CSS**: `darkMode: 'class'` 설정을 통해 클래스 기반 다크 모드 활성화.
 - **useTheme Hook**: 테마 상태 (`light` / `dark`) 관리, `localStorage` 연동, DOM 클래스 조작 로직 구현.
 - **Global Styles**: `index.css`에 기본 배경/글자색 및 매끄러운 전환을 위한 `transition` 효과 추가.
 
 #### 2. Frontend Components
+
 - **App Layout**: 헤더에 테마 전환 버튼 (Sun/Moon 아이콘) 추가, 사이드바 및 레이아웃에 다크 모드 스타일 적용.
 - **Dashboard**: ECharts 차트 테마를 현재 모드에 맞게 동적으로 변경하도록 구현 (`backgroundColor: 'transparent'`).
 - **Tester / LogViewer**: 입력 필드, 코드 블록, 결과 표시창 등 주요 컴포넌트에 통일된 다크 모드 스타일 적용.
 - **OpenApiManager**: 복잡한 모달, 탭, 에디터 및 미리보기 영역까지 모든 UI 요소에 다크 모드 적용 완료.
 
 ### Verification Results
+
 1. **Persistence**: 테마 변경 후 새로고침 시 설정이 유지됨을 확인.
 2. **Component Unity**: 모든 메뉴 및 모달에서 일관된 다크 테마가 적용됨을 확인.
 3. **Chart Integration**: 대시보드 진입 시 및 테마 전환 시 차트 색상이 즉시 반응함을 확인.
@@ -887,17 +1046,19 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
 ## Phase 33: OpenAPI Meta Management (Admin Only) [Completed]
 
 ### Goal
+
 관리자(Admin)가 OpenAPI의 카테고리와 태그를 체계적으로 관리(이름 수정, 안전한 삭제)할 수 있는 전용 인터페이스를 제공하고, 데이터 정합성을 유지합니다.
 
 ### Implemented Changes
-- **Database (`src/db/openapi_meta.py`)**: 
-    - 카테고리/태그 이름 수정을 위한 `update_openapi_category`, `update_openapi_tag` 구현.
-    - 삭제 시 연관된 OpenAPI 존재 여부를 체크하는 안전 장치가 포함된 `delete_openapi_category`, `delete_openapi_tag` 구현.
-    - 특정 메타데이터에 속한 API 목록 조회를 위한 `get_openapi_by_meta` 구현.
+
+- **Database (`src/db/openapi_meta.py`)**:
+  - 카테고리/태그 이름 수정을 위한 `update_openapi_category`, `update_openapi_tag` 구현.
+  - 삭제 시 연관된 OpenAPI 존재 여부를 체크하는 안전 장치가 포함된 `delete_openapi_category`, `delete_openapi_tag` 구현.
+  - 특정 메타데이터에 속한 API 목록 조회를 위한 `get_openapi_by_meta` 구현.
 - **Backend API**: `src/routers/openapi.py`에 메타데이터 관리 전용 엔드포인트 추가.
-- **Frontend**: 
-    - `OpenApiMetaManager.tsx`: 카테고리/태그 목록, 인라인 수정, 연관 API 조회 기능을 포함한 어드민 전용 컴포넌트 구축.
-    - `OpenApiManager.tsx`: 기존의 중복된 통계 요약 카드 UI 제거 및 코드 정리.
+- **Frontend**:
+  - `OpenApiMetaManager.tsx`: 카테고리/태그 목록, 인라인 수정, 연관 API 조회 기능을 포함한 어드민 전용 컴포넌트 구축.
+  - `OpenApiManager.tsx`: 기존의 중복된 통계 요약 카드 UI 제거 및 코드 정리.
 - **Integration**: `App.tsx` 사이드바 메뉴 연동 및 타입 안정성 강화.
 
 ---
@@ -905,29 +1066,33 @@ OpenAPI 프록시를 통해 발생하는 모든 호출을 기록하고, 사용�
 ## Phase 34: OpenAPI PDF Export Refinement [Completed]
 
 ### Goal
+
 PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때 해당 API의 카테고리와 태그 정보를 포함하도록 보완합니다.
 
 ### Implemented Changes
+
 - **Backend (`src/db/openapi.py`)**: `get_openapi_by_tool_id` 함수를 수정하여 카테고리명과 태그 목록을 조인 테이블을 통해 함께 조회하도록 최적화했습니다.
-- **Utils (`src/utils/pdf_generator.py`)**: 
-    - PDF 내 "Basic Information" 섹션에 'Category'와 'Tags' 항목을 추가했습니다.
-    - 태그 정보가 없는 경우에도 레이아웃이 깨지지 않도록 예외 처리 로직을 적용했습니다.
+- **Utils (`src/utils/pdf_generator.py`)**:
+  - PDF 내 "Basic Information" 섹션에 'Category'와 'Tags' 항목을 추가했습니다.
+  - 태그 정보가 없는 경우에도 레이아웃이 깨지지 않도록 예외 처리 로직을 적용했습니다.
 - **Frontend**: `OpenApiConfig` 타입 인터페이스를 업데이트하여 카테고리명과 태그 데이터를 명시적으로 정의하고 `any` 타입을 제거했습니다.
 
 ### Verification Results
+
 1. PDF 문서 내 카테고리와 태그 정보가 정상적으로 표시됨을 확인.
 2. 관리자 메뉴를 통한 카테고리/태그 수정 결과가 실시간으로 반영됨을 확인.
 3. 연관된 API가 있는 메타데이터 삭제 시도시 안내 메시지와 함께 삭제가 방지됨을 확인.
 
 ---
 
-
 ## Phase 35: DB 백업 및 복구 기능 (관리자 전용)
 
 ### 목표
+
 서버 내 `backups/` 디렉토리에 DB 스냅샷을 저장하고, 관리자가 목록에서 선택하여 특정 시점으로 복구할 수 있는 기능을 구현합니다.
 
 ### 상세 요구사항
+
 1. **백업 (Backup)**:
    - 실행 시점의 `agent_mcp.db` 파일을 `backups/` 디렉토리에 복사.
    - 포맷: `YYYY-MM-DD_HH-mm.db` (예: 2026-02-19_22-24.db)
@@ -949,50 +1114,60 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 - **`DELETE /api/admin/db/backups/{filename}`**: (선택) 불필요한 백업 삭제.
 
 #### 2. Frontend (`src/frontend/src/components/DbBackupManager.tsx` 신설)
+
 - **UI**:
   - [백업 생성] 버튼.
   - 백업 목록 테이블 (파일명, 생성일시, 크기, [복구] 버튼, [삭제] 버튼).
 - **Navigation**: `App.tsx` 메뉴에 추가.
 
 ### Verification Plan
+
 1. **Backup Test**: 클릭 시 DB 파일이 정상적으로 다운로드되는지 확인.
 2. **Restore Test**: 다른 상태의 DB 파일을 업로드하여 복구 후 데이터 확인.
 3. **Security Test**: 일반 유저 접근 차단 확인.
+
 ---
 
 ## Phase 36: 내 정보 관리 화면 도구 사용 이력 보완 [Completed]
 
 ### 목표
+
 내 정보(My Page) 화면에서 기존의 OpenAPI 사용량뿐만 아니라, 일반 MCP 도구(add, subtract 등)의 사용 현황도 확인할 수 있도록 기능을 보완합니다.
 
 ### 구현 내용
+
 - **DB Layer (`src/db/mcp_tool_usage.py`)**: 특정 사용자의 오늘 날짜 기준 도구별 사용 횟수를 집계하는 `get_specific_user_tool_usage` 함수를 추가했습니다.
 - **Backend API (`src/routers/mcp.py`)**: `/api/mcp/my-usage` 엔드포인트가 `tool_usage` 배열을 추가로 응답하도록 수정했습니다.
-- **Frontend UI (`MyPage.tsx`)**: 
-    - `Terminal` 아이콘과 함께 "오늘의 일반 MCP 도구 사용 현황" 카드를 새롭게 추가했습니다.
-    - 전체 한도 대비 사용률을 시각화하는 게이지 바와 도구별 상세 횟수 목록을 구현했습니다.
-    - 다크 모드 스타일이 완벽하게 적용되도록 `transition` 및 색상 토큰을 정비했습니다.
+- **Frontend UI (`MyPage.tsx`)**:
+  - `Terminal` 아이콘과 함께 "오늘의 일반 MCP 도구 사용 현황" 카드를 새롭게 추가했습니다.
+  - 전체 한도 대비 사용률을 시각화하는 게이지 바와 도구별 상세 횟수 목록을 구현했습니다.
+  - 다크 모드 스타일이 완벽하게 적용되도록 `transition` 및 색상 토큰을 정비했습니다.
 
 ### 검증 결과
+
 1. 일반 MCP 도구 실행 후 My Page 진입 시 실시간으로 사용 횟수가 반영됨을 확인.
 2. OpenAPI 사용량 카드와 일반 도구 사용량 카드가 나란히 배치되어 일관된 UX 제공 확인.
 3. 무제한(-1) 한도일 경우 '∞' 표시 및 게이지 바 0% 고정 로직 정상 동작 확인.
+
 ---
 
 ## Phase 37: 대시보드 통계 새로고침 기능 추가 [Completed]
 
 ### 목표
+
 메인 대시보드에서 도구 사용 및 사용자별 요청 통계 데이터를 페이지 전체 새로고침 없이 수동으로 갱신할 수 있는 기능을 추가합니다.
 
 ### 구현 내용
+
 - **Hooks (`useMcp.ts`)**: 내부 `fetchStats` 함수를 외부에서 호출 가능하도록 `refreshStats`라는 이름으로 `UseMcpResult`에 포함하여 반환합니다.
 - **App (`App.tsx`)**: `useMcp`에서 추출한 `refreshStats`를 `Dashboard` 컴포너트의 `onRefresh` prop으로 전달합니다.
 - **UI (`Dashboard.tsx`)**:
-    - 대시보드 상단에 표준 헤더 디자인을 적용했습니다. (`Activity` 아이콘, 타이틀, 설명문 포함)
-    - `RotateCw` 아이콘을 활용한 '새로고침' 버튼을 추가했습니다.
-    - 버튼 클릭 시 `animate-spin` 애니메이션과 `disabled` 처리를 통해 사용자에게 진행 상태를 시각적으로 전달합니다.
+  - 대시보드 상단에 표준 헤더 디자인을 적용했습니다. (`Activity` 아이콘, 타이틀, 설명문 포함)
+  - `RotateCw` 아이콘을 활용한 '새로고침' 버튼을 추가했습니다.
+  - 버튼 클릭 시 `animate-spin` 애니메이션과 `disabled` 처리를 통해 사용자에게 진행 상태를 시각적으로 전달합니다.
 
 ### 검증 결과
+
 1. 새로고침 버튼 클릭 시 네트워크 탭에서 `/api/mcp/stats` 호출 및 데이터 갱신 확인.
 2. 도구 실행 후 대시보드로 돌아와 새로고침 시 즉각적으로 차트의 수치가 업데이트됨을 확인.
 3. 다크 모드 환경에서도 버튼 및 헤더 디자인이 조화롭게 표시됨을 확인.
@@ -1002,22 +1177,26 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 ## Phase 38: 대시보드 시각화 확장 (Heatmap & 상세 분석) [Completed]
 
 ### 목표
+
 메인 대시보드 및 OpenAPI 통계 화면에 사용 패턴을 한눈에 파악할 수 있는 Heatmap 차트를 도입하고, 특정 사용자/토큰 클릭 시 Top 5 사용 도구를 보여주는 상세 분석 기능을 추가하여 데이터 가독성과 인터랙션을 강화합니다.
 
 ### 구현 내용
 
 #### 1. Backend (Database & API)
+
 - **DB 확장**: `get_mcp_hourly_daily_stats`, `get_openapi_hourly_daily_stats` 함수를 구현하여 요일/시간대별 집계 데이터를 제공합니다.
 - **상세 분석**: `get_mcp_user_tool_detail`, `get_openapi_user_tool_detail` 함수를 통해 특정 대상의 최다 사용 도구 5개를 추출합니다.
 - **API 라우터**: `/api/mcp/stats`, `/api/openapi/stats`에 `heatmapStats` 필드를 추가하고, 상세 조회를 위한 `/api/mcp/user-tool-stats`, `/api/openapi/user-tool-stats` 엔드포인트를 신설했습니다.
 
 #### 2. Frontend (UI/UX)
+
 - **Heatmap 구현**: ECharts의 `heatmap` 타입을 활용하여 메인 및 OpenAPI 대시보드 상단에 시각적 패턴 분석 영역을 배치했습니다.
 - **2단 레이아웃 (Dashboard)**: 사용자별 요청 횟수 파이 차트 옆에 '상세 분석' 영역을 배치하여, 차트 항목 클릭 시 해당 유저의 Top 5 도구가 즉시 렌더링되도록 구현했습니다.
 - **OpenAPI 상세 분석**: OpenAPI 통계 화면에서도 유저/토큰 클릭 시 상세 도구 사용 순위가 나타나는 인터랙션을 동일하게 적용했습니다.
 - **편의 기능**: 유저 선택 해제 버튼(`Clear Selection`), 데이터 로딩 상태 표시, 데이터 없을 시 폴백 메시지 처리를 완료했습니다.
 
 ### 검증 결과
+
 1. **API 무결성**: `/api/mcp/stats` 호출 시 `heatmapStats` 배열(dow, hour, cnt)이 정상 포함됨을 확인.
 2. **인터랙션**: 차트 클릭 시 `user_id` 또는 `label`을 파라미터로 하여 상세 API가 호출되고 결과가 화면에 반영됨을 확인.
 3. **오류 해결**: `mcp.py` 내 신규 함수 임포트 누락으로 인한 `NameError`를 수정하여 백엔드 구동 안정성을 확보했습니다.
@@ -1027,28 +1206,190 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 ## Phase 39: MCP & OpenAPI 로깅 및 통계 고도화 [Completed]
 
 ### Goal
+
 로깅 데이터의 정밀도를 높이고, 시각화 통계를 통해 관리자에게 더 깊은 분석 인사이트를 제공합니다. 또한 OpenAPI 프록시 실행의 편의성을 개선합니다.
 
 ### Implemented Changes
 
 #### 1. Enhanced Logging (`h_mcp_tool_usage`)
+
 - `token_id` 컬럼 추가 및 `audit_log` 데코레이터에서 실제 토큰 ID를 수집하여 저장하도록 개선.
 - 외부 토큰(`sk_...`) 사용 시 'external' 유저로 하드코딩하던 로직을 제거하고, 실제 토큰 엔티티와 연동하여 식별하도록 수정.
 
 #### 2. Usage Statistics (Heatmap)
+
 - 7x24 (요일별/시간대별) 사용량 히트맵 통계 DB 함수 및 API 구현.
 - `Dashboard` 및 `OpenApiStats` 화면에 히트맵 차트 적용.
 
 #### 3. Top 5 Usage Analysis (Admin Only)
+
 - 각 사용자 또는 토큰별로 가장 많이 사용된 도구 Top 5를 분석하는 기능 추가.
 - 관리자 권한을 가진 사용자에게만 상세 분석(Heatmap 클릭 등) 화면 노출.
 
 #### 4. OpenAPI Proxy Improvements
+
 - 프록시 실행 시 DB에 저장된 `params_schema` 정보를 기본 파라미터로 자동 병합.
 - `ServiceKey` 등 고정값은 DB 정보를 우선 활용하며, 사용자가 직접 제공한 경우 이를 덮어쓰도록(Override) 구현.
 
 ### Verification Results
+
 1. **Logging**: `token_id`가 DB에 정상 기록됨을 확인.
 2. **Stats**: Heatmap 차트를 통해 사용량이 높은 시간대 식별 가능.
 3. **Security**: 일반 유저 계정으로 접속 시 상세 분석 버튼 및 데이터가 노출되지 않음을 확인.
 4. **Proxy**: 필수 파라미터 누락 없이 DB 설정값으로 정상 실행됨을 확인.
+
+---
+
+## Phase 40: Email OTP 모듈 구현 [Completed]
+
+### Goal
+
+보안 강화를 위해 회원가입 시 이메일 인증(OTP)을 필수화하고, 발송된 OTP의 생명주기를 관리하며 관리자 화면에서 인증 이력을 모니터링할 수 있는 기능을 구현합니다.
+
+### Implemented Changes
+
+#### 1. Database & Layer
+
+- **Schema**: `h_email_otp` 테이블 신규 생성 (email, otp_type, otp_code, expires_at, is_verified).
+- **DB Module**: `src/db/email_otp.py` 추가 (OTP 생성, 최신 번호 조회, 인증 상태 업데이트, 이력 조회).
+
+#### 2. Business Logic & Utils
+
+- **OTP Manager**: `src/utils/otp_manager.py` 추가.
+  - 6자리 랜덤 숫자 생성 및 DB 저장.
+  - `EmailSender` 연동을 통한 인증 메일 발송.
+  - 만료 시간(5분) 및 코드 일치 여부 검증.
+
+#### 3. API & Auth Integration
+
+- **Endpoints**: `src/routers/auth.py`에 `/otp/send`, `/otp/verify` 추가.
+- **Signup 연동**: `POST /api/auth/signup` 시 이메일과 인증번호를 매칭하여 `is_verified='Y'`인 유효한 기록이 있는 경우에만 가입을 승인하도록 로직 강화.
+
+#### 4. Admin UI
+
+- **Component**: `src/frontend/src/components/OtpHistory.tsx` 구현.
+- **Visuals**: 인증 대기(노란색), 인증 완료(초록색), 만료됨(회색) 상태를 배지와 아이콘으로 구분.
+- **Integration**: 어드민 사이드바 '이력' 메뉴에 'OTP 인증 이력' 추가.
+
+### Verification Results
+
+1. **Flow Test**: 테스트 스크립트(`tests/verify_otp.py`)를 통해 생성 -> 발송(DB기록) -> 틀린 코드(실패) -> 맞는 코드(성공) -> 가입 연동 확인.
+2. **Admin UI**: 관리자 계정으로 접속하여 실시간 발송 내역 및 상태값 변동 확인 완료.
+
+---
+
+## Phase 41: 계정 잠금 로직 개선 (Login Lock Logic Refinement) [Completed]
+
+### Goal
+
+5회 이상 로그인 실패 시 계정이 잠겼음에도 불구하고 UI에서 '비활성화'로 오인되는 현상을 수정하여 명확한 상태를 사용자에게 전달합니다.
+
+### Implemented Changes
+
+- **Backend (`src/routers/auth.py`)**:
+  - 잠금된 계정으로 로그인 시도 시 반환되는 에러 메시지에 `Account is locked (잠금)` 키워드를 추가하여 프론트엔드가 명확히 구분할 수 있도록 보완했습니다.
+- **Frontend (`src/frontend/src/components/Login.tsx`)**:
+  - 에러 핸들링 로직에서 `locked` 뿐만 아니라 한국어 `잠금` 키워드도 체크하도록 정규화 및 강화했습니다.
+
+### Verification Results
+
+1. 6회 이상 로그인 시도 시 '계정이 잠겼습니다. 관리자에게 문의하세요.' 메시지가 정확히 노출됨을 확인.
+
+---
+
+## Phase 42: 프로필 정보 DB 연동 리팩토링 (Profile DB Fetch) [Completed]
+
+### Goal
+
+'내 정보' 화면에서 세션(localStorage)에 저장된 정적 데이터를 사용하는 대신, 매번 DB에서 최신 정보를 조회하도록 개선하여 정보 변경 사항이 즉각 반영되도록 합니다.
+
+### Implemented Changes
+
+- **Backend (`src/routers/users.py`)**:
+  - 현재 인증된 사용자의 전체 정보를 DB에서 조회하여 반환하는 `/api/users/me` 엔드포인트를 신설했습니다.
+- **Frontend (`src/frontend/src/components/MyPage.tsx`)**:
+  - 컴포넌트 마운트 시 `/api/users/me` API를 호출하여 상태(`user`)를 최신화하는 로직을 추가했습니다.
+
+### Verification Results
+
+1. 관리자 화면에서 이메일 등 개인 정보를 변경한 후, 해당 유저의 '내 정보' 화면에서 즉시 변경된 이메일이 반영됨을 확인 (로그아웃 불필요).
+
+---
+
+## Phase 43: 사용자 삭제(Soft Delete) 및 승인 기능 수정 [Completed]
+
+### Goal
+
+관리자 페이지에서 사용자 삭제(Soft Delete) 및 승인/미승인 토글이 정상적으로 동작하지 않는 문제를 해결합니다.
+
+### Implemented Changes
+
+- **Backend (`src/routers/users.py`)**:
+  - `UserUpdateRequest` 및 `UserCreateRequest` 모델에 `is_delete`, `is_approved` 필드를 추가하여 프론트엔드에서 보낸 플래그가 DB 레이어까지 전달되도록 수정했습니다.
+
+### Verification Results
+
+1. 사용자 관리 페이지에서 특정 사용자 '삭제' 버튼 클릭 시 목록에서 즉시 사라지며 DB 상 `is_delete = 'Y'` 임을 확인.
+2. 승인/비승인 토글이 정상적으로 반영되어 상태 관리가 가능함을 확인.
+
+---
+
+## Phase 44: 사용자 초기화 플래그 설정 고도화 [Completed]
+
+### 목표
+
+데이터베이스 리셋(`db_reset.py`) 시 기본적으로 생성되는 `admin` 및 `user` 계정의 상태 플래그를 정확하게 설정하여 계정 상태 관리의 일관성을 확보합니다.
+
+### 변경 사항
+
+- **[MODIFY] `src/db/check/db_reset.py`**:
+  - `admin` 및 `user` 계정 INSERT 쿼리에 `is_locked`, `is_delete`, `is_approved` 컬럼 추가.
+  - 초기값 설정:
+    - `is_enable`: 'Y' (활성화)
+    - `is_locked`: 'N' (잠금 해제)
+    - `is_delete`: 'N' (삭제 안 함)
+    - `is_approved`: 'Y' (승인됨)
+
+### 검증 결과
+
+1. `db_reset.py` 실행 시 초기 데이터가 새로운 플래그와 함께 정상적으로 입력됨을 확인.
+
+---
+
+## Phase 45: 실시간 알림 시스템 구현 (SSE) 및 UI/UX 개선 [Completed]
+
+### Goal
+
+1.  사용자에게 실시간으로 알림을 전달하는 시스템을 구축합니다.
+2.  대시보드 권한 보안을 강화하고, 스케줄러 관리 UI의 레이아웃 버그를 수정합니다.
+
+### Technical Choice: SSE vs WebSockets vs FCM
+
+이번 실시간 알림 시스템 구현을 위해 다음 세 가지 기술을 검토하였으며, 최종적으로 **SSE(Server-Sent Events)**를 채택하였습니다.
+
+| 기술                               | 장점                                                                                           | 단점                                                                    | 선정 이유                                                                                                 |
+| :--------------------------------- | :--------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
+| **SSE (Server-Sent Events)**       | - HTTP 표준 프로토콜 사용<br>- 구현이 매우 단순함<br>- 서버 -> 클라이언트 단방향 전송에 최적화 | - 단방향 통신만 가능<br>- 최대 연결 수 제한 (HTTP/1.1 사용 시)          | **채택**: 알림 전송은 단방향 통신만으로 충분하며, 기존 FastAPI 환경에 가장 가볍고 효율적으로 통합 가능함. |
+| **WebSockets**                     | - 양방향 실시간 통신 가능<br>- 오버헤드가 적음                                                 | - 구현 및 유지보수가 상대적으로 복잡함<br>- 별도의 프로토콜 핸들링 필요 | 미선택: 알림 시스템에서는 양방향 통신이 필수적 -> 적합하지 않음.                                          |
+| **FCM (Firebase Cloud Messaging)** | - 브라우저가 닫혀 있어도 푸시 가능<br>- 모바일 앱 환경에 최적화                                | - 외부 서비스(Google) 의존성 발생<br>- 설정 및 인증 과정이 복잡함       | 미선택: 현재 프로젝트 규모에서 외부 서비스 의존성을 추가할 필요가 낮음.                                   |
+
+### Implemented Changes
+
+- **Backend (`src/routers/notification.py`)**:
+  - `NotificationManager`: 사용자별 `asyncio.Queue`를 관리하여 실시간 알림을 브로드캐스팅하는 매니저 클래스입니다.
+  - `GET /api/notifications/stream`: SSE 엔드포인트 구현 (JWT 쿼리 파라미터 인증 지원).
+  - 알림 생성(`POST /send`), 읽음(`PATCH /read`), 삭제(`DELETE`) API와 SSE 연동.
+- **Frontend (`src/frontend/src/hooks/useNotifications.ts`)**:
+  - SSE 연결 관리 및 알림 데이터 전역 상태 관리 로직을 훅으로 분리했습니다.
+- **Frontend UI (`src/frontend/src/components/NotificationBell.tsx`)**:
+  - 헤더에 알림 아이콘(배지 포함), 드롭다운, 상세 모달을 구현했습니다.
+  - 모달 내에서 '읽음 확인' 시 즉시 '삭제' 버튼으로 전환되는 인터랙티브 로직을 적용했습니다.
+- **UI/UX & Security**:
+  - `SchedulerManager.tsx`: 카드 내 버튼들이 화면 너비에 따라 적절히 감싸지도록(`flex-wrap`) 수정했습니다.
+  - `Dashboard.tsx`: 일반 사용자일 경우 시스템 헬스 체크 API 호출을 차단하고 UI를 숨김 처리하여 보안을 강화했습니다.
+
+### Verification Results
+
+1.  관리자가 알림 발송 시, 대상 유저의 화면에 즉시 빨간색 배지와 알림 내역이 표시됨을 확인.
+2.  알림 클릭 후 읽음 처리 시 읽지 않은 알림 개수가 즉시 감소하고 버튼 UI가 변경됨을 확인.
+3.  일반 사용자 대시보드에서 403 Forbidden 에러가 더 이상 발생하지 않음을 확인.

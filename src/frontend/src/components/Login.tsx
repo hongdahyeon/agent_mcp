@@ -56,11 +56,19 @@ export function Login({ onLogin }: Props) {
                     throw new Error(data.detail || '아이디 또는 비밀번호가 잘못되었습니다.');
                 }
                 if (res.status === 403) {
-                    // detail 내용에 locked가 포함되어 있으면 계정 잠김
-                    if (data.detail && data.detail.includes('locked')) {
+                    // detail 내용에 deleted가 포함되어 있으면 계정 삭제
+                    if (data.detail && data.detail.includes('deleted')) {
+                        throw new Error('삭제되었거나 사용이 불가능한 계정입니다. 관리자에게 문의하세요.');
+                    }
+                    // detail 내용에 unapproved가 포함되어 있으면 승인 대기
+                    if (data.detail && data.detail.includes('unapproved')) {
+                        throw new Error('아직 승인되지 않은 계정입니다. 관리자 승인을 기다려주세요.');
+                    }
+                    // detail 내용에 locked나 잠금이 포함되어 있으면 계정 잠김
+                    if (data.detail && (data.detail.includes('locked') || data.detail.includes('잠금'))) {
                         throw new Error('계정이 잠겼습니다. 관리자에게 문의하세요.');
                     }
-                    // detail 내용에 locked가 포함되어 있지 않으면 계정 비활성화
+                    // 그 외에는 계정 비활성화
                     throw new Error('계정이 비활성화되었습니다.');
                 }
                 throw new Error('로그인 중 오류가 발생했습니다.');

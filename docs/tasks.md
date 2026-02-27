@@ -625,3 +625,55 @@
 - [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
 - [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
 - [x] 6. 최종 검증 및 문서 업데이트
+
+## 67. Email OTP 모듈 구현 (New)
+
+- [x] 1. DB: h_email_otp 테이블 생성 및 관리 로직 구현 (db/email_otp.py)
+- [x] 2. Backend: OTP 생성, 발송, 검증 비즈니스 로직 구현 (utils/otp_manager.py)
+- [x] 3. API: OTP 발송 및 검증 전용 엔드포인트 구현 (routers/auth.py)
+- [x] 4. Integration: 회원가입 시 이메일 OTP 필수 검증 로직 연동
+- [x] 5. Admin UI: OTP 발송 및 인증 이력 조회 화면 구현 (OtpHistory.tsx)
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 68. User Email 통합 및 고도화 (New)
+
+- [x] 1. DB: `h_user` 테이블 `user_email` 컬럼 추가 및 마이그레이션 (`src/db/migrate_user_email.py`)
+- [x] 2. Backend: `user_email` 기반 중복 체크 API 익스포트 및 가입 로직 연동
+- [x] 3. Frontend: 사용자 관리(Users.tsx) 내 이메일 필드 추가 및 인증 프로세스 통합
+- [x] 4. Frontend: 회원가입 시 이메일 인증 필수화 및 UI 개선
+- [x] 5. Frontend: 내 정보(MyPage.tsx) 이메일 정보 노출
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 69. 계정 잠금 로직 개선 (Bug Fix)
+
+- [x] 1. Backend: `auth.py` 에러 메시지 개선 (프론트엔드 인식용 '잠금' 키워드 추가)
+- [x] 2. Frontend: `Login.tsx` 내 계정 잠금 상태 인식 로직 강화 (KOR/ENG 키워드 지원)
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 70. 내 정보 조회 로직 개선 (Session -> DB)
+
+- [x] 1. Backend: `/api/users/me` 엔드포인트 신설 (DB 연동 최신 정보 반환)
+- [x] 2. Frontend: `MyPage.tsx`에서 세션 대신 `/me` API를 통한 최신 프로필 정보 조회
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 71. 사용자 삭제 및 승인 관리 기능 오류 수정
+
+- [x] 1. Backend: `UserUpdateRequest` 모델 필드 보완 (`is_delete`, `is_approved`)
+- [x] 2. 기능 검증 (삭제 및 승인 토글 정상 동작 확인)
+
+## 72. 사용자 초기화 플래그 설정 고도화 (New)
+
+- [x] 상세 구현 계획 추가 (`docs/implementation_plan.md`)
+- [x] `db_reset.py` 수정: `admin`, `user` 계정 생성 시 상태 플래그(`is_enable`, `is_locked`, `is_delete`, `is_approved`) 설정 로직 추가
+- [x] 기능 검증 및 문서 업데이트 완료
+
+## 73. 실시간 알림 시스템 구현 및 UI 개선 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: SSE(Server-Sent Events) 기반 실시간 알림 스트리밍 구현 (`NotificationManager`)
+- [x] 2. Backend: 알림 생성, 조회, 읽음, 삭제 API 구현 및 SSE 연동
+- [x] 3. Frontend: `useNotifications` 훅 및 `NotificationBell`, `NotificationModal` 컴포넌트 개발
+- [x] 4. UX: 알림 보낸 이(Sender) 정보 표시 및 모달 내 버튼 즉시 전환 로직 적용
+- [x] 5. UI: 스케줄러 관리 화면 버튼 넘침(Overflow) 현상 수정
+- [x] 6. Security: 일반 사용자의 시스템 헬스 API 접근 차단 및 UI 숨김 처리
+- [x] 최종 검증 및 문서 업데이트 완료
