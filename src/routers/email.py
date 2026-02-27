@@ -3,11 +3,13 @@ from pydantic import BaseModel
 import logging
 try:
     from src.db import log_email, update_email_status, get_email_logs, cancel_email_log
+    from src.db.email_otp import get_otp_history
     from src.utils.mailer import EmailSender
     from src.scheduler import add_scheduled_job
     from src.dependencies import get_current_user_jwt
 except ImportError:
     from db import log_email, update_email_status, get_email_logs, cancel_email_log
+    from db.email_otp import get_otp_history
     from utils.mailer import EmailSender
     from scheduler import add_scheduled_job
     from dependencies import get_current_user_jwt
@@ -59,8 +61,8 @@ async def api_send_email(req: EmailSendRequest, current_user: dict = Depends(get
 # 이메일 로그 조회
 @router.get("/logs")
 async def api_get_email_logs(
-    page: int = Query(1, ge=1), 
-    size: int = Query(10, ge=1, le=100), 
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     all_logs: bool = Query(False),
     current_user: dict = Depends(get_current_user_jwt)
 ):
@@ -94,3 +96,19 @@ async def api_cancel_email(log_id: int, current_user: dict = Depends(get_current
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     return {"success": True, "message": msg}
+
+# OTP 이력 조회 (Admin 전용)
+@router.get("/otp-history")
+async def api_get_otp_history(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    
+    try:
+        return get_otp_history(page, size)
+    except Exception as e:
+        logger.error(f"Failed to fetch OTP history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

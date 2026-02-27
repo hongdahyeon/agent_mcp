@@ -75,7 +75,6 @@ def _register_single_tool(mcp: FastMCP, tool: dict):
     DynamicModel = create_model(f"DynamicArgs_{tool_name}", **field_definitions)
     
     # 3. 실행 핸들러 생성 (Closure 활용)
-    @audit_log
     async def dynamic_handler(**kwargs) -> str:
         # 인자 검증 (Pydantic이 이미 수행했으나, 값 추출)
         # kwargs에는 모델의 필드들이 들어옴
@@ -91,6 +90,9 @@ def _register_single_tool(mcp: FastMCP, tool: dict):
     dynamic_handler.__name__ = tool_name
     dynamic_handler.__doc__ = desc_agent
     
+    # [수정] 이름을 설정한 후에 감싸야 audit_log 내부에서 바뀐 이름을 정확히 인식함
+    dynamic_handler = audit_log(dynamic_handler)
+
     # 중요: Type Hinting을 동적으로 설정해야 FastMCP가 Schema를 추출함
     # 하지만 FastMCP(mcp) 데코레이터가 Pydantic 모델을 인자로 받는 방식이 아니라,
     # 함수 시그니처를 분석하는 방식이라면 inspect 조작이 필요할 수 있음.

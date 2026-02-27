@@ -1013,7 +1013,10 @@ export function OpenApiManager() {
                                             <label className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">외부 실행용 엔드포인트</label>
                                             <button
                                                 onClick={() => {
-                                                    const url = `${window.location.origin}/api/execute/${testModal.api?.tool_id}`;
+                                                    const baseUrl = window.location.port === '5173'
+                                                        ? `${window.location.protocol}//${window.location.hostname}:8000`
+                                                        : window.location.origin;
+                                                    const url = `${baseUrl}/api/execute/${testModal.api?.tool_id}`;
                                                     navigator.clipboard.writeText(url);
                                                     setUrlCopied(true);
                                                     setTimeout(() => setUrlCopied(false), 2000);
@@ -1025,7 +1028,9 @@ export function OpenApiManager() {
                                             </button>
                                         </div>
                                         <div className="bg-white/60 dark:bg-slate-800 p-2 rounded-lg border border-indigo-200 dark:border-indigo-900/50 text-[11px] font-mono text-indigo-900 dark:text-indigo-200 break-all">
-                                            {window.location.origin}/api/execute/{testModal.api?.tool_id}
+                                            {window.location.port === '5173'
+                                                ? `${window.location.protocol}//${window.location.hostname}:8000`
+                                                : window.location.origin}/api/execute/{testModal.api?.tool_id}
                                         </div>
                                     </div>
                                 </div>

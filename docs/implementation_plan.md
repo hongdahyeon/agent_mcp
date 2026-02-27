@@ -996,3 +996,138 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 1. 새로고침 버튼 클릭 시 네트워크 탭에서 `/api/mcp/stats` 호출 및 데이터 갱신 확인.
 2. 도구 실행 후 대시보드로 돌아와 새로고침 시 즉각적으로 차트의 수치가 업데이트됨을 확인.
 3. 다크 모드 환경에서도 버튼 및 헤더 디자인이 조화롭게 표시됨을 확인.
+
+---
+
+## Phase 38: 대시보드 시각화 확장 (Heatmap & 상세 분석) [Completed]
+
+### 목표
+메인 대시보드 및 OpenAPI 통계 화면에 사용 패턴을 한눈에 파악할 수 있는 Heatmap 차트를 도입하고, 특정 사용자/토큰 클릭 시 Top 5 사용 도구를 보여주는 상세 분석 기능을 추가하여 데이터 가독성과 인터랙션을 강화합니다.
+
+### 구현 내용
+
+#### 1. Backend (Database & API)
+- **DB 확장**: `get_mcp_hourly_daily_stats`, `get_openapi_hourly_daily_stats` 함수를 구현하여 요일/시간대별 집계 데이터를 제공합니다.
+- **상세 분석**: `get_mcp_user_tool_detail`, `get_openapi_user_tool_detail` 함수를 통해 특정 대상의 최다 사용 도구 5개를 추출합니다.
+- **API 라우터**: `/api/mcp/stats`, `/api/openapi/stats`에 `heatmapStats` 필드를 추가하고, 상세 조회를 위한 `/api/mcp/user-tool-stats`, `/api/openapi/user-tool-stats` 엔드포인트를 신설했습니다.
+
+#### 2. Frontend (UI/UX)
+- **Heatmap 구현**: ECharts의 `heatmap` 타입을 활용하여 메인 및 OpenAPI 대시보드 상단에 시각적 패턴 분석 영역을 배치했습니다.
+- **2단 레이아웃 (Dashboard)**: 사용자별 요청 횟수 파이 차트 옆에 '상세 분석' 영역을 배치하여, 차트 항목 클릭 시 해당 유저의 Top 5 도구가 즉시 렌더링되도록 구현했습니다.
+- **OpenAPI 상세 분석**: OpenAPI 통계 화면에서도 유저/토큰 클릭 시 상세 도구 사용 순위가 나타나는 인터랙션을 동일하게 적용했습니다.
+- **편의 기능**: 유저 선택 해제 버튼(`Clear Selection`), 데이터 로딩 상태 표시, 데이터 없을 시 폴백 메시지 처리를 완료했습니다.
+
+### 검증 결과
+1. **API 무결성**: `/api/mcp/stats` 호출 시 `heatmapStats` 배열(dow, hour, cnt)이 정상 포함됨을 확인.
+2. **인터랙션**: 차트 클릭 시 `user_id` 또는 `label`을 파라미터로 하여 상세 API가 호출되고 결과가 화면에 반영됨을 확인.
+3. **오류 해결**: `mcp.py` 내 신규 함수 임포트 누락으로 인한 `NameError`를 수정하여 백엔드 구동 안정성을 확보했습니다.
+
+---
+
+## Phase 39: MCP & OpenAPI 로깅 및 통계 고도화 [Completed]
+
+### Goal
+로깅 데이터의 정밀도를 높이고, 시각화 통계를 통해 관리자에게 더 깊은 분석 인사이트를 제공합니다. 또한 OpenAPI 프록시 실행의 편의성을 개선합니다.
+
+### Implemented Changes
+
+#### 1. Enhanced Logging (`h_mcp_tool_usage`)
+- `token_id` 컬럼 추가 및 `audit_log` 데코레이터에서 실제 토큰 ID를 수집하여 저장하도록 개선.
+- 외부 토큰(`sk_...`) 사용 시 'external' 유저로 하드코딩하던 로직을 제거하고, 실제 토큰 엔티티와 연동하여 식별하도록 수정.
+
+#### 2. Usage Statistics (Heatmap)
+- 7x24 (요일별/시간대별) 사용량 히트맵 통계 DB 함수 및 API 구현.
+- `Dashboard` 및 `OpenApiStats` 화면에 히트맵 차트 적용.
+
+#### 3. Top 5 Usage Analysis (Admin Only)
+- 각 사용자 또는 토큰별로 가장 많이 사용된 도구 Top 5를 분석하는 기능 추가.
+- 관리자 권한을 가진 사용자에게만 상세 분석(Heatmap 클릭 등) 화면 노출.
+
+#### 4. OpenAPI Proxy Improvements
+- 프록시 실행 시 DB에 저장된 `params_schema` 정보를 기본 파라미터로 자동 병합.
+- `ServiceKey` 등 고정값은 DB 정보를 우선 활용하며, 사용자가 직접 제공한 경우 이를 덮어쓰도록(Override) 구현.
+
+### Verification Results
+1. **Logging**: `token_id`가 DB에 정상 기록됨을 확인.
+2. **Stats**: Heatmap 차트를 통해 사용량이 높은 시간대 식별 가능.
+3. **Security**: 일반 유저 계정으로 접속 시 상세 분석 버튼 및 데이터가 노출되지 않음을 확인.
+4. **Proxy**: 필수 파라미터 누락 없이 DB 설정값으로 정상 실행됨을 확인.
+
+---
+
+## Phase 40: Email OTP 모듈 구현 [Completed]
+
+### Goal
+보안 강화를 위해 회원가입 시 이메일 인증(OTP)을 필수화하고, 발송된 OTP의 생명주기를 관리하며 관리자 화면에서 인증 이력을 모니터링할 수 있는 기능을 구현합니다.
+
+### Implemented Changes
+
+#### 1. Database & Layer
+- **Schema**: `h_email_otp` 테이블 신규 생성 (email, otp_type, otp_code, expires_at, is_verified).
+- **DB Module**: `src/db/email_otp.py` 추가 (OTP 생성, 최신 번호 조회, 인증 상태 업데이트, 이력 조회).
+
+#### 2. Business Logic & Utils
+- **OTP Manager**: `src/utils/otp_manager.py` 추가.
+    - 6자리 랜덤 숫자 생성 및 DB 저장.
+    - `EmailSender` 연동을 통한 인증 메일 발송.
+    - 만료 시간(5분) 및 코드 일치 여부 검증.
+
+#### 3. API & Auth Integration
+- **Endpoints**: `src/routers/auth.py`에 `/otp/send`, `/otp/verify` 추가.
+- **Signup 연동**: `POST /api/auth/signup` 시 이메일과 인증번호를 매칭하여 `is_verified='Y'`인 유효한 기록이 있는 경우에만 가입을 승인하도록 로직 강화.
+
+#### 4. Admin UI
+- **Component**: `src/frontend/src/components/OtpHistory.tsx` 구현.
+- **Visuals**: 인증 대기(노란색), 인증 완료(초록색), 만료됨(회색) 상태를 배지와 아이콘으로 구분.
+- **Integration**: 어드민 사이드바 '이력' 메뉴에 'OTP 인증 이력' 추가.
+
+### Verification Results
+1. **Flow Test**: 테스트 스크립트(`tests/verify_otp.py`)를 통해 생성 -> 발송(DB기록) -> 틀린 코드(실패) -> 맞는 코드(성공) -> 가입 연동 확인.
+2. **Admin UI**: 관리자 계정으로 접속하여 실시간 발송 내역 및 상태값 변동 확인 완료.
+
+---
+
+## Phase 41: 계정 잠금 로직 개선 (Login Lock Logic Refinement) [Completed]
+
+### Goal
+5회 이상 로그인 실패 시 계정이 잠겼음에도 불구하고 UI에서 '비활성화'로 오인되는 현상을 수정하여 명확한 상태를 사용자에게 전달합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/auth.py`)**: 
+    - 잠금된 계정으로 로그인 시도 시 반환되는 에러 메시지에 `Account is locked (잠금)` 키워드를 추가하여 프론트엔드가 명확히 구분할 수 있도록 보완했습니다.
+- **Frontend (`src/frontend/src/components/Login.tsx`)**: 
+    - 에러 핸들링 로직에서 `locked` 뿐만 아니라 한국어 `잠금` 키워드도 체크하도록 정규화 및 강화했습니다.
+
+### Verification Results
+1. 6회 이상 로그인 시도 시 '계정이 잠겼습니다. 관리자에게 문의하세요.' 메시지가 정확히 노출됨을 확인.
+
+---
+
+## Phase 42: 프로필 정보 DB 연동 리팩토링 (Profile DB Fetch) [Completed]
+
+### Goal
+'내 정보' 화면에서 세션(localStorage)에 저장된 정적 데이터를 사용하는 대신, 매번 DB에서 최신 정보를 조회하도록 개선하여 정보 변경 사항이 즉각 반영되도록 합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/users.py`)**: 
+    - 현재 인증된 사용자의 전체 정보를 DB에서 조회하여 반환하는 `/api/users/me` 엔드포인트를 신설했습니다.
+- **Frontend (`src/frontend/src/components/MyPage.tsx`)**: 
+    - 컴포넌트 마운트 시 `/api/users/me` API를 호출하여 상태(`user`)를 최신화하는 로직을 추가했습니다.
+
+### Verification Results
+1. 관리자 화면에서 이메일 등 개인 정보를 변경한 후, 해당 유저의 '내 정보' 화면에서 즉시 변경된 이메일이 반영됨을 확인 (로그아웃 불필요).
+
+---
+
+## Phase 43: 사용자 삭제(Soft Delete) 및 승인 기능 수정 [Completed]
+
+### Goal
+관리자 페이지에서 사용자 삭제(Soft Delete) 및 승인/미승인 토글이 정상적으로 동작하지 않는 문제를 해결합니다.
+
+### Implemented Changes
+- **Backend (`src/routers/users.py`)**: 
+    - `UserUpdateRequest` 및 `UserCreateRequest` 모델에 `is_delete`, `is_approved` 필드를 추가하여 프론트엔드에서 보낸 플래그가 DB 레이어까지 전달되도록 수정했습니다.
+
+### Verification Results
+1. 사용자 관리 페이지에서 특정 사용자 '삭제' 버튼 클릭 시 목록에서 즉시 사라지며 DB 상 `is_delete = 'Y'` 임을 확인.
+2. 승인/비승인 토글이 정상적으로 반영되어 상태 관리가 가능함을 확인.

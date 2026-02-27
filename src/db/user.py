@@ -11,13 +11,14 @@ except ImportError:
     - [2] get_user: {user_id} 값으로 사용자 정보 조회
     - [3] get_all_users: 모든 사용자 조회 (비밀번호 제외, 페이징 포함)
     - [4] check_user_id: 사용자 ID 중복 확인
-    - [5] create_user: 새 사용자 생성
-    - [6] update_user: 사용자 정보 수정
+    - [5] check_user_email: 사용자 이메일 중복 확인
+    - [6] create_user: 새 사용자 생성
+    - [7] update_user: 사용자 정보 수정
         -> (1) 이름, 권한, 상태, 잠금 상태, 로그인 실패 횟수 수정
         -> (2) 비밀번호 수정은 별도 처리
-    - [7] increment_login_fail_count: 로그인 실패 횟수 증가
-    - [8] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
-    - [9] set_user_locked: 사용자 잠금 상태 설정
+    - [8] increment_login_fail_count: 로그인 실패 횟수 증가
+    - [9] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
+    - [10] set_user_locked: 사용자 잠금 상태 설정
 """
 
 # [1] verify_password: 비밀번호 검증
@@ -41,12 +42,18 @@ def get_all_users(page: int = 1, size: int = 20):
     conn = get_db_connection()
     offset = (page - 1) * size
     
-    # 전체 개수 조회
-    cursor = conn.execute('SELECT COUNT(*) FROM h_user')
+    # 전체 개수 조회 (삭제되지 않은 사용자만)
+    cursor = conn.execute("SELECT COUNT(*) FROM h_user WHERE is_delete = 'N'")
     total = cursor.fetchone()[0]
 
     # 보안을 위해 비밀번호 제외
-    query = 'SELECT uid, user_id, user_nm, role, is_enable, is_locked, login_fail_count, last_cnn_dt FROM h_user ORDER BY uid ASC LIMIT ? OFFSET ?'
+    query = """
+        SELECT uid, user_id, user_nm, user_email, role, is_enable, is_locked, 
+               is_delete, is_approved, login_fail_count, last_cnn_dt 
+        FROM h_user 
+        WHERE is_delete = 'N'
+        ORDER BY uid ASC LIMIT ? OFFSET ?
+    """
     users = conn.execute(query, (size, offset)).fetchall()
     conn.close()
     
@@ -65,8 +72,16 @@ def check_user_id(user_id: str) -> bool:
     conn.close()
     return user is not None
 
+# [5] check_user_email: 사용자 이메일 중복 확인
+def check_user_email(user_email: str) -> bool:
+    """사용자 이메일 중복 확인. 이미 존재하면 True 반환."""
+    conn = get_db_connection()
+    user = conn.execute('SELECT 1 FROM h_user WHERE user_email = ?', (user_email,)).fetchone()
+    conn.close()
+    return user is not None
 
-# [5] create_user: 새 사용자 생성
+
+# [6] create_user: 새 사용자 생성
 def create_user(user_data: dict):
     """새 사용자 생성."""
     conn = get_db_connection()
@@ -79,15 +94,18 @@ def create_user(user_data: dict):
 
     try:
         conn.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, role, is_enable, is_locked, login_fail_count, last_cnn_dt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, is_enable, is_locked, is_delete, is_approved, login_fail_count, last_cnn_dt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
         ''', (
             user_data['user_id'],
             password_hash,
             user_data['user_nm'],
+            user_data['user_email'],
             user_data.get('role', 'ROLE_USER'),
             user_data.get('is_enable', 'Y'),
             user_data.get('is_locked', 'N'),
+            user_data.get('is_delete', 'N'),
+            user_data.get('is_approved', 'N'),
             user_data.get('login_fail_count', 0)
         ))
         conn.commit()
@@ -98,7 +116,7 @@ def create_user(user_data: dict):
     conn.close()
 
 
-# [6] update_user: 사용자 정보 수정
+# [7] update_user: 사용자 정보 수정
 def update_user(user_id: str, update_data: dict):
     """사용자 정보 수정 (이름, 권한, 상태). 비밀번호 수정은 별도 처리."""
     conn = get_db_connection()
@@ -110,6 +128,10 @@ def update_user(user_id: str, update_data: dict):
     if 'user_nm' in update_data:
         fields.append("user_nm = ?")
         values.append(update_data['user_nm'])
+
+    if 'user_email' in update_data:
+        fields.append("user_email = ?")
+        values.append(update_data['user_email'])
     
     if 'role' in update_data:
         fields.append("role = ?")
@@ -122,6 +144,14 @@ def update_user(user_id: str, update_data: dict):
     if 'is_locked' in update_data:
         fields.append("is_locked = ?")
         values.append(update_data['is_locked'])
+
+    if 'is_delete' in update_data:
+        fields.append("is_delete = ?")
+        values.append(update_data['is_delete'])
+
+    if 'is_approved' in update_data:
+        fields.append("is_approved = ?")
+        values.append(update_data['is_approved'])
     
     if 'login_fail_count' in update_data:
         fields.append("login_fail_count = ?")
@@ -140,7 +170,7 @@ def update_user(user_id: str, update_data: dict):
     conn.close()
 
 
-# [7] increment_login_fail_count: 로그인 실패 횟수 증가
+# [8] increment_login_fail_count: 로그인 실패 횟수 증가
 def increment_login_fail_count(user_id: str) -> int:
     """로그인 실패 횟수를 1 증가시키고 현재 횟수를 반환."""
     conn = get_db_connection()
@@ -151,7 +181,7 @@ def increment_login_fail_count(user_id: str) -> int:
     conn.close()
     return row[0] if row else 0
 
-# [8] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
+# [9] reset_login_fail_count: 로그인 실패 횟수 초기화 및 잠금 해제
 def reset_login_fail_count(user_id: str):
     """로그인 실패 횟수를 0으로 초기화하고 잠금을 해제."""
     conn = get_db_connection()
@@ -159,7 +189,7 @@ def reset_login_fail_count(user_id: str):
     conn.commit()
     conn.close()
 
-# [9] set_user_locked: 사용자 잠금 상태 설정
+# [10] set_user_locked: 사용자 잠금 상태 설정
 def set_user_locked(user_id: str, is_locked: str = 'Y'):
     """사용자의 잠금 상태를 변경."""
     conn = get_db_connection()

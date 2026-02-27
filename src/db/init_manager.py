@@ -18,10 +18,13 @@ def init_db():
         user_id TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         user_nm TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         role TEXT DEFAULT 'ROLE_USER',
         last_cnn_dt TEXT,
         is_enable TEXT DEFAULT 'Y',
         is_locked TEXT DEFAULT 'N',
+        is_delete TEXT DEFAULT 'N' NOT NULL,
+        is_approved TEXT DEFAULT 'N' NOT NULL,
         login_fail_count INTEGER DEFAULT 0
     )
     ''')
@@ -40,16 +43,19 @@ def init_db():
     ''')
     
     # 3. MCP Tool 사용 이력 테이블
+    # - (26.02.24) token_id 컬럼 추가
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS h_mcp_tool_usage (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_uid INTEGER,
+        token_id INTEGER,
         tool_nm TEXT NOT NULL,
         tool_params TEXT,
         tool_success TEXT,
         tool_result TEXT,
         reg_dt TEXT NOT NULL,
-        FOREIGN KEY (user_uid) REFERENCES h_user (uid)
+        FOREIGN KEY (user_uid) REFERENCES h_user (uid),
+        FOREIGN KEY (token_id) REFERENCES h_access_token (id)
     )
     ''')
     
@@ -245,6 +251,19 @@ def init_db():
         PRIMARY KEY (openapi_id, tag_id),
         FOREIGN KEY (openapi_id) REFERENCES h_openapi (id) ON DELETE CASCADE,
         FOREIGN KEY (tag_id) REFERENCES h_openapi_tag (id) ON DELETE CASCADE
+    )
+    ''')
+    
+    # 18. 이메일 OTP 관리 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_email_otp (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        otp_type TEXT NOT NULL,
+        otp_code TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        is_verified TEXT DEFAULT 'N',
+        reg_dt TEXT DEFAULT (datetime('now', 'localtime'))
     )
     ''')
 

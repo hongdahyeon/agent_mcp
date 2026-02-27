@@ -21,7 +21,7 @@ export function AccessTokenManager() {
 
     // Pagination
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [totalItems, setTotalItems] = useState(0);
 
     // Server-side pagination
@@ -206,8 +206,8 @@ export function AccessTokenManager() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors ${token.can_use === 'Y'
-                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                                                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
                                                 }`}>
                                                 {token.can_use === 'Y' ? 'Active' : 'Inactive'}
                                             </span>

@@ -5,9 +5,12 @@ export interface User {
     uid?: number;
     user_id: string;
     user_nm: string;
+    user_email: string;
     role: string;
     is_enable?: string;
     is_locked?: string;
+    is_delete?: string;
+    is_approved?: string;
     login_fail_count?: number;
     last_cnn_dt?: string;
     login_ts?: number; // 세션 로그인 timestamp
@@ -35,4 +38,5 @@ export interface SessionUser {
     uid: number;
     user_id: string;
     user_nm: string;
+    user_email?: string;
 }

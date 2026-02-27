@@ -604,3 +604,56 @@
 - [x] Backend: `src/routers/system.py` health & scheduler API 구현
 - [x] Frontend: `SchedulerManager.tsx` 구현 및 대시보드 UI 연동
 - [x] 최종 기능 검증 및 문서 업데이트
+
+## 65. 대시보드 시각화 확정 (Heatmap & 사용자 상세 분석) (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: 시간대별/요일별 사용 통계 DB 함수 구현 (`mcp_tool_usage.py`, `openapi_usage.py`)
+- [x] 2. Backend: 특정 유저의 Top 5 도구 사용량 조회 함수 구현
+- [x] 3. Backend: API 엔드포인트 확장 (`/mcp/stats`, `/mcp/user-tool-stats`, `/openapi/stats`, `/openapi/user-tool-stats`)
+- [x] 4. Frontend: UsageStats 및 OpenApiStats 타입 정의 업데이트
+- [x] 5. Frontend: 메인 대시보드 Heatmap 차트 및 2단 레이아웃 사용자 상세 분석 구현
+- [x] 6. Frontend: OpenAPI 통계 Heatmap 차트 및 사용자/토큰 상세 분석 구현
+- [x] 7. 최종 검증 및 버그 수정 (`mcp.py` 임포트 오류 해결)
+- [ ] 8. UI, 데이터 조회 부분 이상한지 체크 필요
+
+## 66. MCP 및 OpenAPI 로깅/통계 고도화 (New)
+
+- [x] 1. `h_mcp_tool_usage`: `token_id` 값 저장 추가 (DB 스키마 및 `audit_log` 연동)
+- [x] 2. 외부 토큰 사용 시 'external user' 매핑 로직 제거 및 실제 토큰 식별 적용
+- [x] 3. 사용량 히트맵(7x24) 통계 구현 및 차트 적용 (Dashboard/OpenAPI)
+- [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
+- [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
+- [x] 6. 최종 검증 및 문서 업데이트
+
+## 67. Email OTP 모듈 구현 (New)
+
+- [x] 1. DB: h_email_otp 테이블 생성 및 관리 로직 구현 (db/email_otp.py)
+- [x] 2. Backend: OTP 생성, 발송, 검증 비즈니스 로직 구현 (utils/otp_manager.py)
+- [x] 3. API: OTP 발송 및 검증 전용 엔드포인트 구현 (routers/auth.py)
+- [x] 4. Integration: 회원가입 시 이메일 OTP 필수 검증 로직 연동
+- [x] 5. Admin UI: OTP 발송 및 인증 이력 조회 화면 구현 (OtpHistory.tsx)
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 68. User Email 통합 및 고도화 (New)
+
+- [x] 1. DB: `h_user` 테이블 `user_email` 컬럼 추가 및 마이그레이션 (`src/db/migrate_user_email.py`)
+- [x] 2. Backend: `user_email` 기반 중복 체크 API 익스포트 및 가입 로직 연동
+- [x] 3. Frontend: 사용자 관리(Users.tsx) 내 이메일 필드 추가 및 인증 프로세스 통합
+- [x] 4. Frontend: 회원가입 시 이메일 인증 필수화 및 UI 개선
+- [x] 5. Frontend: 내 정보(MyPage.tsx) 이메일 정보 노출
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 69. 계정 잠금 로직 개선 (Bug Fix)
+- [x] 1. Backend: `auth.py` 에러 메시지 개선 (프론트엔드 인식용 '잠금' 키워드 추가)
+- [x] 2. Frontend: `Login.tsx` 내 계정 잠금 상태 인식 로직 강화 (KOR/ENG 키워드 지원)
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 70. 내 정보 조회 로직 개선 (Session -> DB)
+- [x] 1. Backend: `/api/users/me` 엔드포인트 신설 (DB 연동 최신 정보 반환)
+- [x] 2. Frontend: `MyPage.tsx`에서 세션 대신 `/me` API를 통한 최신 프로필 정보 조회
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 71. 사용자 삭제 및 승인 관리 기능 오류 수정
+- [x] 1. Backend: `UserUpdateRequest` 모델 필드 보완 (`is_delete`, `is_approved`)
+- [x] 2. 기능 검증 (삭제 및 승인 토글 정상 동작 확인)

@@ -18,6 +18,7 @@ from .user import (
     get_user,
     get_all_users,
     check_user_id,
+    check_user_email,
     create_user,
     update_user,
     increment_login_fail_count,
@@ -36,7 +37,9 @@ from .mcp_tool_usage import (
     get_tool_stats,
     get_user_daily_usage,
     get_user_tool_stats,
-    get_specific_user_tool_usage
+    get_specific_user_tool_usage,
+    get_mcp_hourly_daily_stats,
+    get_mcp_user_tool_detail
 )
 
 from .mcp_tool_limit import (
@@ -81,7 +84,9 @@ from .openapi_usage import (
     get_openapi_usage_logs,
     get_openapi_stats,
     get_user_openapi_daily_usage,
-    get_user_openapi_tool_usage
+    get_user_openapi_tool_usage,
+    get_openapi_hourly_daily_stats,
+    get_openapi_user_tool_detail
 )
 
 from .openapi_limit import (
@@ -139,6 +144,7 @@ __all__ = [
     'get_user',
     'get_all_users',
     'check_user_id',
+    'check_user_email',
     'create_user',
     'update_user',
     'increment_login_fail_count',
@@ -152,6 +158,8 @@ __all__ = [
     'get_user_daily_usage',
     'get_user_tool_stats',
     'get_specific_user_tool_usage',
+    'get_mcp_hourly_daily_stats',
+    'get_mcp_user_tool_detail',
     'get_user_limit',
     'get_admin_usage_stats',
     'get_limit_list',
@@ -193,6 +201,8 @@ __all__ = [
     'get_openapi_stats',
     'get_user_openapi_daily_usage',
     'get_user_openapi_tool_usage',
+    'get_openapi_hourly_daily_stats',
+    'get_openapi_user_tool_detail',
     'get_openapi_limit',
     'get_openapi_limit_list',
     'upsert_openapi_limit',

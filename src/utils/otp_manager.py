@@ -1,0 +1,112 @@
+import random
+import logging
+from datetime import datetime
+try:
+    from src.db.email_otp import create_otp, get_latest_otp, verify_otp_record
+    from src.db.email_manager import log_email, update_email_status
+    from src.utils.mailer import EmailSender
+    from src.utils.context import get_current_user
+except ImportError:
+    from db.email_otp import create_otp, get_latest_otp, verify_otp_record
+    from db.email_manager import log_email, update_email_status
+    from utils.mailer import EmailSender
+    from utils.context import get_current_user
+
+logger = logging.getLogger(__name__)
+
+"""
+    OTP 관리 모듈
+    - [1] generate_otp_code: 6자리 랜덤 숫자 생성
+    - [2] send_management_otp: OTP 생성, DB 저장 및 이메일 발송
+    - [3] verify_management_otp: OTP 검증
+"""
+
+# [1] generate_otp_code: 6자리 랜덤 숫자 생성
+def generate_otp_code(length: int = 6) -> str:
+    """6자리 랜덤 숫자를 생성합니다."""
+    return "".join([str(random.randint(0, 9)) for _ in range(length)])
+
+# [2] send_management_otp: OTP 생성, DB 저장 및 이메일 발송
+async def send_management_otp(email: str, otp_type: str = 'SIGNUP'):
+    """
+    OTP를 생성하여 DB에 저장하고 사용자에게 메일을 발송합니다.
+    """
+    # 1. OTP 번호 생성
+    otp_code = generate_otp_code()
+    
+    # 2. DB 저장 (기본 5분 만료)
+    create_otp(email, otp_type, otp_code, valid_minutes=5)
+    
+    # 3. 이메일 발송
+    subject = f"[Agent MCP] 인증 번호를 안내해 드립니다."
+    content = f"""안녕하세요.
+                인증 번호는 [{otp_code}] 입니다.
+                5분 이내에 입력해 주세요.
+
+                감사합니다.
+                """
+    
+    # 2.5 Email Logging (New)
+    user = get_current_user()
+    user_uid = user['uid'] if user else None
+    
+    log_id = None
+    try:
+        log_id = log_email(
+            user_uid=user_uid,
+            recipient=email,
+            subject=subject,
+            content=content
+        )
+    except Exception as e:
+        logger.error(f"Failed to log OTP email: {e}")
+
+    # 3. 이메일 발송
+    sender = EmailSender()
+    success, error_msg = sender.send_immediate(email, subject, content)
+    
+    # 4. 로그 상태 업데이트 (New)
+    if log_id:
+        try:
+            new_status = 'SENT' if success else 'FAILED'
+            update_email_status(log_id, new_status, error_msg)
+        except Exception as e:
+            logger.error(f"Failed to update OTP email status: {e}")
+
+    if not success:
+        logger.error(f"Failed to send OTP email to {email}: {error_msg}")
+        return False, error_msg
+    
+    return True, None
+
+# [3] verify_management_otp: OTP 검증
+def verify_management_otp(email: str, otp_type: str, input_code: str):
+    """
+    사용자가 입력한 OTP를 검증합니다.
+    Returns: (success: bool, status: str, message: str)
+    status: SUCCESS, EXPIRED, INVALID_CODE, NOT_FOUND
+    """
+    # 1. 최신 OTP 조회
+    otp_record = get_latest_otp(email, otp_type)
+    
+    if not otp_record:
+        return False, "NOT_FOUND", "발송된 인증 번호를 찾을 수 없습니다."
+    
+    # 2. 이미 확인된 경우라도, 코드 값이 일치하고 만료되지 않았다면 유효한 것으로 간주 (회원가입 최종 단계 대비)
+    is_already_verified = (otp_record['is_verified'] == 'Y')
+
+    # 3. 만료 여부 확인
+    expires_at = datetime.strptime(otp_record['expires_at'], '%Y-%m-%d %H:%M:%S')
+    if datetime.now() > expires_at:
+        return False, "EXPIRED", "인증 번호가 만료되었습니다. 재발송해 주세요."
+    
+    # 4. 일치 여부 확인
+    if otp_record['otp_code'] != input_code:
+        return False, "INVALID_CODE", "인증 번호가 일치하지 않습니다."
+    
+    # 5. 성공 시 확인 처리 (아직 확인 안 된 경우만)
+    # => 회원가입의 경우 이미 확인 처리 후, 여기를 타게 됨
+    if not is_already_verified:
+        verify_otp_record(otp_record['id'])
+    
+    return True, "SUCCESS", "인증에 성공하였습니다."
