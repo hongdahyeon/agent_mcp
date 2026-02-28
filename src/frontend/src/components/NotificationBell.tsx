@@ -39,7 +39,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ notification, onC
         </div>
         <div className="p-6 pt-0 flex space-x-2">
           {notification.is_read === 'N' ? (
-             <button
+            <button
               onClick={() => onRead(notification.id)}
               className="flex-1 flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all"
             >
@@ -104,14 +104,14 @@ export function NotificationBell() {
       )}
 
       {isOpen && (
-        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden z-30 animate-in slide-in-from-top-5 duration-300">
+        <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-800 overflow-hidden z-50 animate-in slide-in-from-top-5 duration-300">
           <div className="p-4 border-b border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
             <h4 className="font-bold text-gray-800 dark:text-slate-200">알림</h4>
             <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">
               {unreadCount}개 읽지 않음
             </span>
           </div>
-          
+
           <div className="max-h-[400px] overflow-y-auto no-scrollbar">
             {notifications.length > 0 ? (
               notifications.map((notif) => (
@@ -158,9 +158,9 @@ export function NotificationBell() {
               </div>
             )}
           </div>
-          
+
           <div className="p-3 bg-gray-50/50 dark:bg-slate-800/50 border-t border-gray-50 dark:border-slate-800 text-center">
-             <button 
+            <button
               className="text-xs font-semibold text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
               onClick={() => {
                 // 관리 페이지로 이동 등의 로직

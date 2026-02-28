@@ -401,7 +401,7 @@ function App() {
 
       {/* 메인 콘텐츠 영역 (Main Content) */}
       <main className="flex-1 overflow-hidden flex flex-col">
-        <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4 shadow-sm flex justify-between items-center z-10 transition-colors duration-300">
+        <header className="bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-6 py-4 shadow-sm flex justify-between items-center z-40 transition-colors duration-300">
           <div className="flex items-center overflow-hidden">
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -459,8 +459,8 @@ function App() {
           {activeView === 'openapi-limits' && user.role === 'ROLE_ADMIN' && <OpenApiLimit />}
           {activeView === 'db-backup' && user.role === 'ROLE_ADMIN' && <DbBackupManager />}
           {activeView === 'scheduler' && user.role === 'ROLE_ADMIN' && <SchedulerManager />}
-          { activeView === 'otp-history' && user.role === 'ROLE_ADMIN' && <OtpHistory />}
-          { activeView === 'notifications' && user.role === 'ROLE_ADMIN' && <NotificationManagement />}
+          {activeView === 'otp-history' && user.role === 'ROLE_ADMIN' && <OtpHistory />}
+          {activeView === 'notifications' && user.role === 'ROLE_ADMIN' && <NotificationManagement />}
         </div>
       </main>
     </div>
