@@ -46,6 +46,18 @@ async def api_execute_openapi(
                 status_code=429,
                 detail=f"OpenAPI usage limit exceeded ({current_usage}/{max_count}). Please contact admin."
             )
+            
+        # [임계치 알림 체크]
+        # MCP와 동일하게 80%, 90%, 100% 임계치 도달 시 알림 전송 (실행 시도 시점 기준)
+        from src.utils.notification_helper import send_system_notification
+        for threshold in [0.8, 0.9, 1.0]:
+            target_count = int(max_count * threshold)
+            if current_usage + 1 == target_count:
+                title = "OpenAPI 사용량 임계치 도달"
+                message = f"현재 OpenAPI({tool_id}) 사용량이 일일 제한({max_count}회)의 {int(threshold*100)}%({target_count}회)에 도달했습니다."
+                # 알림은 계정 유저에게만 (토큰 유저는 수신 불가하므로)
+                if user_uid:
+                    send_system_notification(receive_user_uid=user_uid, title=title, message=message)
 
     # 1. OpenAPI 정의 조회
     config = get_openapi_by_tool_id(tool_id)

@@ -12,8 +12,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 """
     유저의 JWT 토큰 가져오기
-    및
-    외부 토큰(Header/Query) 지원
+    Authorization 헤더 (Bearer <token>) 방식으로 토큰을 찾아 검증
 
 """
 
@@ -49,19 +48,26 @@ async def get_current_user_jwt(token: str = Depends(oauth2_scheme)):
     return dict(user)
 
 # 통합 인증 의존성: JWT(Header) 및 외부 토큰(Header) 지원
+# - EventSource는 헤더 설정이 불가하여 쿼리 파라미터 방식을 사용 (26.03.03)
 async def get_current_active_user(
     request: Request,
-    authorization: Optional[str] = Header(None)
+    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Query(None)
 ):
     """
     1. Authorization 헤더 (Bearer <token>)
-    방식으로 토큰을 찾아 검증합니다. (Query Parameter 방식은 보안상 비권장되어 제거됨 26.02.27)
+    2. token 쿼리 파라미터 (EventSource 등 헤더 설정 불가 시 사용)
+    방식으로 토큰을 찾아 검증합니다.
     """
     final_token = None
     
     # 1. 헤더 확인
     if authorization and authorization.startswith("Bearer "):
         final_token = authorization.split(" ")[1]
+    
+    # 2. 쿼리 파라미터 확인 (헤더가 없는 경우)
+    if not final_token and token:
+        final_token = token
         
     if not final_token:
         raise HTTPException(

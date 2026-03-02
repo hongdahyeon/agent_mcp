@@ -107,9 +107,13 @@ app.include_router(notification.router)
 
 # ==========================================
 # 4. SSE Handler (Integrated)
+# - EventSource 객체는 HTTP 헤더를 직접 설정할 수 없다.
 # ==========================================
 @app.get("/sse")
-async def handle_sse(request: Request, token: str = Query(None)):
+async def handle_sse(
+    request: Request,
+    token: str = Query(None)
+):
     print(f"*** SSE REQUEST RECEIVED. Token: {token} ***")
     try:
         if token:

@@ -11,34 +11,59 @@ from .mcp_tool_usage import get_user_daily_usage
     - [5] delete_limit: 제한 정책 삭제
 """
 
-# [1] get_user_limit: 사용자에게 적용될 일일 제한 횟수 조회 (User 설정 > Role 설정 > 기본값)
-def get_user_limit(user_uid: int, role: str) -> int:
-    """사용자에게 적용될 일일 제한 횟수 조회 (User 설정 > Role 설정 > 기본값)."""
+# [1] get_user_limit: 사용자 또는 토큰에게 적용될 일일 제한 횟수 조회 (Token > User > Role 우선순위)
+def get_user_limit(
+    user_uid: int = None,
+    role: str = None,
+    token_id: int = None
+) -> int:
+
+    """
+        사용자 또는 토큰에게 적용될 일일 제한 횟수 조회
+        (Token > User > Role 우선순위)
+    """
     conn = get_db_connection()
     
+    # 0. 토큰 개별 설정 확인 (최우선)
+    if token_id:
+        limit_row = conn.execute(
+            "SELECT max_count FROM h_mcp_tool_limit WHERE target_type='TOKEN' AND target_id=?", 
+            (str(token_id),)
+        ).fetchone()
+        if limit_row:
+            conn.close()
+            return limit_row[0]
+
     # 1. 사용자 개별 설정 확인
-    limit_row = conn.execute(
-        "SELECT max_count FROM h_mcp_tool_limit WHERE target_type='USER' AND target_id=?", 
-        (str(user_uid),)
-    ).fetchone()
-    
-    if limit_row:
-        conn.close()
-        return limit_row[0]
+    if user_uid:
+        limit_row = conn.execute(
+            "SELECT max_count FROM h_mcp_tool_limit WHERE target_type='USER' AND target_id=?", 
+            (str(user_uid),)
+        ).fetchone()
         
+        if limit_row:
+            conn.close()
+            return limit_row[0]
+            
     # 2. 역할(Role) 설정 확인
-    limit_row = conn.execute(
-        "SELECT max_count FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id=?", 
-        (role,)
-    ).fetchone()
-    
+    if role:
+        limit_row = conn.execute(
+            "SELECT max_count FROM h_mcp_tool_limit WHERE target_type='ROLE' AND target_id=?", 
+            (role,)
+        ).fetchone()
+        
+        if limit_row:
+            conn.close()
+            return limit_row[0]
+        
     conn.close()
     
-    if limit_row:
-        return limit_row[0]
+    # 3. 설정이 없으면 기본적으로 0 (사용 불가) 또는 특정 규칙 적용
+    # 관리자는 기본 무제한(-1), 일반 유저는 0 또는 시스템 기본값
+    if role == 'ROLE_ADMIN':
+        return -1
         
-    # 3. 설정이 없으면 기본적으로 0 (사용 불가) 또는 안전한 기본값 반환
-    return 0 
+    return 0
 
 
 # [2] get_admin_usage_stats: 관리자용: 모든 사용자의 금일 사용량 및 제한 정보 통계
