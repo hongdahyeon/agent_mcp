@@ -10,8 +10,9 @@ except ImportError:
     - [2] get_notification_list_admin: 관리자용 전체 알림 목록 조회
     - [3] get_user_notifications: 특정 사용자의 알림 목록 조회
     - [4] mark_notification_as_read: 알림 읽음 처리
-    - [5] delete_notification: 알림 삭제 (소프트 삭제)
-    - [6] get_unread_count: 읽지 않은 알림 개수 조회
+    - [5] mark_all_notifications_as_read: 모든 알림 읽음 처리
+    - [6] delete_notification: 알림 삭제 (소프트 삭제)
+    - [7] get_unread_count: 읽지 않은 알림 개수 조회
 """
 
 # [1] create_notification: 알림 생성
@@ -110,7 +111,23 @@ def mark_notification_as_read(notify_id: int):
     conn.commit()
     conn.close()
 
-# [5] delete_notification: 알림 삭제 (소프트 삭제)
+# [5] mark_all_notifications_as_read: 모든 알림 읽음 처리
+def mark_all_notifications_as_read(user_uid: int):
+    """특정 사용자의 모든 알림을 읽음 처리합니다."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute('''
+        UPDATE h_notification
+        SET is_read = 'Y', read_dt = ?
+        WHERE receive_user_uid = ? AND is_read = 'N' AND delete_at IS NULL
+    ''', (timestamp, user_uid))
+    
+    conn.commit()
+    conn.close()
+
+# [6] delete_notification: 알림 삭제 (소프트 삭제)
 def delete_notification(notify_id: int):
     """알림을 소프트 삭제합니다."""
     conn = get_db_connection()
@@ -126,7 +143,7 @@ def delete_notification(notify_id: int):
     conn.commit()
     conn.close()
 
-# [6] get_unread_count: 읽지 않은 알림 개수 조회
+# [7] get_unread_count: 읽지 않은 알림 개수 조회
 def get_unread_count(user_uid: int):
     """읽지 않은 알림 개수를 조회합니다."""
     conn = get_db_connection()
