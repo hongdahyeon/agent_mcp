@@ -17,9 +17,16 @@ interface Props {
     refreshTools?: () => void;
 }
 
+interface OpenApiTool {
+    id: number;
+    tool_id: string;
+    name_ko: string;
+}
+
 export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     const [selectedTool, setSelectedTool] = useState<string>('');
     const [openapiToolId, setOpenapiToolId] = useState<string>('');
+    const [openapiTools, setOpenapiTools] = useState<OpenApiTool[]>([]);
     const [formValues, setFormValues] = useState<Record<string, unknown>>({});
 
     // Result handling (Local state for display control)
@@ -43,6 +50,25 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
             setCopied(false);
         }
     }, [lastResult]);
+
+    // OpenAPI tools 목록 조회
+    useEffect(() => {
+        const fetchOpenApiTools = async () => {
+            try {
+                const token = localStorage.getItem('mcp_api_token');
+                const res = await fetch('/api/openapi?size=100', {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setOpenapiTools(data.items || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch OpenAPI tools for analysis:', err);
+            }
+        };
+        fetchOpenApiTools();
+    }, []);
 
     const handleExecute = () => {
         if (!currentTool) return;
@@ -201,21 +227,21 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                         <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-800 flex-shrink-0">
                             <h4 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 flex items-center font-pretendard">
                                 <span className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2"></span>
-                                OpenAPI 도구 분석 (Manual Analysis)
+                                OpenAPI 도구 분석 (Tool Analysis)
                             </h4>
                             <div className="flex items-center space-x-2">
-                                <input
-                                    type="text"
-                                    placeholder="분석할 OpenAPI Tool ID 입력 (예: get_info)"
+                                <select
                                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard text-sm h-[42px]"
                                     value={openapiToolId}
                                     onChange={(e) => setOpenapiToolId(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && openapiToolId.trim()) {
-                                            sendRpc('tools/call', { name: 'get_tool_analysis', arguments: { tool_id: openapiToolId.trim() } }, 'analyze-' + openapiToolId.trim());
-                                        }
-                                    }}
-                                />
+                                >
+                                    <option value="">분석할 도구 선택 (Select Tool for Analysis)</option>
+                                    {openapiTools.map(item => (
+                                        <option key={item.id} value={item.tool_id}>
+                                            {item.name_ko} ({item.tool_id})
+                                        </option>
+                                    ))}
+                                </select>
                                 <button
                                     onClick={() => {
                                         if (openapiToolId.trim()) {
