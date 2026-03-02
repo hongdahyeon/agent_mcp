@@ -1388,8 +1388,44 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
   - `SchedulerManager.tsx`: 카드 내 버튼들이 화면 너비에 따라 적절히 감싸지도록(`flex-wrap`) 수정했습니다.
   - `Dashboard.tsx`: 일반 사용자일 경우 시스템 헬스 체크 API 호출을 차단하고 UI를 숨김 처리하여 보안을 강화했습니다.
 
-### Verification Results
+---
 
-1.  관리자가 알림 발송 시, 대상 유저의 화면에 즉시 빨간색 배지와 알림 내역이 표시됨을 확인.
-2.  알림 클릭 후 읽음 처리 시 읽지 않은 알림 개수가 즉시 감소하고 버튼 UI가 변경됨을 확인.
-3.  일반 사용자 대시보드에서 403 Forbidden 에러가 더 이상 발생하지 않음을 확인.
+## Phase 46: 알림 센터 고도화 및 토큰 보안 강화 [Planned]
+
+### 목표
+
+사용자 경험 강화와 안정적인 외부 연동을 위해 실시간 알림 시스템을 확장하고, 외부 액세스 토큰에 대한 사용량 제한을 정교화합니다.
+
+### 상세 요구사항
+
+1.  **외부 토큰(sk_...) 사용량 제한**:
+    - 현재 `uid`가 없는 외부 토큰 유저에 대해서도 `token_id`를 기반으로 MCP 도구 사용량을 체크하고 제한합니다.
+2.  **사용량 임계치 알림 (Usage Thresholds)**:
+    - MCP 도구 및 OpenAPI 호출 시 사용량을 체크하여 특정 단계(80%, 90%, 100%) 도달 시 실시간 알림 발송.
+    - 동일 단계 중복 알림 방지 로직 적용.
+3.  **스케줄러 결과 알림 (Scheduler Results)**:
+    - 예약 이메일 발송 완료 시 요청자에게 성공/실패 알림 전송.
+4.  **계정 보안 알림 (Account Security)**:
+    - 로그인 실패로 인한 계정 잠금 발생 시 시스템 알림 생성.
+
+### Proposed Changes
+
+#### 1. Common Utility (`src/utils/notification_helper.py`) [Created]
+- `send_system_notification(user_uid, title, message)` 구현 완료.
+
+#### 2. Usage Limit Enhancement (`src/mcp_server_impl.py`)
+- `user_uid`가 없는 경우 `token_id`를 사용하여 `get_user_openapi_limit` (또는 MCP 전용) 체크 로직 추가.
+
+#### 3. Threshold Notification Logic
+- 도구 실행 후 사용량 비율(Usage / Limit) 계산.
+- 임계치 트리거 시 `send_system_notification` 호출.
+
+#### 4. Scheduler & Auth Integration
+- `src/scheduler.py` 및 `src/utils/auth.py` (또는 관련 라우터)에 알림 발송 코드 삽입.
+
+### Verification Plan
+
+1.  **Token Limit Test**: 외부 토큰으로 MCP 도구 호출 시 제한 도달 시 거부되는지 확인.
+2.  **Threshold Test**: 80% 사용 시 알림 팝업 및 배지 확인.
+3.  **Scheduler Test**: 예약 메일 발송 후 알림 확인.
+4.  **Lock Test**: 계정 잠금 시 알림 생성 확인.

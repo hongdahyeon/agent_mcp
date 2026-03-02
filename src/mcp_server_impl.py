@@ -48,6 +48,7 @@ try:
     from src.utils.context import get_current_user
     from src.utils.mailer import EmailSender
     from src.scheduler import add_scheduled_job
+    from src.utils.notification_helper import send_system_notification
 except ImportError:
     from db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
@@ -58,6 +59,7 @@ except ImportError:
     from utils.context import get_current_user
     from utils.mailer import EmailSender
     from scheduler import add_scheduled_job
+    from utils.notification_helper import send_system_notification
 
 logger = logging.getLogger(__name__)
 
@@ -233,14 +235,26 @@ async def call_tool(name: str, arguments: dict):
         return [TextContent(type="text", text="Error: Authentication required to execute tools. Please refresh token.")]
         
     # [2] 사용량 제한 체크
-    # user_uid가 있는 경우에만 기존 사용자 제한 체크 수행
-    if user_uid:
-        daily_usage = get_user_daily_usage(user_uid)
-        daily_limit = get_user_limit(user_uid, current_user.get('role', 'ROLE_USER'))
-        
-        if daily_limit != -1 and daily_usage >= daily_limit:
-            logger.warning(f"Tool execution blocked: Daily limit exceeded ({user_uid}, Usage: {daily_usage}/{daily_limit})")
+    # user_uid 또는 token_id를 기반으로 한도 체크
+    daily_usage = get_user_daily_usage(user_uid=user_uid, token_id=token_id)
+    daily_limit = get_user_limit(user_uid=user_uid, role=current_user.get('role'), token_id=token_id)
+    
+    # 만일 무제한 사용이 아닌 경우 체크
+    if daily_limit != -1:
+        if daily_usage >= daily_limit:
+            logger.warning(f"Tool execution blocked: Daily limit exceeded (UID:{user_uid}/TokenID:{token_id}, Usage: {daily_usage}/{daily_limit})")
             return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}). Please contact admin.")]
+        
+        # [임계치 알림 체크] - 실행 전 체크 (N회 도달 시 알림)
+        # =>> 80%, 90%, 100% 임계치 도달 시 알림
+        for threshold in [0.8, 0.9, 1.0]:
+            target_count = int(daily_limit * threshold)
+            if daily_usage + 1 == target_count:
+                title = "MCP 사용량 임계치 도달"
+                message = f"현재 MCP 도구 사용량이 일일 제한({daily_limit}회)의 {int(threshold*100)}%({target_count}회)에 도달했습니다."
+                # 알림은 계정 유저에게만 (토큰 유저는 수신 불가하므로)
+                if user_uid:
+                    send_system_notification(receive_user_uid=user_uid, title=title, message=message)
 
     # [3] 도구 실행 준비
     tool_args = arguments.copy()

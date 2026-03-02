@@ -159,18 +159,6 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                         <RefreshCw className="w-5 h-5" />
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => {
-                                        if (selectedTool) {
-                                            sendRpc('tools/call', { name: 'get_tool_analysis', arguments: { tool_id: selectedTool } }, 'analyze-' + selectedTool);
-                                        }
-                                    }}
-                                    disabled={!selectedTool}
-                                    className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold hover:bg-indigo-100 dark:hover:bg-indigo-800/60 transition-all border border-indigo-200 dark:border-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-pretendard h-[42px]"
-                                    title="도구 연동 분석 (AI 에이전트용 정보 추출)"
-                                >
-                                    <span className="whitespace-nowrap">분석 (Analyze)</span>
-                                </button>
                             </div>
                         </div>
 
