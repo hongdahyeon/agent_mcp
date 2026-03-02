@@ -65,7 +65,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ notification, onC
 };
 
 export function NotificationBell() {
-  const { notifications, unreadCount, markAsRead, deleteNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -161,13 +161,13 @@ export function NotificationBell() {
 
           <div className="p-3 bg-gray-50/50 dark:bg-slate-800/50 border-t border-gray-50 dark:border-slate-800 text-center">
             <button
-              className="text-xs font-semibold text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+              className="text-xs font-semibold text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
               onClick={() => {
-                // 관리 페이지로 이동 등의 로직
-                setIsOpen(false);
+                markAllAsRead();
               }}
+              disabled={unreadCount === 0}
             >
-              모든 알림 보기
+              모든 알림 읽음 처리
             </button>
           </div>
         </div>
