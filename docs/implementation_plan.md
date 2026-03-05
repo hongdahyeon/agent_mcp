@@ -1429,3 +1429,28 @@ PDF 스펙 문서의 정보력을 높이기 위해 문서를 다운로드할 때
 2.  **Threshold Test**: 80% 사용 시 알림 팝업 및 배지 확인.
 3.  **Scheduler Test**: 예약 메일 발송 후 알림 확인.
 4.  **Lock Test**: 계정 잠금 시 알림 생성 확인.
+
+---
+
+## Phase 47: MCP Tool REST API Proxy [Completed]
+
+### Goal
+
+SSE 연결 없이 일반적인 HTTP POST 요청만으로 MCP 도구(정적/동적)를 실행할 수 있는 관문(REST Proxy)을 구축합니다.
+
+### Implemented Changes
+
+- **Route Implementation (`src/routers/mcp_execution.py`)**:
+    - `POST /api/mcp/proxy/{tool_nm}` 엔드포인트 신설.
+    - `get_current_active_user` 의존성을 통한 통합 인증 지원.
+    - 실행 전 `set_current_user`를 통한 컨텍스트 바인딩 및 `call_tool` 직접 호출.
+- **Integration (`src/sse_server.py`)**:
+    - 신규 라우터 등록 및 엔드포인트 활성화.
+- **Documentation (`docs/mcp_rest_api.md`)**:
+    - 외부 연동을 위한 REST API 사용 가이드 작성.
+
+### Verification Plan
+
+1. **Stateless Test**: SSE 연결 없이 `POST` 요청만으로 도구 결과 수신 확인.
+2. **Security Test**: 유효하지 않은 토큰 접근 시 `401 Unauthorized` 반환 확인.
+3. **Audit Log Test**: REST 호출 시에도 `h_mcp_tool_usage` 테이블에 이력이 정상적으로 남는지 확인.
