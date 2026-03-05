@@ -42,7 +42,7 @@ async def execute_sql_tool(query_template: str, params: dict) -> str:
 async def execute_python_tool(script: str, params: dict) -> str:
     """
     Python 표현식(Expression)을 실행하고 결과를 반환합니다.
-    보안을 위해 simpleeval 등의 사용이 권장되지만, 
+    보안을 위해 simpleeval 등의 사용이 권장되지만,
     현재는 Phase 2 단계이므로 기본 eval()을 사용하되 최소한의 제약을 둡니다.
     (추후 simpleeval 적용 예정)
     """

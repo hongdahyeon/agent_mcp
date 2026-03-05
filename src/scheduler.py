@@ -5,10 +5,12 @@ import logging
 try:
     from src.db.email_manager import get_pending_scheduled_emails, update_email_status
     from src.utils.mailer import EmailSender
+    from src.utils.notification_helper import send_system_notification
 except ImportError:
     # Fallback for direct execution testing
     from db.email_manager import get_pending_scheduled_emails, update_email_status
     from utils.mailer import EmailSender
+    from utils.notification_helper import send_system_notification
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +52,23 @@ def process_scheduled_emails():
             if success:
                 update_email_status(log_id, 'SENT')
                 logger.info(f"Scheduled email sent successfully. Log ID: {log_id}")
+                # 알림 발송
+                if email.get('user_uid'):
+                    send_system_notification(
+                        receive_user_uid=email['user_uid'],
+                        title="예약 메일 발송 완료",
+                        message=f"[{recipient}] 주소로 예약된 메일 '{subject}' 발송이 완료되었습니다."
+                    )
             else:
                 update_email_status(log_id, 'FAILED', error_msg)
                 logger.error(f"Failed to send scheduled email. Log ID: {log_id}, Error: {error_msg}")
+                # 알림 발송
+                if email.get('user_uid'):
+                    send_system_notification(
+                        receive_user_uid=email['user_uid'],
+                        title="예약 메일 발송 실패",
+                        message=f"[{recipient}] 주소로 예약된 메일 발송에 실패했습니다. (사유: {error_msg})"
+                    )
                 
     except Exception as e:
         logger.error(f"Error in process_scheduled_emails: {e}")
@@ -93,9 +109,23 @@ def send_one_email(log_id: int):
         if success:
             update_email_status(log_id, 'SENT')
             logger.info(f"Scheduled email (One-time) sent successfully. Log ID: {log_id}")
+            # 알림 발송
+            if email.get('user_uid'):
+                send_system_notification(
+                    receive_user_uid=email['user_uid'],
+                    title="예약 메일 발송 완료",
+                    message=f"[{recipient}] 주소로 예약된 메일 '{subject}' 발송이 완료되었습니다."
+                )
         else:
             update_email_status(log_id, 'FAILED', error_msg)
             logger.error(f"Failed to send scheduled email (One-time). Log ID: {log_id}, Error: {error_msg}")
+            # 알림 발송
+            if email.get('user_uid'):
+                send_system_notification(
+                    receive_user_uid=email['user_uid'],
+                    title="예약 메일 발송 실패",
+                    message=f"[{recipient}] 주소로 예약된 메일 발송에 실패했습니다. (사유: {error_msg})"
+                )
             
     except Exception as e:
         logger.error(f"Error in send_one_email: {e}")

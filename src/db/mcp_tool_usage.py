@@ -6,7 +6,7 @@ from .connection import get_db_connection
     - [1] log_tool_usage: MCP Tool 사용 이력을 기록
     - [2] get_tool_usage_logs: MCP Tool 사용 이력을 조회 (페이징 + 필터링)
     - [3] get_tool_stats: 도구별 사용 통계 집계 (Total, Success, Failure)
-    - [4] get_user_daily_usage: 사용자의 금일 도구 사용 횟수 조회
+    - [4] get_user_daily_usage: 사용자 또는 토큰의 금일 도구 사용 횟수 조회
     - [5] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
     - [6] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
     - [7] get_mcp_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
@@ -162,21 +162,40 @@ def get_tool_stats() -> dict:
     return stats
 
 
-# [4] get_user_daily_usage: 사용자의 금일 도구 사용 횟수 조회
-def get_user_daily_usage(user_uid: int) -> int:
-    """사용자의 금일 도구 사용 횟수 조회."""
+# [4] get_user_daily_usage: 사용자 또는 토큰의 금일 도구 사용 횟수 조회
+def get_user_daily_usage(
+    user_uid: int = None,
+    token_id: int = None
+) -> int:
+    """
+        사용자 또는 토큰의 금일 도구 사용 횟수 조회
+    """
     conn = get_db_connection()
     today_start = datetime.now().strftime("%Y-%m-%d 00:00:00")
     today_end = datetime.now().strftime("%Y-%m-%d 23:59:59")
     
-    # 성공/실패 여부와 관계없이 실행 시도 횟수를 카운트함 (정책에 따라 변경 가능)
-    query = '''
+    where_clause = ""
+    params = []
+    
+    if user_uid:
+        where_clause = "user_uid = ?"
+        params.append(user_uid)
+    elif token_id:
+        where_clause = "token_id = ?"
+        params.append(token_id)
+    else:
+        conn.close()
+        return 0
+        
+    query = f'''
         SELECT COUNT(*)
         FROM h_mcp_tool_usage
-        WHERE user_uid = ?
+        WHERE {where_clause}
         AND reg_dt BETWEEN ? AND ?
     '''
-    count = conn.execute(query, (user_uid, today_start, today_end)).fetchone()[0]
+    params.extend([today_start, today_end])
+    
+    count = conn.execute(query, tuple(params)).fetchone()[0]
     conn.close()
     return count
 

@@ -47,7 +47,7 @@ export function useNotifications() {
     // useMcp와 유사하게 토큰 처리
     const token = localStorage.getItem('mcp_api_token');
     const url = token ? `/api/notifications/stream?token=${token}` : '/api/notifications/stream';
-    
+
     const source = new EventSource(url);
     eventSourceRef.current = source;
 
@@ -60,18 +60,20 @@ export function useNotifications() {
       try {
         const data = JSON.parse(event.data);
         console.log('Received notification event:', data);
-        
+
         if (data.type === 'new_notification') {
           // 새로운 알림이 오면 목록 앞에 추가 (최신 10개 유지)
           // 실제로는 fetchInitialData를 다시 부르는게 더 정확할 수도 있음
           fetchInitialData();
-          
+
           // 브라우저 기본 알림 (선택 사항)
           if (Notification.permission === 'granted') {
-             new window.Notification(data.title, { body: data.message });
+            new window.Notification(data.title, { body: data.message });
           }
         } else if (data.type === 'unread_count_update') {
           setUnreadCount(data.unread_count);
+        } else if (data.type === 'all_read_success') {
+          fetchInitialData();
         }
       } catch (err) {
         console.error('Failed to parse notification event:', err);
@@ -110,13 +112,29 @@ export function useNotifications() {
         headers: getAuthHeaders()
       });
       if (res.ok) {
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.map(n => n.id === id ? { ...n, is_read: 'Y', read_dt: new Date().toISOString() } : n)
         );
         // 서버에서 SSE로 unread_count_update를 보내주므로 여기서 직접 줄이지 않아도 됨
       }
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
+    }
+  };
+
+  // 모두 읽음 처리
+  const markAllAsRead = async () => {
+    try {
+      const res = await fetch('/api/notifications/read-all', {
+        method: 'PATCH',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        // 서버에서 SSE로 unread_count_update와 all_read_success를 보내줌
+        // all_read_success 수신 시 목록이 갱신됨
+      }
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
     }
   };
 
@@ -140,6 +158,7 @@ export function useNotifications() {
     loading,
     connected,
     markAsRead,
+    markAllAsRead,
     deleteNotification,
     refresh: fetchInitialData
   };

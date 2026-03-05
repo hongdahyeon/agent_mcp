@@ -11,6 +11,7 @@ from src.db.notification import (
     create_notification,
     get_user_notifications,
     mark_notification_as_read,
+    mark_all_notifications_as_read,
     delete_notification,
     get_unread_count
 )
@@ -168,6 +169,28 @@ async def read_notify(
     notification_manager.notify(current_user.get('uid'), {
         "type": "unread_count_update",
         "unread_count": get_unread_count(current_user.get('uid'))
+    })
+    
+    return {"status": "success"}
+
+# 모든 알림 읽음 처리
+@router.patch("/read-all")
+async def read_all_notifications(
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    """모든 알림 읽음 처리"""
+    user_uid = current_user.get('uid')
+    mark_all_notifications_as_read(user_uid)
+    
+    # SSE로 상태 업데이트 알림
+    notification_manager.notify(user_uid, {
+        "type": "unread_count_update",
+        "unread_count": 0
+    })
+    
+    # 목록 갱신을 유도하기 위해 전체 갱신 이벤트를 보낼 수 있음 (프론트에서 수신 시 fetchInitialData 호출)
+    notification_manager.notify(user_uid, {
+        "type": "all_read_success"
     })
     
     return {"status": "success"}
