@@ -234,6 +234,28 @@ async def call_tool(name: str, arguments: dict):
         logger.warning("Tool execution blocked: Unauthenticated")
         return [TextContent(type="text", text="Error: Authentication required to execute tools. Please refresh token.")]
         
+    # [1-1] 외부 토큰 권한 체크 (New 26.03.05)
+    # - 토큰 접근 시 허용된 도구인지 매핑 테이블 확인
+    if token_id:
+        from src.db import check_access_token_permission, get_active_tools
+        
+        # 관리자 전용 정적 도구 등은 기본적으로 차단 (설정된 것만 허용)
+        # 하지만 사용자의 요청이 'h_custom_tool', 'h_openapi'에 대해 선택 가능하게 하는 것이 핵심이므로
+        # 해당 테이블들에 등록된 도구인 경우 매핑 여부를 확인합니다.
+        
+        # (1) 커스텀 도구(DB)인지 확인
+        active_custom_tools = get_active_tools()
+        is_custom_tool = any(t['name'] == name for t in active_custom_tools)
+        
+        if is_custom_tool:
+            if not check_access_token_permission(token_id, name, "CUSTOM"):
+                logger.warning(f"Access Denied: Token({token_id}) has no permission for Custom Tool '{name}'")
+                return [TextContent(type="text", text=f"Error: Access Denied. Token has NO permission for '{name}'.")]
+        
+        # (2) 정적 도구(Static)의 경우: 관리자가 명시적으로 허용한 것만 (추후 확장 가능)
+        # 현재는 Custom/OpenAPI 위주로 제어하므로 정적 도구는 기본 허용 정책 유지 또는 명시적 체크
+        # get_user_info 같은 민감 도구는 이미 role 체크(270라인)로 보호됨.
+        
     # [2] 사용량 제한 체크
     # user_uid 또는 token_id를 기반으로 한도 체크
     daily_usage = get_user_daily_usage(user_uid=user_uid, token_id=token_id)

@@ -142,6 +142,11 @@ def upsert_openapi(data: dict):
             cursor = conn.cursor()
             cursor.execute(sql, values)
             openapi_id = cursor.lastrowid
+            
+            # [추가 26.03.05] 신규 OpenAPI 등록 시 기존 모든 액세스 토큰에 대해 권한 부여
+            tokens = cursor.execute("SELECT id FROM h_access_token WHERE is_delete = 'N'").fetchall()
+            for t_row in tokens:
+                cursor.execute("INSERT OR IGNORE INTO h_access_token_openapi_map (token_id, openapi_id) VALUES (?, ?)", (t_row[0], openapi_id))
         
         # 태그 매핑 업데이트
         if tags is not None:
