@@ -294,6 +294,28 @@ def init_db():
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_notify_receive_user ON h_notification (receive_user_uid)')
     cursor.execute('CREATE INDEX IF NOT EXISTS idx_notify_reg_dt ON h_notification (reg_dt)')
 
+    # 20. 외부 액세스 토큰 - 커스텀 도구 매핑 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_access_token_tool_map (
+        token_id INTEGER NOT NULL,
+        tool_id INTEGER NOT NULL,
+        PRIMARY KEY (token_id, tool_id),
+        FOREIGN KEY (token_id) REFERENCES h_access_token (id) ON DELETE CASCADE,
+        FOREIGN KEY (tool_id) REFERENCES h_custom_tool (id) ON DELETE CASCADE
+    )
+    ''')
+
+    # 21. 외부 액세스 토큰 - OpenAPI 매핑 테이블
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS h_access_token_openapi_map (
+        token_id INTEGER NOT NULL,
+        openapi_id INTEGER NOT NULL,
+        PRIMARY KEY (token_id, openapi_id),
+        FOREIGN KEY (token_id) REFERENCES h_access_token (id) ON DELETE CASCADE,
+        FOREIGN KEY (openapi_id) REFERENCES h_openapi (id) ON DELETE CASCADE
+    )
+    ''')
+
     conn.commit()
     conn.close()
     print("[DB] Schema initialization completed.", file=sys.stderr)

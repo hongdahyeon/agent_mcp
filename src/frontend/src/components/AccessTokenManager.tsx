@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Key, Plus, Trash2, Copy, Check } from 'lucide-react';
+import { Key, Plus, Trash2, Copy, Check, Settings, Shield, Globe } from 'lucide-react';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
 
@@ -23,6 +23,15 @@ export function AccessTokenManager() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const [totalItems, setTotalItems] = useState(0);
+    
+    // Permission Modal States
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedToken, setSelectedToken] = useState<AccessToken | null>(null);
+    const [allTools, setAllTools] = useState<{id: number, name: string}[]>([]);
+    const [allOpenAPIs, setAllOpenAPIs] = useState<{id: number, name_ko: string, tool_id: string}[]>([]);
+    const [allowedToolIds, setAllowedToolIds] = useState<number[]>([]);
+    const [allowedOpenApiIds, setAllowedOpenApiIds] = useState<number[]>([]);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Server-side pagination
     const displayedTokens = Array.isArray(tokens) ? tokens : [];
@@ -109,6 +118,62 @@ export function AccessTokenManager() {
             if (err instanceof Error) {
                 alert(err.message);
             }
+        }
+    };
+
+    // 권한 관리 모달
+    const handleOpenPermissionModal = async (token: AccessToken) => {
+        setSelectedToken(token);
+        setIsModalOpen(true);
+        try {
+            // 1. 모든 도구 목록 조회 (관리자용 API 사용)
+            const [toolsRes, apisRes, permsRes] = await Promise.all([
+                fetch('/api/mcp/custom-tools?page=1&size=100', { headers: getAuthHeaders() }),
+                fetch('/api/openapi?page=1&size=100', { headers: getAuthHeaders() }),
+                fetch(`/api/tokens/${token.id}/permissions`, { headers: getAuthHeaders() })
+            ]);
+
+            if (!toolsRes.ok || !apisRes.ok || !permsRes.ok) {
+                throw new Error("데이터를 불러오는데 실패했습니다.");
+            }
+
+            const toolsData = await toolsRes.json();
+            const apisData = await apisRes.json();
+            const permsData = await permsRes.json();
+
+            setAllTools(toolsData.items || []);
+            setAllOpenAPIs(apisData.items || []);
+            setAllowedToolIds(permsData.allowed_tool_ids || []);
+            setAllowedOpenApiIds(permsData.allowed_openapi_ids || []);
+        } catch (err: any) {
+            console.error("Failed to load permissions:", err);
+            alert(err.message || "권한 정보를 불러오는데 실패했습니다.");
+        }
+    };
+
+    const handleSavePermissions = async () => {
+        if (!selectedToken) return;
+        setIsSaving(true);
+        try {
+            const res = await fetch(`/api/tokens/${selectedToken.id}/permissions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
+                },
+                body: JSON.stringify({
+                    allowed_tool_ids: allowedToolIds,
+                    allowed_openapi_ids: allowedOpenApiIds
+                }),
+            });
+
+            if (!res.ok) throw new Error('Failed to save permissions');
+            alert('권한이 성공적으로 저장되었습니다.');
+            setIsModalOpen(false);
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -216,13 +281,22 @@ export function AccessTokenManager() {
                                             {token.created_at}
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={() => handleDelete(token.id)}
-                                                className="text-red-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                title="삭제"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex justify-center gap-2">
+                                                <button
+                                                    onClick={() => handleOpenPermissionModal(token)}
+                                                    className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                    title="권한 설정"
+                                                >
+                                                    <Settings className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(token.id)}
+                                                    className="text-red-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                    title="삭제"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -257,6 +331,121 @@ export function AccessTokenManager() {
                     </div>
                 )}
             </div>
+
+            {/* 권한 설정 모달 */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-100 dark:border-slate-800 transition-all scale-in-center">
+                        <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/30">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                                    <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+                                        [{selectedToken?.name}] 권한 설정
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 font-mono">
+                                        ID: {selectedToken?.id}
+                                    </p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsModalOpen(false)}
+                                className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+                            {/* Custom Tools Section */}
+                            <section>
+                                <div className="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-slate-800 pb-2">
+                                    <Shield className="w-5 h-5 text-indigo-500" />
+                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">Custom Tools</h4>
+                                    <span className="text-xs text-gray-400 font-normal ml-auto">
+                                        {allowedToolIds.length} / {allTools.length} selected
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {allTools.map(tool => (
+                                        <label key={tool.id} className="group flex items-center p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 cursor-pointer transition-all">
+                                            <input
+                                                type="checkbox"
+                                                checked={allowedToolIds.includes(tool.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setAllowedToolIds([...allowedToolIds, tool.id]);
+                                                    else setAllowedToolIds(allowedToolIds.filter(id => id !== tool.id));
+                                                }}
+                                                className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-700 focus:ring-blue-500 dark:focus:ring-offset-slate-900"
+                                            />
+                                            <span className="ml-3 text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
+                                                {tool.name}
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </section>
+
+                            {/* OpenAPI Section */}
+                            <section>
+                                <div className="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-slate-800 pb-2">
+                                    <Globe className="w-5 h-5 text-emerald-500" />
+                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">OpenAPI Tools</h4>
+                                    <span className="text-xs text-gray-400 font-normal ml-auto">
+                                        {allowedOpenApiIds.length} / {allOpenAPIs.length} selected
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {allOpenAPIs.map(api => (
+                                        <label key={api.id} className="group flex items-center p-3 rounded-xl border border-gray-100 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 cursor-pointer transition-all">
+                                            <input
+                                                type="checkbox"
+                                                checked={allowedOpenApiIds.includes(api.id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) setAllowedOpenApiIds([...allowedOpenApiIds, api.id]);
+                                                    else setAllowedOpenApiIds(allowedOpenApiIds.filter(id => id !== api.id));
+                                                }}
+                                                className="w-4 h-4 text-emerald-600 rounded border-gray-300 dark:border-slate-700 focus:ring-emerald-500 dark:focus:ring-offset-slate-900"
+                                            />
+                                            <div className="ml-3 flex flex-col">
+                                                <span className="text-sm font-medium text-gray-700 dark:text-slate-300 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                                                    {api.name_ko}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 group-hover:text-emerald-500/70 transition-colors">
+                                                    {api.tool_id}
+                                                </span>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </section>
+                        </div>
+                        
+                        <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-5 py-2.5 text-sm font-semibold text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+                            >
+                                취소
+                            </button>
+                            <button
+                                onClick={handleSavePermissions}
+                                disabled={isSaving}
+                                className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:shadow-none flex items-center gap-2 transition-all active:scale-95"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        저장 중...
+                                    </>
+                                ) : '저장하기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

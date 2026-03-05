@@ -80,6 +80,12 @@ def create_tool(name: str, tool_type: str, definition: str,
               created_by, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         
         tool_id = cur.lastrowid
+        
+        # [추가 26.03.05] 신규 도구 생성 시 기존 모든 액세스 토큰에 대해 권한 부여
+        tokens = cur.execute("SELECT id FROM h_access_token WHERE is_delete = 'N'").fetchall()
+        for t_row in tokens:
+            cur.execute("INSERT OR IGNORE INTO h_access_token_tool_map (token_id, tool_id) VALUES (?, ?)", (t_row[0], tool_id))
+            
         conn.commit()
         return tool_id
     finally:
