@@ -15,6 +15,7 @@ except ImportError:
     - [5] get_user_openapi_tool_usage: 특정 유저/토큰의 오늘 도구별 사용량 상세 조회
     - [6] get_openapi_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
     - [7] get_openapi_user_tool_detail: 특정 유저의 전체 기간 도구별 사용량 (Top 5)
+    - [8] get_all_openapi_usage_logs: MCP Tool 사용 이력을 조회 (Excel 전용)
 """
 
 # [1] log_openapi_usage: 사용 이력 저장
@@ -200,3 +201,24 @@ def get_openapi_user_tool_detail(label: str):
     rows = conn.execute(query, (label,)).fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+# [8] get_all_openapi_usage_logs: OpenAPI 전체 사용 이력 조회 (내보내기용)
+def get_all_openapi_usage_logs():
+    """OpenAPI 전체 사용 이력을 조회 (내보내기용)."""
+    conn = get_db_connection()
+    try:
+        sql = '''
+            SELECT
+                log.*,
+                u.user_id,
+                u.user_nm,
+                t.name as token_name
+            FROM h_openapi_usage log
+            LEFT JOIN h_user u ON log.user_uid = u.uid
+            LEFT JOIN h_access_token t ON log.token_id = t.id
+            ORDER BY log.id DESC
+        '''
+        rows = conn.execute(sql).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
