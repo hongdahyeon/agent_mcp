@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X, Download } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
@@ -113,6 +113,46 @@ export function UsageHistory() {
     const openJsonModal = (title: string, content: string) => {
         setModalTitle(title);
         setSelectedJson(formatJson(content));
+    };
+
+    // MCP Tool 사용 이력 내보내기
+    const handleExport = async (format: 'csv' | 'excel') => {
+        try {
+            const params = new URLSearchParams({
+                format
+            });
+            if (searchUserId) params.append('user_id', searchUserId);
+            if (searchToolNm) params.append('tool_nm', searchToolNm);
+            if (searchSuccess !== 'ALL') params.append('success', searchSuccess);
+
+            const url = `/api/export/mcp/usage?${params.toString()}`;
+            const res = await fetch(url, {
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) throw new Error("Export failed");
+
+            const blob = await res.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            
+            // Get filename from header if possible, or use default
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = `mcp_usage_export.${format === 'csv' ? 'csv' : 'xlsx'}`;
+            if (contentDisposition && contentDisposition.includes("filename*=UTF-8''")) {
+                filename = decodeURIComponent(contentDisposition.split("filename*=UTF-8''")[1]);
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            console.error("Export error:", err);
+            setError("내보내기 중 오류가 발생했습니다.");
+        }
     };
 
 
@@ -242,7 +282,23 @@ export function UsageHistory() {
                         </button>
                     </div>
 
-                    <div className="flex-none text-right">
+                    <div className="flex-none flex gap-2">
+                        {/* <button
+                            onClick={() => handleExport('csv')}
+                            className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-sm font-medium text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
+                            title="CSV 내보내기"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            CSV
+                        </button> */}
+                        <button
+                            onClick={() => handleExport('excel')}
+                            className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+                            title="Excel 내보내기"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            Excel
+                        </button>
                         <button
                             onClick={() => fetchLogs(page)}
                             disabled={loading}

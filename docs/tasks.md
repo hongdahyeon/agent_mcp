@@ -720,3 +720,17 @@
   - [x] 도구별(Custom/OpenAPI) 체크박스 연동 및 실시간 권한 저장 기능 구현
   - [x] **[Troubleshooting]**: 미정의 함수 오류 및 잘못된 API 경로(`/api/tools`) 수정 완료
 - [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 78. 감사 로그 내보내기 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend Implementation
+  - [x] `pandas`, `openpyxl` 의존성 추가 및 설치 > pip install pandas openpyxl
+  - [x] `src/routers/export.py` 신규 라우터 및 엔드포인트 구현 (CSV/Excel 지원)
+  - [x] `src/server.py` 에 라우터 등록
+- [x] 2. Database Implementation
+  - [x] `get_all_tool_usage_logs`, `get_all_openapi_usage_logs` 구현
+- [x] 3. Frontend Implementation
+  - [x] `UsageHistory.tsx` 내 내보내기 버튼 추가 및 API 연동
+  - [x] `OpenApiStats.tsx` 내 내보내기 버튼 추가 및 API 연동
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)

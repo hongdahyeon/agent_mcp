@@ -21,3 +21,7 @@ markdown
 
 # PDF generation
 fpdf2
+
+# Export to CSV/Excel
+pandas
+openpyxl
