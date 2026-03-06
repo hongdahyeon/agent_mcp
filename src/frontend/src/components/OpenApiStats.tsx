@@ -12,7 +12,8 @@ import {
     Eye,
     Info,
     AlertTriangle,
-    BarChart
+    BarChart,
+    Download
 } from 'lucide-react';
 import { getAuthHeaders } from '../utils/auth';
 import type { OpenApiUsageLog, OpenApiStats } from '../types/openapi';
@@ -89,6 +90,39 @@ export default function OpenApiStatsView({ theme }: Props) {
             setLoadingLabelStats(false);
         }
     }, []);
+
+    // OpenAPI 사용 이력 내보내기
+    const handleExport = async (format: 'csv' | 'excel') => {
+        try {
+            const url = `/api/export/openapi/usage?format=${format}`;
+            const res = await fetch(url, {
+                headers: getAuthHeaders()
+            });
+
+            if (!res.ok) throw new Error("Export failed");
+
+            const blob = await res.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            
+            // Get filename from header if possible, or use default
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = `openapi_usage_export.${format === 'csv' ? 'csv' : 'xlsx'}`;
+            if (contentDisposition && contentDisposition.includes("filename*=UTF-8''")) {
+                filename = decodeURIComponent(contentDisposition.split("filename*=UTF-8''")[1]);
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            console.error("Export error:", err);
+            alert("내보내기 중 오류가 발생했습니다.");
+        }
+    };
 
     useEffect(() => {
         fetchStats();
@@ -388,7 +422,26 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center font-pretendard">
                         <History className="w-4 h-4 mr-2" /> 상세 호출 이력
                     </h3>
-                    <span className="text-xs text-gray-500 dark:text-slate-400">총 {total}건</span>
+                    <div className="flex items-center space-x-3">
+                        <div className="flex bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-0.5">
+                            {/* <button
+                                onClick={() => handleExport('csv')}
+                                className="flex items-center px-2 py-1 text-[10px] font-bold text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/10 rounded-md transition-colors"
+                            >
+                                <Download className="w-3 h-3 mr-1" />
+                                CSV
+                            </button>
+                            <div className="w-px h-3 bg-gray-200 dark:bg-slate-700 mx-0.5 self-center" /> */}
+                            <button
+                                onClick={() => handleExport('excel')}
+                                className="flex items-center px-2 py-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-md transition-colors"
+                            >
+                                <Download className="w-3 h-3 mr-1" />
+                                EXCEL
+                            </button>
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">총 {total}건</span>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-auto">

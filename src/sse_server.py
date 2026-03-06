@@ -19,7 +19,7 @@ from src.utils.auth import verify_token
 from src.db import get_user, get_access_token
 from src.utils.context import set_current_user, clear_current_user
 # Include Routers
-from src.routers import auth, users, mcp as mcp_router, system, email, files, openapi, execution, admin_db, notification, mcp_execution
+from src.routers import auth, users, mcp as mcp_router, system, email, files, openapi, execution, admin_db, notification, mcp_execution, export
 from src.routers import token
 
 """
@@ -107,6 +107,7 @@ app.include_router(admin_db.router)
 app.include_router(notification.router)
 app.include_router(mcp_execution.router)
 app.include_router(token.router)
+app.include_router(export.router)
 
 # ==========================================
 # 4. SSE Handler (Integrated)

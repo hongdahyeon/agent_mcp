@@ -11,6 +11,7 @@ from .connection import get_db_connection
     - [6] get_user_tool_stats: 사용자별 도구 사용 횟수 집계
     - [7] get_mcp_hourly_daily_stats: 시간대별/요일별 사용 통계 (Heatmap)
     - [8] get_mcp_user_tool_detail: 특정 유저의 전체 기간 도구별 사용량 (Top 5)
+    - [9] get_all_tool_usage_logs: MCP Tool 사용 이력을 조회 (Excel 전용)
 """
 
 # [1] log_tool_usage: MCP Tool 사용 이력 관리 함수 (관리자용)
@@ -296,3 +297,61 @@ def get_mcp_user_tool_detail(user_id: str):
         
     conn.close()
     return [dict(row) for row in rows]
+
+# [9] get_all_tool_usage_logs: MCP Tool 전체 사용 이력 조회 (내보내기용)
+def get_all_tool_usage_logs(search_user_id: str = None, search_tool_nm: str = None, search_success: str = None):
+    """MCP Tool 전체 사용 이력을 조회 (내보내기용, 필터링 포함)."""
+    conn = get_db_connection()
+    
+    # 이력 조회 쿼리
+    query = '''
+        SELECT 
+            t.id,
+            t.tool_nm,
+            t.tool_params,
+            t.tool_success,
+            t.tool_result,
+            t.reg_dt,
+            u.user_id,
+            u.user_nm,
+            tk.name as token_name
+        FROM h_mcp_tool_usage t
+        LEFT JOIN h_user u ON t.user_uid = u.uid
+        LEFT JOIN h_access_token tk ON t.token_id = tk.id
+        WHERE 1=1
+    '''
+    
+    params = []
+    if search_user_id:
+        query += " AND (u.user_id LIKE ? OR tk.name LIKE ?)"
+        params.extend([f"%{search_user_id}%", f"%{search_user_id}%"])
+        
+    if search_tool_nm:
+        query += " AND t.tool_nm LIKE ?"
+        params.append(f"%{search_tool_nm}%")
+        
+    if search_success and search_success != 'ALL':
+        query += " AND t.tool_success = ?"
+        params.append(search_success)
+
+    query += " ORDER BY t.reg_dt DESC"
+    
+    cursor = conn.execute(query, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # dict 형태로 변환
+    items = []
+    for row in rows:
+        items.append({
+            "id": row['id'],
+            "tool_nm": row['tool_nm'],
+            "tool_params": row['tool_params'],
+            "tool_success": row['tool_success'],
+            "tool_result": row['tool_result'],
+            "reg_dt": row['reg_dt'],
+            "user_id": row['user_id'] or (f"token:{row['token_name']}" if row['token_name'] else "Unknown"),
+            "user_nm": row['user_nm'] or row['token_name'] or "Unknown"
+        })
+        
+    return items
