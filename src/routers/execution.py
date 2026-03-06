@@ -22,6 +22,16 @@ async def api_execute_openapi(
     role = current_user.get('role')
     token_id = current_user.get('_token_id')
     
+    # 0-1. [권한 확인] 외부 토큰 접근 시 OpenAPI 권한 체크 (New 26.03.05)
+    if token_id:
+        from src.db import check_access_token_permission
+        if not check_access_token_permission(token_id, tool_id, "OPENAPI"):
+            logger.warning(f"Access Denied: Token({token_id}) has no permission for OpenAPI '{tool_id}'")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access Denied. External token has NO permission for OpenAPI '{tool_id}'. Please contact admin."
+            )
+
     from src.db import get_openapi_limit, get_user_openapi_daily_usage, log_openapi_usage
     
     # 일일 제한량 조회 (TOKEN > USER > ROLE 우선순위)

@@ -8,6 +8,7 @@ import secrets
     - [3] get_all_access_tokens: 모든 토큰 목록 조회 (페이징 적용)
     - [4] delete_access_token: 토큰 삭제
     - [5] get_user_by_active_token: 토큰으로 사용자 조회 (SSE/Stdio 통합용)
+    - [6] check_access_token_permission: 토큰별 도구 권한 검증
 """
 
 # [1] create_access_token: 토큰 생성
@@ -18,10 +19,31 @@ def create_access_token(name: str) -> str:
     
     conn = get_db_connection()
     try:
-        conn.execute('''
+        cursor = conn.cursor()
+        # 1. 토큰 생성
+        cursor.execute('''
             INSERT INTO h_access_token (name, token)
             VALUES (?, ?)
         ''', (name, token))
+        
+        token_id = cursor.lastrowid
+        
+        # 2. 모든 커스텀 도구 권한 자동 부여
+        custom_tools = cursor.execute("SELECT id FROM h_custom_tool").fetchall()
+        for tool in custom_tools:
+            cursor.execute('''
+                INSERT INTO h_access_token_tool_map (token_id, tool_id)
+                VALUES (?, ?)
+            ''', (token_id, tool[0]))
+            
+        # 3. 모든 OpenAPI 도구 권한 자동 부여
+        openapis = cursor.execute("SELECT id FROM h_openapi").fetchall()
+        for api in openapis:
+            cursor.execute('''
+                INSERT INTO h_access_token_openapi_map (token_id, openapi_id)
+                VALUES (?, ?)
+            ''', (token_id, api[0]))
+            
         conn.commit()
         return token
     finally:
@@ -126,5 +148,49 @@ def get_user_by_active_token(token: str):
             }
             
         return None
+    finally:
+        conn.close()
+
+# [6] check_access_token_permission: 토큰별 도구 권한 검증
+def check_access_token_permission(
+    token_id: int,
+    tool_id: str | int,
+    tool_type: str = "CUSTOM"
+) -> bool:
+    """
+    특정 토큰이 특정 도구(CUSTOM 또는 OPENAPI)를 사용할 권한이 있는지 확인합니다.
+    """
+    if not token_id:
+        return False
+        
+    conn = get_db_connection()
+    try:
+        if tool_type == "CUSTOM":
+            # 커스텀 도구의 경우 name(str) 또는 id(int)로 조회 가능하도록 처리
+            if isinstance(tool_id, str):
+                row = conn.execute('''
+                    SELECT 1 FROM h_access_token_tool_map m
+                    JOIN h_custom_tool ct ON m.tool_id = ct.id
+                    WHERE m.token_id = ? AND ct.name = ?
+                ''', (token_id, tool_id)).fetchone()
+            else:
+                row = conn.execute('''
+                    SELECT 1 FROM h_access_token_tool_map
+                    WHERE token_id = ? AND tool_id = ?
+                ''', (token_id, tool_id)).fetchone()
+        else: # OPENAPI
+            if isinstance(tool_id, str):
+                row = conn.execute('''
+                    SELECT 1 FROM h_access_token_openapi_map m
+                    JOIN h_openapi o ON m.openapi_id = o.id
+                    WHERE m.token_id = ? AND o.tool_id = ?
+                ''', (token_id, tool_id)).fetchone()
+            else:
+                row = conn.execute('''
+                    SELECT 1 FROM h_access_token_openapi_map
+                    WHERE token_id = ? AND openapi_id = ?
+                ''', (token_id, tool_id)).fetchone()
+        
+        return row is not None
     finally:
         conn.close()

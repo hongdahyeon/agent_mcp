@@ -680,7 +680,7 @@
 
 ## 74. 외부 SSE 접근 및 토큰 제어 고도화 (New)
 
-- [x] 1. 외부 토큰(sk_...) 기반 MCP 도구 사용량 제한 로직 구현 (Security)
+- [x] 1. 외부 토큰(sk\_...) 기반 MCP 도구 사용량 제한 로직 구현 (Security)
   - [x] `token_id` 기준 사용량 집계 및 제한 정책 연동
 - [x] 2. 외부 접속 세션 관리 개선 및 가이드 배포
 - [x] 3. 기능 검증
@@ -703,3 +703,20 @@
 - [x] 인증 유지: JWT 및 외부 보안 토큰 연동 (통합 인증)
 - [x] 기능 통합: 기존 MCP 도구 사용 로직(사용량 체크, Audit Log) 연동
 - [x] 결과 반환: JSON 형식의 즉시 응답 제공
+
+## 77. 외부 토큰별 도구 권한 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Database Implementation
+  - [x] `h_access_token_tool_map`, `h_access_token_openapi_map` 테이블 생성
+  - [x] 기존 토큰들에 대한 전체 권한 부여 마이그레이션 (`migration_token_tools.py`)
+- [x] 2. Backend Implementation
+  - [x] 신규 토큰 생성(`create_access_token`) 및 신규 도구 등록 시 자동 권한 매핑 로직 추가
+  - [x] 권한 체크 유틸리티(`check_access_token_permission`) 구현
+  - [x] 3단계 보안 프로세스(권한->한도->실행) 적용 (`call_tool`, `api_execute_openapi`)
+  - [x] 토큰별 권한 관리 전용 API 라우터(`token.py`) 구현 및 등록
+- [x] 3. Frontend Implementation
+  - [x] `AccessTokenManager.tsx` 내 '권한 설정' 버튼 및 상세 제어 모달 UI 구현
+  - [x] 도구별(Custom/OpenAPI) 체크박스 연동 및 실시간 권한 저장 기능 구현
+  - [x] **[Troubleshooting]**: 미정의 함수 오류 및 잘못된 API 경로(`/api/tools`) 수정 완료
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
