@@ -734,3 +734,12 @@
   - [x] `UsageHistory.tsx` 내 내보내기 버튼 추가 및 API 연동
   - [x] `OpenApiStats.tsx` 내 내보내기 버튼 추가 및 API 연동
 - [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 79. 로그 정기 삭제 및 압축 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend: 로그 목록 조회 시 '오늘' 로그 식별 로직 추가
+- [x] 2. Backend: 로그 다중 파일 압축 API (`/api/system/logs/archive`) 구현
+- [x] 3. Frontend: 로그 목록 다중 선택 UI 및 체크박스 추가
+- [x] 4. Frontend: 압축 파일명 입력 및 압축 실행 기능 구현
+- [x] 5. 최종 검증 및 문서 업데이트
