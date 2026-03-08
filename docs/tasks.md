@@ -743,3 +743,13 @@
 - [x] 3. Frontend: 로그 목록 다중 선택 UI 및 체크박스 추가
 - [x] 4. Frontend: 압축 파일명 입력 및 압축 실행 기능 구현
 - [x] 5. 최종 검증 및 문서 업데이트
+
+## 80. API 문서화 자동화 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. FastAPI 인스턴스 메타데이터(Title, Description, Version) 추가
+- [x] 2. 서버 시작 로그에 Swagger UI/ReDoc 접속 주소 출력 로직 추가
+- [x] 3. MCP REST API Proxy 엔드포인트 Pydantic 모델(Request/Response) 적용
+  - [x] 4. 신규 엔드포인트: `GET /api/mcp/proxy/tools` (사용 가능한 도구 목록 조회) 구현
+  - [x] 5. Swagger UI 인증(Authorize) 버튼 활성화 및 보안 레이아웃 최적화
+  - [x] 6. 기능 검증 (tests/verify_api_docs.py) 완료
