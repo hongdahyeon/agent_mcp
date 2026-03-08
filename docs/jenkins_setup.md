@@ -113,6 +113,12 @@ pipeline {
     *   **Content type**: `application/json`
     *   **Events**: `Just the push event` 선택
 
-이제 GitHub에 코드를 `push`할 때마다 Jenkins가 자동으로 빌드를 시작합니다.
+## 7. 컴퓨터 재부팅 시 조치사항 (Checklist)
 
-(테스트 라인)
+컴퓨터를 껐다 켰을 경우, 자동화 파이프라인이 정상 작동하려면 다음 순서를 확인해야 합니다.
+
+1.  **Jenkins 서비스 확인**: 브라우저에서 `http://localhost:9090` 접속. 화면이 안 뜬다면 'Windows 서비스'에서 Jenkins를 시작합니다.
+2.  **ngrok 재실행**: 터미널에서 `ngrok http 9090` 실행.
+3.  **Webhook 주소 갱신**: ngrok을 재실행하면 주소명이 바뀝니다. 새로운 `Forwarding` 주소를 복사하여 **GitHub Webhook 설정의 Payload URL**을 업데이트합니다.
+
+이제 GitHub에 코드를 `push`할 때마다 Jenkins가 자동으로 빌드를 시작합니다.
