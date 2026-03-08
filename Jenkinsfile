@@ -63,8 +63,12 @@ pipeline {
 
 // 텔레그램 알림을 보내는 헬퍼 함수
 def sendTelegramNotification(String message) {
-    withCredentials([string(credentialsId: 'telegram-token', variable: 'TOKEN'),
-                     string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')]) {
-        bat "curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text=\"${message}\""
+    try {
+        withCredentials([string(credentialsId: 'telegram-token', variable: 'TOKEN'),
+                         string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')]) {
+            bat "curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text=\"${message}\""
+        }
+    } catch (Exception e) {
+        echo "Telegram 알림 전송 실패: ${e.getMessage()}"
     }
 }
