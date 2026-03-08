@@ -42,7 +42,6 @@ pipeline {
                     git checkout work
                     git pull origin work
                     git merge origin/home --no-edit
-                    // 토큰 정보를 포함한 HTTPS 주소로 푸시
                     git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git work
                     """
                 }
