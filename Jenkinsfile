@@ -33,15 +33,19 @@ pipeline {
 
         stage('Merge to work') {
             steps {
-                bat """
-                git config user.email "hyeon8287@gmail.com"
-                git config user.name "hong Home"
-                git fetch origin
-                git checkout work
-                git pull origin work
-                git merge origin/home --no-edit
-                git push origin work
-                """
+                // 'github-login'은 Jenkins Credentials에서 생성한 ID입니다.
+                withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    bat """
+                    git config user.email "hyeon8287@gmail.com"
+                    git config user.name "hong Home"
+                    git fetch origin
+                    git checkout work
+                    git pull origin work
+                    git merge origin/home --no-edit
+                    // 토큰 정보를 포함한 HTTPS 주소로 푸시
+                    git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git work
+                    """
+                }
             }
         }
     }
