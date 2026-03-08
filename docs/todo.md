@@ -229,7 +229,7 @@ Phase 1: 사용자 토큰 관리 (완료)
 
 - **도구 패키징 (Import/Export)**: 직접 만든 커스텀 도구 설정을 파일로 내보내거나 다른 환경에서 가져오는 기능
 - **웹훅(Webhook) 지원**: 도구 실행 결과나 특정 이벤트(한도 초과 등) 발생 시 외부 시스템으로 알림 전송
-- **API 문서화 자동화**: `MCP REST API Proxy` 엔드포인트에 대한 Swagger/OpenAPI 문서 자동 생성 및 노출
+- **API 문서화 자동화**: `MCP REST API Proxy` 엔드포인트에 대한 Swagger/OpenAPI 문서 자동 생성 및 노출 (v)
 
 #### 4. 사용자 경험(UX) 개선
 
