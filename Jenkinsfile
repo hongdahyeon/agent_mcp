@@ -53,9 +53,19 @@ pipeline {
     post {
         success {
             echo 'Build and Automated Merge Succeeded!'
+            sendTelegramNotification("✅ CI/CD 성공: 빌드 및 자동 머지 완료 (home -> work)")
         }
         failure {
             echo 'Build or Merge Failed. Please check the console output.'
+            sendTelegramNotification("❌ CI/CD 실패: 빌드 또는 머지 중 오류가 발생했습니다. Jenkins 로그를 확인하세요.")
         }
+    }
+}
+
+// 텔레그램 알림을 보내는 헬퍼 함수
+def sendTelegramNotification(String message) {
+    withCredentials([string(credentialsId: 'telegram-token', variable: 'TOKEN'),
+                     string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')]) {
+        bat "curl -s -X POST https://api.telegram.org/bot${TOKEN}/sendMessage -d chat_id=${CHAT_ID} -d text=\"${message}\""
     }
 }
