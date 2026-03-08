@@ -34,6 +34,8 @@ pipeline {
         stage('Merge to work') {
             steps {
                 bat """
+                git config user.email "hyeon8287@gmail.com"
+                git config user.name "hong Home"
                 git fetch origin
                 git checkout work
                 git pull origin work
