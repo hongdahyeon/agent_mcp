@@ -99,6 +99,7 @@ pipeline {
 *   **Repository URL**: `https://github.com/hongdahyeon/agent_mcp`
 *   **Branch Specifier**: `*/home`
 *   **Script Path**: `Jenkinsfile`
+*   **빌드 유발 (Build Triggers)**: `GitHub hook trigger for GITScm polling` 체크 (이게 되어 있어야 Webhook이 작동합니다!)
 
 ## 6. Webhook Accessibility (ngrok)
 

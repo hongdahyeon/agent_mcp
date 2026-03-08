@@ -31,19 +31,25 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Merge to work') {
             steps {
-                echo 'Deploying Agent MCP...'
+                bat """
+                git fetch origin
+                git checkout work
+                git pull origin work
+                git merge origin/home --no-edit
+                git push origin work
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Build and Deployment Succeeded!'
+            echo 'Build and Automated Merge Succeeded!'
         }
         failure {
-            echo 'Build Failed. Please check the console output.'
+            echo 'Build or Merge Failed. Please check the console output.'
         }
     }
 }
