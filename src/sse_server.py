@@ -71,7 +71,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Shutdown error: {e}")
 
-app = FastAPI(lifespan=lifespan)
+# FastAPI 인스턴스 생성 -> swagger ui 문서화
+app = FastAPI(
+    title="Agent MCP API",
+    description="MCP(Model Context Protocol) 서버 및 REST API 프록시 서비스",
+    version="1.0.0",
+    lifespan=lifespan
+)
+logger.info("Swagger UI: http://localhost:8000/docs")
+logger.info("ReDoc: http://localhost:8000/redoc")
+
 sse = SseServerTransport("/messages")
 
 # CORS
