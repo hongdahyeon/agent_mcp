@@ -6,17 +6,11 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Backend Setup') {
             steps {
                 bat """
                 if not exist venv (
-                    python -m venv venv
+                    py -3.12 -m venv venv
                 )
                 venv\\Scripts\\activate && pip install -r requirements.txt
                 """
