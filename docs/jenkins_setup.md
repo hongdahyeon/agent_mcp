@@ -39,24 +39,21 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'node' // Jenkins에서 설정한 Node.js 도구 이름
+        nodejs 'node' // Jenkins Global Tool Configuration에서 설정한 이름
     }
 
     environment {
-        PYTHON_PATH = "C:\\Python312\\python.exe" // 실제 Python 경로에 맞춰 수정
+        // 시스템에 설치된 Python의 실제 경로 (Windows 환경에서 PATH 이슈 방지)
+        PYTHON_EXE = 'C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/사용자/agent_mcp.git'
-            }
-        }
-
         stage('Backend Setup') {
             steps {
                 bat """
-                python -m venv venv
+                if not exist venv (
+                    "%PYTHON_EXE%" -m venv venv
+                )
                 venv\\Scripts\\activate && pip install -r requirements.txt
                 """
             }
@@ -73,29 +70,46 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                echo 'Deploying application...'
-                // 빌드된 프런트엔드 파일 이동 및 서버 재시작 로직 추가
+                echo 'Deploying Agent MCP...'
+                // 빌드된 파일 이동 또는 서버 재시작 로직
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD Pipeline Succeeded!'
+            echo 'Build and Deployment Succeeded!'
         }
         failure {
-            echo 'CI/CD Pipeline Failed. Check logs.'
+            echo 'Build Failed. Please check the console output.'
         }
     }
 }
 ```
 
-## 5. GitHub Webhook 연동
+> [!TIP]
+> Windows 시스템에서 Jenkins 서비스 계정이 Python 경로를 찾지 못할 경우, `environment` 블록에 Python 실행 파일의 절대 경로를 직접 지정해 주면 안정적으로 실행됩니다.
 
-1.  GitHub 저장소 > **Settings** > **Webhooks**로 이동.
-2.  **Add webhook** 클릭.
-3.  **Payload URL**: `http://<너의-IP-또는-도메인>:8080/github-webhook/` 입력.
-4.  **Content type**: `application/json` 선택.
-5.  **Just the push event** 선택 후 등록.
+## 5. Jenkins UI 설정 (SCM)
+
+파이프라인 프로젝트의 상세 설정에서 다음 항목을 입력합니다.
+
+*   **Definition**: `Pipeline script from SCM`
+*   **SCM**: `Git`
+*   **Repository URL**: `https://github.com/hongdahyeon/agent_mcp`
+*   **Branch Specifier**: `*/home`
+*   **Script Path**: `Jenkinsfile`
+
+## 6. Webhook Accessibility (ngrok)
+
+로컬 환경의 Jenkins를 GitHub이 인식할 수 있도록 외부로 노출합니다.
+
+1.  **ngrok 설치**: [ngrok 홈페이지](https://ngrok.com/)에서 다운로드 후 설치.
+2.  **인증**: `ngrok config add-authtoken <TOKEN>` 실행 (회원가입 후 확인 가능).
+3.  **실행**: 터미널에서 `ngrok http 9090` 실행 (포트번호는 Jenkins 설정에 맞춤).
+4.  **GitHub Webhook 등록**:
+    *   **Payload URL**: `https://<ngrok-ID>.ngrok-free.app/github-webhook/`
+    *   **Content type**: `application/json`
+    *   **Events**: `Just the push event` 선택
 
 이제 GitHub에 코드를 `push`할 때마다 Jenkins가 자동으로 빌드를 시작합니다.
