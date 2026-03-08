@@ -52,11 +52,11 @@ pipeline {
     post {
         success {
             echo 'Build and Automated Merge Succeeded!'
-            sendTelegramNotification("✅ CI/CD Success: Build and Automated Merge completed (home -> work)")
+            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (home -> work)")
         }
         failure {
             echo 'Build or Merge Failed. Please check the console output.'
-            sendTelegramNotification("❌ CI/CD Failed: Error during build or merge. Check Jenkins logs.")
+            sendTelegramNotification("CI/CD Failed: Error during build or merge. Check Jenkins logs.")
         }
     }
 }
