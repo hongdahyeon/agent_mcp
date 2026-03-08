@@ -113,3 +113,5 @@ pipeline {
     *   **Events**: `Just the push event` 선택
 
 이제 GitHub에 코드를 `push`할 때마다 Jenkins가 자동으로 빌드를 시작합니다.
+
+(테스트 라인)
