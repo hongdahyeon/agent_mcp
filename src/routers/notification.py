@@ -111,32 +111,29 @@ async def list_notifications_admin(
     
     return get_notification_list_admin(page, size, include_deleted)
 
+from src.utils.notification_helper import send_dual_notification
+
 # 관리자가 사용자에게 알림 발송
 @router.post("/send", status_code=201)
 async def send_notification(
     request: NotificationCreateRequest,
     current_user: dict = Depends(get_current_user_jwt)
 ):
-    """관리자가 사용자에게 알림 발송"""
+    """관리자가 사용자에게 알림 발송 (SSE + Telegram)"""
     if current_user.get('role') != 'ROLE_ADMIN':
         raise HTTPException(status_code=403, detail="Admin privileges required")
     
-    notify_id = create_notification(
+    # 알림 발송 > SSE, Telegram
+    notify_id = send_dual_notification(
         receive_user_uid=request.receive_user_uid,
         title=request.title,
         message=request.message,
         send_user_uid=current_user.get('uid')
     )
     
-    # 실시간 알림 전송
-    notification_manager.notify(request.receive_user_uid, {
-        "type": "new_notification",
-        "id": notify_id,
-        "title": request.title,
-        "message": request.message,
-        "unread_count": get_unread_count(request.receive_user_uid)
-    })
-    
+    if not notify_id:
+        raise HTTPException(status_code=500, detail="Failed to send notification")
+        
     return {"status": "success", "id": notify_id}
 
 # 내 알림 목록 조회

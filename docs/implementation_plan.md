@@ -1628,3 +1628,29 @@ Jenkins CI/CD 파이프라인의 빌드 및 배포 결과를 텔레그램으로 
 - **Schema Expansion (`src/db/init_manager.py`)**: `h_user` 테이블에 `telegram_chat_id (TEXT)` 컬럼을 추가했습니다.
 - **Auto Seeding (`src/db/check/db_reset.py`)**: DB 초기화 시 `.env`에 설정된 관리자의 Chat ID가 기본 계정(admin/user)에 자동으로 세팅되도록 보완했습니다.
 - **Migration Tool (`src/db/check/db_telegram_db.py`)**: 기존 DB 사용자를 위해 컬럼 생성 및 데이터 업데이트를 자동으로 수행하는 마이그레이션 스크립트를 작성하여 배포했습니다.
+---
+ 
+ ## Phase 28: Admin Manual Notification Telegram Integration (New)
+ 
+ ### Goal
+ 
+ 관리자가 직접 발송하는 알림(Notification Center)도 시스템 알림과 마찬가지로 SSE와 Telegram에 동시에 발송되도록 통합합니다.
+ 
+ ### Proposed Changes
+ 
+ #### 1. Backend: Notification Helper Refactoring
+ 
+ - **[MODIFY] `src/utils/notification_helper.py`**
+   - `send_system_notification`을 좀 더 일반화된 `send_dual_notification`으로 리팩토링.
+   - `send_user_uid` 매개변수를 추가하여 시스템(None) 뿐만 아니라 특정 관리자가 보낸 경우도 기록 가능하게 함.
+ 
+ #### 2. Backend: API Endpoint Update
+ 
+ - **[MODIFY] `src/routers/notification.py`**
+   - `send_notification` 함수에서 직접 DB와 SSE를 호출하던 로직을 공통 헬퍼(`send_dual_notification`)를 사용하도록 변경.
+ 
+ ### Verification Plan
+ 
+ 1. **Code Review**: `notification_helper`가 Telegram 발송 로직을 포함하고 있는지 확인.
+ 2. **Manual Test**: 관리자 화면에서 알림 발송 시 로그에 Telegram 발송 관련 로그가 찍히는지 확인.
+ 3. **Regression Test**: 기존 시스템 알림(사용량 초과 등)이 여전히 잘 동작하는지 확인.
