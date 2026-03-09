@@ -8,6 +8,10 @@ import uvicorn
 import logging
 import os
 import sys
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 # 프로젝트 루트를 sys.path에 추가하여 'src' 모듈을 찾을 수 있게 합니다.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

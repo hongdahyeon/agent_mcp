@@ -2,7 +2,7 @@
 
 이 프로젝트는 **MCP (Model Context Protocol) Agent**가 사용할 도구(Tools)를 관리하고, 이를 웹 인터페이스에서 테스트, 모니터링 및 제어할 수 있는 관리형 서버 애플리케이션입니다.
 
-> **v5.0 업데이트**: **Jenkins 기반 CI/CD 파이프라인**이 구축되어 코드 품질 검증 및 브랜치 머지가 자동화되었습니다. 또한 MCP REST API Proxy, 세밀한 토큰별 권한 관리, 감사 로그 Excel 내보내기 및 Swagger UI 통합 문서화 기능이 추가되었습니다.
+> **v5.0 업데이트**: **Jenkins 기반 CI/CD 파이프라인**이 구축되어 코드 품질 검증 및 브랜치 머지가 자동화되었습니다. 또한 **Telegram 봇 연동**을 통해 빌드 및 머지 결과를 실시간으로 통보받을 수 있습니다. MCP REST API Proxy, 세밀한 토큰별 권한 관리, 감사 로그 Excel 내보내기 및 Swagger UI 통합 문서화 기능이 추가되었습니다.
 
 ---
 
@@ -65,6 +65,7 @@
   - 개발자가 `home` 브랜치에 코드를 `push`하면 GitHub Webhook이 Jenkins를 호출합니다.
   - Jenkins는 백엔드(Python) 및 프론트엔드(Node.js) 빌드와 유효성 검증을 수행합니다.
   - 빌드 성공 시, Jenkins가 자동으로 `work` 브랜치로 최신 내용을 **Merge 및 Push** 합니다.
+  - **실시간 알림**: 빌드 및 머지 성공/실패 여부를 **Telegram 봇**을 통해 개발자에게 즉시 전송합니다.
 - **로컬 연동**: `ngrok` 터널링을 통해 로컬 Jenkins 서버와 GitHub를 안전하게 연결합니다.
 
 ---
@@ -82,6 +83,7 @@
 
 - **v5.0 (New)**:
   - Jenkins CI/CD 파이프라인 구축 (자동 빌드 및 머지).
+  - **Telegram Notification 연동 (실시간 빌드 결과 알림).**
   - MCP REST API Proxy 구현 및 통합 인증 연동.
   - 외부 토큰별 도구 권한 관리 시스템 도입.
   - 감사 로그(Audit Log) Excel 내보내기 기능 추가.
