@@ -50,16 +50,19 @@ pipeline {
         stage('Automated Merge') {
             steps {
                 script {
-                    // 1. 빌드 상황 파악 (커밋 메시지 및 현재 브랜치 분석)
-                    def commitLog = bat(script: 'git log -1 --pretty=%%B', returnStdout: true).trim()
-                    def lines = commitLog.split('\r?\n')
-                    def commitMessage = lines.length > 0 ? lines[lines.length - 1].trim() : ""
+                    // 1. 빌드 상황 파악 (커밋 메시지 분석)
+                    // bat의 결과에는 실행된 명령어 라인이 포함될 수 있으므로, 실제 메시지 부분만 필터링합니다.
+                    def fullLog = bat(script: 'git log -1 --pretty=%%B', returnStdout: true).trim()
+                    
+                    // 명령어 라인(C:\...)을 제외한 실제 커밋 메시지 본문만 추출
+                    def messageLines = fullLog.split('\r?\n').findAll { !it.contains('git log -1') && !it.startsWith('C:\\') }
+                    def commitMessage = messageLines.join('\n').trim()
                     
                     def rawBranch = env.GIT_BRANCH ?: "home"
                     def currentBranch = rawBranch.replace('origin/', '').trim()
                     
                     echo ">>> Current Branch: ${currentBranch}"
-                    echo ">>> Commit Message: ${commitMessage}"
+                    echo ">>> Extracted Commit Message: ${commitMessage}"
 
                     // 시나리오 판별
                     if (currentBranch == 'work') {
