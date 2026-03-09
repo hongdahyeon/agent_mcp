@@ -6,12 +6,13 @@ pipeline {
     }
 
     environment {
-        // 시스템에 설치된 Python의 실제 경로로 수정 (where python 명령어로 확인한 경로)
-        PYTHON_EXE = 'C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
+        // Jenkins Node 설정(Environment variables)에서 정의한 PYTHON_EXE를 사용
+        // 정의되지 않은 경우 기본값인 'python'을 사용
+        PYTHON_EXE = "${env.PYTHON_EXE ?: 'python'}"
     }
 
     parameters {
-        string(name: 'SOURCE_BRANCH', defaultValue: 'note', description: 'Source branch to merge from (e.g., home, note)')
+        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: 'Source branch to merge from (e.g., home, note)')
         string(name: 'TARGET_BRANCH', defaultValue: 'work', description: 'Target branch to merge into (e.g., work)')
     }
 
@@ -29,14 +30,10 @@ pipeline {
         stage('Backend Setup') {
             steps {
                 bat """
-                @echo off
-                :: 시스템에 설치된 python을 사용하거나, Jenkins 환경 변수를 활용하세요
-                python -m venv venv
-                if errorlevel 1 exit /b 1
-                
-                :: 가상환경 활성화 후 패키지 설치
-                call venv\\Scripts\\activate
-                pip install -r requirements.txt
+                if not exist venv (
+                    "%PYTHON_EXE%" -m venv venv
+                )
+                venv\\Scripts\\activate && pip install -r requirements.txt
                 """
             }
         }
@@ -52,17 +49,34 @@ pipeline {
 
         stage('Automated Merge') {
             steps {
-                // 'github-login'은 Jenkins Credentials에서 생성한 ID입니다.
-                withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                    bat """
-                    git config user.email "hyeon8287@gmail.com"
-                    git config user.name "hong Home"
-                    git fetch origin
-                    git checkout ${params.TARGET_BRANCH}
-                    git pull origin ${params.TARGET_BRANCH}
-                    git merge origin/${params.SOURCE_BRANCH} --no-edit
-                    git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${params.TARGET_BRANCH}
-                    """
+                script {
+                    // 1. 소스 브랜치 결정 (파라미터 우선, 없으면 현재 빌드 브랜치)
+                    // =>> env.GIT_BRANCH는 보통 'origin/branch_name' 형태
+                    def rawBranchSource = params.SOURCE_BRANCH ?: env.GIT_BRANCH
+                    if (rawBranchSource == null) rawBranchSource = "home"
+                    
+                    def cleanSource = rawBranchSource.replace('origin/', '').trim()
+                    def cleanTarget = params.TARGET_BRANCH.trim()
+
+                    echo ">>> Source Branch: ${cleanSource}"
+                    echo ">>> Target Branch: ${cleanTarget}"
+
+                    // 2. 병합 실행
+                    withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                        bat """
+                        git config user.email "hyeon8287@gmail.com"
+                        git config user.name "hong Home"
+                        git fetch origin
+                        git checkout ${cleanTarget}
+                        git pull origin ${cleanTarget}
+                        git merge origin/${cleanSource} --no-edit
+                        git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${cleanTarget}
+                        """
+                    }
+                    
+                    // 3. 알림용 변수 설정 (성공/실패 시 사용)
+                    env.ACTUAL_SOURCE = cleanSource
+                    env.ACTUAL_TARGET = cleanTarget
                 }
             }
         }
@@ -71,11 +85,11 @@ pipeline {
     post {
         success {
             echo 'Build and Automated Merge Succeeded!'
-            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${params.SOURCE_BRANCH} -> ${params.TARGET_BRANCH})")
+            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE ?: params.SOURCE_BRANCH} -> ${env.ACTUAL_TARGET ?: params.TARGET_BRANCH})")
         }
         failure {
             echo 'Build or Merge Failed. Please check the console output.'
-            sendTelegramNotification("CI/CD Failed: Error during build or merge (${params.SOURCE_BRANCH} -> ${params.TARGET_BRANCH}). Check Jenkins logs.")
+            sendTelegramNotification("CI/CD Failed: Error during build or merge (${env.ACTUAL_SOURCE ?: params.SOURCE_BRANCH} -> ${env.ACTUAL_TARGET ?: params.TARGET_BRANCH}). Check Jenkins logs.")
         }
     }
 }
