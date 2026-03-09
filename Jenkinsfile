@@ -51,7 +51,7 @@ pipeline {
             steps {
                 script {
                     // 1. 빌드 상황 파악 (커밋 메시지 및 현재 브랜치 분석)
-                    def commitLog = bat(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    def commitLog = bat(script: 'git log -1 --pretty=%%B', returnStdout: true).trim()
                     def lines = commitLog.split('\r?\n')
                     def commitMessage = lines.length > 0 ? lines[lines.length - 1].trim() : ""
                     
