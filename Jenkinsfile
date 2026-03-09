@@ -113,20 +113,25 @@ pipeline {
     post {
         success {
             script {
+                def now = new Date().format("yyyy-MM-dd HH:mm", TimeZone.getTimeZone('Asia/Seoul'))
                 if (env.CASE_TYPE == "SYNC_FROM_WORK") {
                     echo 'Sync from work completed.'
-                    sendTelegramNotification("CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
                 } else if (env.CASE_TYPE == "MERGE_TO_WORK") {
                     echo 'Automated Merge Succeeded!'
-                    sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
                 } else {
                     echo 'Build Succeeded (No special merge scenario).'
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Build completed (${env.GIT_BRANCH ?: 'unknown'})")
                 }
             }
         }
         failure {
-            echo 'Build or Merge Failed.'
-            sendTelegramNotification("CI/CD Failed: Error during pipeline execution. Check Jenkins logs.")
+            script {
+                def now = new Date().format("yyyy-MM-dd HH:mm", TimeZone.getTimeZone('Asia/Seoul'))
+                echo 'Build or Merge Failed.'
+                sendTelegramNotification("[${now}] [x] CI/CD Failed: Error during pipeline execution. Check Jenkins logs.")
+            }
         }
     }
 }
