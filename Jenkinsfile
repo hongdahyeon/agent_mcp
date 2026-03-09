@@ -50,31 +50,45 @@ pipeline {
         stage('Automated Merge') {
             steps {
                 script {
-                    // 1. 소스 브랜치 결정 (파라미터 우선, 없으면 현재 빌드 브랜치)
-                    // =>> env.GIT_BRANCH는 보통 'origin/branch_name' 형태
-                    def rawBranchSource = params.SOURCE_BRANCH ?: env.GIT_BRANCH
-                    if (rawBranchSource == null) rawBranchSource = "home"
+                    // 1. 소스 브랜치 결정 로직 개선
+                    // 현재 빌드를 유발한 브랜치(env.GIT_BRANCH)를 최우선으로 사용합니다.
+                    def rawBranchSource = env.GIT_BRANCH ?: params.SOURCE_BRANCH
                     
+                    // 만약 둘 다 비어있다면(드문 경우) 기본값 'home' 사용
+                    if (rawBranchSource == null || rawBranchSource == "") {
+                        rawBranchSource = "home"
+                    }
+                    
+                    // 'origin/' 접두어 제거 및 공백 정리
                     def cleanSource = rawBranchSource.replace('origin/', '').trim()
                     def cleanTarget = params.TARGET_BRANCH.trim()
 
-                    echo ">>> Source Branch: ${cleanSource}"
-                    echo ">>> Target Branch: ${cleanTarget}"
+                    echo ">>> Detected Build Branch (Source): ${cleanSource}"
+                    echo ">>> Target Branch for Merge: ${cleanTarget}"
 
                     // 2. 병합 실행
                     withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                         bat """
+                        @echo off
                         git config user.email "hyeon8287@gmail.com"
                         git config user.name "hong Home"
+                        
+                        echo Fetching latest changes...
                         git fetch origin
+                        
+                        echo Checking out target branch: ${cleanTarget}
                         git checkout ${cleanTarget}
                         git pull origin ${cleanTarget}
+                        
+                        echo Merging ${cleanSource} into ${cleanTarget}...
                         git merge origin/${cleanSource} --no-edit
+                        
+                        echo Pushing changes to remote...
                         git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${cleanTarget}
                         """
                     }
                     
-                    // 3. 알림용 변수 설정 (성공/실패 시 사용)
+                    // 3. 알림용 변수 설정 (post 단계에서 사용)
                     env.ACTUAL_SOURCE = cleanSource
                     env.ACTUAL_TARGET = cleanTarget
                 }
