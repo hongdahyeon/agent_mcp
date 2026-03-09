@@ -753,3 +753,24 @@
   - [x] 4. 신규 엔드포인트: `GET /api/mcp/proxy/tools` (사용 가능한 도구 목록 조회) 구현
   - [x] 5. Swagger UI 인증(Authorize) 버튼 활성화 및 보안 레이아웃 최적화
   - [x] 6. 기능 검증 (tests/verify_api_docs.py) 완료
+
+## 81. Jenkins Telegram Integration (New)
+
+- [x] Telegram 봇 생성 및 API Token/Chat ID 획득
+- [x] Jenkins 자격 증명(Credentials) 등록 (`telegram-token`, `telegram-chat-id`)
+- [x] Jenkinsfile 내 `sendTelegramNotification` 함수 구현 및 에러 핸들링 적용
+- [x] CI/CD 파이프라인 빌드 결과(성공/실패) 실시간 알림 연동
+
+## 82. 백엔드 시스템 Telegram 연동 (New)
+
+- [x] `python-dotenv`, `httpx` 패키지 설치 및 환경 변수(.env) 설정
+- [x] `src/utils/telegram_bot.py` 비동기 메시지 발송 모듈 구현
+- [x] `src/utils/notification_helper.py` 내 SSE 알림과 Telegram 동시 발송 로직 통합
+- [x] 서버 시작 시 환경 변수 로드 로직 추가 (`src/sse_server.py`)
+
+## 83. 사용자별 Telegram Chat ID 관리 및 DB 확장 (New)
+
+- [x] `h_user` 테이블 `telegram_chat_id` 컬럼 추가 (`init_manager.py`)
+- [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
+- [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
+- [x] 기능 검증 (tests/test_telegram_notify.py) 완료

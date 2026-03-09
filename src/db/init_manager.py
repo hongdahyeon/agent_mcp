@@ -25,7 +25,8 @@ def init_db():
         is_locked TEXT DEFAULT 'N',
         is_delete TEXT DEFAULT 'N' NOT NULL,
         is_approved TEXT DEFAULT 'N' NOT NULL,
-        login_fail_count INTEGER DEFAULT 0
+        login_fail_count INTEGER DEFAULT 0,
+        telegram_chat_id TEXT
     )
     ''')
     
