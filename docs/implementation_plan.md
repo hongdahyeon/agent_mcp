@@ -1675,3 +1675,16 @@ Jenkins CI/CD 파이프라인의 빌드 및 배포 결과를 텔레그램으로 
 1. 이름/텔레그램 ID 수정 후 MyPage 재진입 시 값 유지 확인.
 2. 이메일 수정 시 중복 시 차단 및 OTP 인증 필수 여부 확인.
 3. 수정 실패/성공 시 사용자 피드백(알림) 확인.
+
+ ---
+ 
+## Phase 30: Configurable Jenkins Branch Merge [Completed]
+ 
+### Goal
+ 
+Jenkins의 브랜치 병합 로직을 파라미터화하여 다양한 브랜치 간 병합(예: note -> work)을 지원하도록 개선했습니다.
+ 
+### Implemented Changes
+ 
+- **[MODIFY] [Jenkinsfile](file:///d:/hong/9.%20project/agent_mcp/Jenkinsfile)**: `SOURCE_BRANCH`, `TARGET_BRANCH` 파라미터 추가 및 로직 연동.
+- **Telegram Notification**: 알림 메시지에 브랜치 정보 동적 반영.

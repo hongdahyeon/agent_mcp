@@ -10,6 +10,11 @@ pipeline {
         PYTHON_EXE = 'C:\\Users\\user\\AppData\\Local\\Programs\\Python\\Python312\\python.exe'
     }
 
+    parameters {
+        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: 'Source branch to merge from (e.g., home, note)')
+        string(name: 'TARGET_BRANCH', defaultValue: 'work', description: 'Target branch to merge into (e.g., work)')
+    }
+
     stages {
         stage('Backend Setup') {
             steps {
@@ -31,7 +36,7 @@ pipeline {
             }
         }
 
-        stage('Merge to work') {
+        stage('Automated Merge') {
             steps {
                 // 'github-login'은 Jenkins Credentials에서 생성한 ID입니다.
                 withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
@@ -39,10 +44,10 @@ pipeline {
                     git config user.email "hyeon8287@gmail.com"
                     git config user.name "hong Home"
                     git fetch origin
-                    git checkout work
-                    git pull origin work
-                    git merge origin/home --no-edit
-                    git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git work
+                    git checkout ${params.TARGET_BRANCH}
+                    git pull origin ${params.TARGET_BRANCH}
+                    git merge origin/${params.SOURCE_BRANCH} --no-edit
+                    git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${params.TARGET_BRANCH}
                     """
                 }
             }
@@ -52,11 +57,11 @@ pipeline {
     post {
         success {
             echo 'Build and Automated Merge Succeeded!'
-            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (home -> work)")
+            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${params.SOURCE_BRANCH} -> ${params.TARGET_BRANCH})")
         }
         failure {
             echo 'Build or Merge Failed. Please check the console output.'
-            sendTelegramNotification("CI/CD Failed: Error during build or merge. Check Jenkins logs.")
+            sendTelegramNotification("CI/CD Failed: Error during build or merge (${params.SOURCE_BRANCH} -> ${params.TARGET_BRANCH}). Check Jenkins logs.")
         }
     }
 }
