@@ -11,9 +11,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-def send_system_notification(receive_user_uid: int, title: str, message: str):
+
+"""
+    유저에게 알림 발송 헬퍼 함수 > SSE, Telegram
+    [1] send_dual_notification: 사용자에게 실시간 알림을 전송합니다.
+    (DB 저장 + SSE 브로드캐스팅 + Telegram 전송)
+
+    [2] send_system_notification: 시스템 알림을 전송합니다.
+    (DB 저장 + SSE 브로드캐스팅 + Telegram 전송)
+"""
+
+
+# [1] send_dual_notification: 사용자에게 실시간 알림을 전송합니다.
+# (DB 저장 + SSE 브로드캐스팅 + Telegram 전송)
+def send_dual_notification(
+    receive_user_uid: int,
+    title: str,
+    message: str,
+    send_user_uid: int = None
+):
     """
-    시스템에서 발생하는 주요 이벤트를 사용자에게 실시간 알림으로 전송합니다.
+    사용자에게 실시간 알림을 전송합니다.
     (DB 저장 + SSE 브로드캐스팅 + Telegram 전송)
     """
     if not receive_user_uid:
@@ -25,7 +43,7 @@ def send_system_notification(receive_user_uid: int, title: str, message: str):
             receive_user_uid=receive_user_uid,
             title=title,
             message=message,
-            send_user_uid=None # 시스템 발신 (NULL)
+            send_user_uid=send_user_uid
         )
         
         # 2. 실시간 SSE 전송
@@ -51,8 +69,18 @@ def send_system_notification(receive_user_uid: int, title: str, message: str):
         except Exception as te:
             logger.error(f"Telegram background task error: {te}")
 
-        logger.info(f"System notification sent to UID {receive_user_uid}: {title}")
+        logger.info(f"Notification sent to UID {receive_user_uid} (Sender: {send_user_uid}): {title}")
         return notify_id
     except Exception as e:
-        logger.error(f"Failed to send system notification: {e}")
+        logger.error(f"Failed to send dual notification: {e}")
         return None
+
+# [2] send_system_notification: 시스템 알림을 전송합니다.
+# (DB 저장 + SSE 브로드캐스팅 + Telegram 전송)
+def send_system_notification(
+    receive_user_uid: int,
+    title: str,
+    message: str
+):
+    """하위 호환성을 위해 유지 (시스템 발송용)"""
+    return send_dual_notification(receive_user_uid, title, message, send_user_uid=None)

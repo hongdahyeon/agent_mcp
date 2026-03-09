@@ -774,3 +774,9 @@
 - [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
 - [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
 - [x] 기능 검증 (tests/test_telegram_notify.py) 완료
+ 
+## 84. 관리자 수동 알림 Telegram 연동 (New)
+
+- [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
+- [x] `src/routers/notification.py` 내 관리자 발송 API 연동
+- [x] 기능 검증 및 테스트
