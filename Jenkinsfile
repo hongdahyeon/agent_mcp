@@ -50,47 +50,64 @@ pipeline {
         stage('Automated Merge') {
             steps {
                 script {
-                    // 1. 소스 브랜치 결정 로직 개선
-                    // 현재 빌드를 유발한 브랜치(env.GIT_BRANCH)를 최우선으로 사용합니다.
-                    def rawBranchSource = env.GIT_BRANCH ?: params.SOURCE_BRANCH
+                    // 1. 빌드 상황 파악 (커밋 메시지 및 현재 브랜치 분석)
+                    def commitLog = bat(script: 'git log -1 --pretty=%B', returnStdout: true).trim()
+                    def lines = commitLog.split('\r?\n')
+                    def commitMessage = lines.length > 0 ? lines[lines.length - 1].trim() : ""
                     
-                    // 만약 둘 다 비어있다면(드문 경우) 기본값 'home' 사용
-                    if (rawBranchSource == null || rawBranchSource == "") {
-                        rawBranchSource = "home"
-                    }
+                    def rawBranch = env.GIT_BRANCH ?: "home"
+                    def currentBranch = rawBranch.replace('origin/', '').trim()
                     
-                    // 'origin/' 접두어 제거 및 공백 정리
-                    def cleanSource = rawBranchSource.replace('origin/', '').trim()
-                    def cleanTarget = params.TARGET_BRANCH.trim()
+                    echo ">>> Current Branch: ${currentBranch}"
+                    echo ">>> Commit Message: ${commitMessage}"
 
-                    echo ">>> Detected Build Branch (Source): ${cleanSource}"
-                    echo ">>> Target Branch for Merge: ${cleanTarget}"
+                    // 시나리오 판별
+                    if (currentBranch == 'work') {
+                        // case 0: work 브랜치 자체 빌드 (일반적으로는 병합 생략)
+                        echo ">>> Build on 'work' branch. Skipping automated merge."
+                        env.CASE_TYPE = "WORK_SELF"
+                        env.SKIP_PUSH = "true"
+                        return
+                    } else if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains('Merge branch \'work\'')) {
+                        // 시나리오 2: work -> Feature (Sync)
+                        echo ">>> Scenario 2: Sync from 'work' to '${currentBranch}' detected."
+                        env.CASE_TYPE = "SYNC_FROM_WORK"
+                        env.ACTUAL_SOURCE = "work"
+                        env.ACTUAL_TARGET = currentBranch
+                        env.SKIP_PUSH = "true"
+                        return
+                    } else {
+                        // 시나리오 1: Feature -> work (Automated Merge)
+                        echo ">>> Scenario 1: Automated Merge from '${currentBranch}' to 'work' detected."
+                        env.CASE_TYPE = "MERGE_TO_WORK"
+                        def cleanSource = currentBranch
+                        def cleanTarget = "work"
+                        
+                        env.ACTUAL_SOURCE = cleanSource
+                        env.ACTUAL_TARGET = cleanTarget
+                        env.SKIP_PUSH = "false"
 
-                    // 2. 병합 실행
-                    withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                        bat """
-                        @echo off
-                        git config user.email "hyeon8287@gmail.com"
-                        git config user.name "hong Home"
-                        
-                        echo Fetching latest changes...
-                        git fetch origin
-                        
-                        echo Checking out target branch: ${cleanTarget}
-                        git checkout ${cleanTarget}
-                        git pull origin ${cleanTarget}
-                        
-                        echo Merging ${cleanSource} into ${cleanTarget}...
-                        git merge origin/${cleanSource} --no-edit
-                        
-                        echo Pushing changes to remote...
-                        git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${cleanTarget}
-                        """
+                        withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                            bat """
+                            @echo off
+                            git config user.email "hyeon8287@gmail.com"
+                            git config user.name "hong Home"
+                            
+                            echo Fetching latest changes...
+                            git fetch origin
+                            
+                            echo Checking out target branch: ${cleanTarget}
+                            git checkout ${cleanTarget}
+                            git pull origin ${cleanTarget}
+                            
+                            echo Merging ${cleanSource} into ${cleanTarget}...
+                            git merge origin/${cleanSource} --no-edit
+                            
+                            echo Pushing changes to remote...
+                            git push https://%GIT_USER%:%GIT_PASS%@github.com/hongdahyeon/agent_mcp.git ${cleanTarget}
+                            """
+                        }
                     }
-                    
-                    // 3. 알림용 변수 설정 (post 단계에서 사용)
-                    env.ACTUAL_SOURCE = cleanSource
-                    env.ACTUAL_TARGET = cleanTarget
                 }
             }
         }
@@ -98,12 +115,21 @@ pipeline {
 
     post {
         success {
-            echo 'Build and Automated Merge Succeeded!'
-            sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE ?: params.SOURCE_BRANCH} -> ${env.ACTUAL_TARGET ?: params.TARGET_BRANCH})")
+            script {
+                if (env.CASE_TYPE == "SYNC_FROM_WORK") {
+                    echo 'Sync from work completed.'
+                    sendTelegramNotification("CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                } else if (env.CASE_TYPE == "MERGE_TO_WORK") {
+                    echo 'Automated Merge Succeeded!'
+                    sendTelegramNotification("CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                } else {
+                    echo 'Build Succeeded (No special merge scenario).'
+                }
+            }
         }
         failure {
-            echo 'Build or Merge Failed. Please check the console output.'
-            sendTelegramNotification("CI/CD Failed: Error during build or merge (${env.ACTUAL_SOURCE ?: params.SOURCE_BRANCH} -> ${env.ACTUAL_TARGET ?: params.TARGET_BRANCH}). Check Jenkins logs.")
+            echo 'Build or Merge Failed.'
+            sendTelegramNotification("CI/CD Failed: Error during pipeline execution. Check Jenkins logs.")
         }
     }
 }
