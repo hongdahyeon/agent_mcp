@@ -11,7 +11,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: 'Source branch to merge from (e.g., home, note)')
+        string(name: 'SOURCE_BRANCH', defaultValue: 'note', description: 'Source branch to merge from (e.g., home, note)')
         string(name: 'TARGET_BRANCH', defaultValue: 'work', description: 'Target branch to merge into (e.g., work)')
     }
 
