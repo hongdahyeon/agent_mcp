@@ -51,7 +51,7 @@ pipeline {
             steps {
                 script {
                     // 1. 빌드 상황 파악 (커밋 메시지 분석)
-                    // bat의 결과에는 실행된 명령어 라인이 포함될 수 있으므로, 실제 메시지 부분만 필터링합니다.
+                    // bat의 결과에는 실행된 명령어 라인이 포함될 수 있으므로, 실제 메시지 부분만 추출
                     def fullLog = bat(script: 'git log -1 --pretty=%%B', returnStdout: true).trim()
                     
                     // 명령어 라인(C:\...)을 제외한 실제 커밋 메시지 본문만 추출
@@ -65,13 +65,7 @@ pipeline {
                     echo ">>> Extracted Commit Message: ${commitMessage}"
 
                     // 시나리오 판별
-                    if (currentBranch == 'work') {
-                        // case 0: work 브랜치 자체 빌드 (일반적으로는 병합 생략)
-                        echo ">>> Build on 'work' branch. Skipping automated merge."
-                        env.CASE_TYPE = "WORK_SELF"
-                        env.SKIP_PUSH = "true"
-                        return
-                    } else if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains('Merge branch \'work\'')) {
+                    if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains('Merge branch \'work\'')) {
                         // 시나리오 2: work -> Feature (Sync)
                         echo ">>> Scenario 2: Sync from 'work' to '${currentBranch}' detected."
                         env.CASE_TYPE = "SYNC_FROM_WORK"
