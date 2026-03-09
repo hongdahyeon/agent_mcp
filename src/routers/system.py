@@ -104,18 +104,142 @@ async def api_get_table_data(
 LOG_DIR = "logs"
 
 # 로그 파일 목록 조회
+# (기존) logs 하위 .txt 파일 조회
+# (변경) logs 하위 .txt, .zip 파일 조회
 @router.get("/logs")
-async def get_logs_list():
+async def get_logs_list(
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
     try:
-        files = [f for f in os.listdir(LOG_DIR) if f.endswith(".txt")]
-        files.sort(key=lambda x: os.path.getmtime(os.path.join(LOG_DIR, x)), reverse=True)
+        from datetime import datetime
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        files = []
+        for f in os.listdir(LOG_DIR):
+            if f.endswith(".txt") or f.endswith(".zip"):
+                file_path = os.path.join(LOG_DIR, f)
+                is_zip = f.endswith(".zip")
+                files.append({
+                    "name": f,
+                    "type": "zip" if is_zip else "text",
+                    "is_today": not is_zip and f.startswith(today_str),
+                    "mtime": os.path.getmtime(file_path),
+                    "size": os.path.getsize(file_path)
+                })
+        
+        # 수정 시간 역순 정렬
+        files.sort(key=lambda x: x["mtime"], reverse=True)
         return {"files": files}
     except Exception as e:
         return {"error": str(e)}
 
-# 로그 파일 내용 조회
+class LogArchiveRequest(BaseModel):
+    filenames: list[str]
+    archive_name: str
+
+# 로그 파일 압축 관리 (New: Delete originals after zip)
+@router.post("/api/system/logs/archive")
+async def api_archive_logs(
+    req: LogArchiveRequest,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    if not req.filenames:
+        raise HTTPException(status_code=400, detail="No files selected")
+    
+    if not req.archive_name:
+        raise HTTPException(status_code=400, detail="Archive name is required")
+
+    from datetime import datetime
+    import zipfile
+    
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    safe_name = "".join([c for c in req.archive_name if c.isalnum() or c in (' ', '-', '_')]).strip()
+    if not safe_name: safe_name = f"logs_archive_{datetime.now().strftime('%H%M%S')}"
+    archive_filename = f"{safe_name}.zip"
+    archive_path = os.path.join(LOG_DIR, archive_filename)
+    
+    try:
+        successfully_archived = []
+        with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for filename in req.filenames:
+                if filename.startswith(today_str):
+                    continue
+                
+                file_path = os.path.join(LOG_DIR, filename)
+                if os.path.exists(file_path) and os.path.dirname(os.path.abspath(file_path)) == os.path.abspath(LOG_DIR):
+                    zipf.write(file_path, filename)
+                    successfully_archived.append(file_path)
+        
+        # 압축 성공 후 원본 파일 삭제
+        for path in successfully_archived:
+            try:
+                os.remove(path)
+            except:
+                pass # 삭제 실패 무시
+                
+        return {"success": True, "archive_name": archive_filename}
+    except Exception as e:
+        if os.path.exists(archive_path): os.remove(archive_path) # 실패 시 껍데기 삭제
+        raise HTTPException(status_code=500, detail=f"Archiving failed: {str(e)}")
+
+# Zip 내부 파일 목록 조회
+@router.get("/api/system/logs/zip-content/{filename}")
+async def api_get_zip_content(
+    filename: str,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    file_path = os.path.join(LOG_DIR, filename)
+    if not filename.endswith(".zip") or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Zip file not found")
+        
+    import zipfile
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zipf:
+            return {"filename": filename, "files": [info.filename for info in zipf.infolist()]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Zip 압축 해제
+@router.post("/api/system/logs/unzip")
+async def api_unzip_logs(
+    req: dict,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    filename = req.get("filename")
+    if not filename or not filename.endswith(".zip"):
+        raise HTTPException(status_code=400, detail="Invalid zip filename")
+        
+    file_path = os.path.join(LOG_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Zip file not found")
+        
+    import zipfile
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zipf:
+            zipf.extractall(LOG_DIR)
+        
+        # 해제 성공 후 zip 파일 삭제
+        os.remove(file_path)
+        return {"success": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/logs/{filename}")
-async def get_log_content(filename: str):
+async def get_log_content(
+    filename: str,
+    current_user: dict = Depends(get_current_user_jwt)
+):
+    if current_user['role'] != 'ROLE_ADMIN': 
+        raise HTTPException(status_code=403, detail="Admin access required")
     file_path = os.path.join(LOG_DIR, filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Log file not found")
@@ -126,7 +250,9 @@ async def get_log_content(filename: str):
 
 # api_get_health: 시스템 헬스 체크
 @router.get("/api/system/health")
-async def api_get_health(current_user: dict = Depends(get_current_user_jwt)):
+async def api_get_health(
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     health = {"db": "OK", "smtp": "OK", "scheduler": "OFF"}
     # 1. DB Check
@@ -152,14 +278,19 @@ async def api_get_health(current_user: dict = Depends(get_current_user_jwt)):
 
 # 스케줄러에 등록된 작업 목록 조회
 @router.get("/api/system/scheduler/jobs")
-async def api_get_scheduler_jobs(current_user: dict = Depends(get_current_user_jwt)):
+async def api_get_scheduler_jobs(
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     from src.scheduler import get_scheduler_jobs
     return {"jobs": get_scheduler_jobs()}
 
 # 스케줄러 제어
 @router.post("/api/system/scheduler/control")
-async def api_control_scheduler(action: str = Query(...), current_user: dict = Depends(get_current_user_jwt)):
+async def api_control_scheduler(
+    action: str = Query(...),
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     from src.scheduler import start_scheduler, shutdown_scheduler, scheduler
     try:
@@ -173,7 +304,10 @@ async def api_control_scheduler(action: str = Query(...), current_user: dict = D
 
 # 스케줄러 작업 삭제
 @router.delete("/api/system/scheduler/jobs/{job_id}")
-async def api_delete_scheduler_job(job_id: str, current_user: dict = Depends(get_current_user_jwt)):
+async def api_delete_scheduler_job(
+    job_id: str,
+    current_user: dict = Depends(get_current_user_jwt)
+):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
     from src.scheduler import scheduler
     try:

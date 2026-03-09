@@ -49,9 +49,18 @@ export interface RpcResponse {
     };
 }
 
+// 로그 파일 정보
+export interface LogFileInfo {
+    name: string;
+    type: 'text' | 'zip';
+    is_today: boolean;
+    mtime: number;
+    size: number;
+}
+
 // 로그 파일 목록
 export interface LogFileResponse {
-    files: string[];
+    files: LogFileInfo[];
 }
 // 로그 파일 내용
 export interface LogContentResponse {

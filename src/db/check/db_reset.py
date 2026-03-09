@@ -97,15 +97,19 @@ def reset_and_seed():
         print(" - Seeded: MCP Tool limits (User/Admin)")
 
         # 3.3. 유저 계정 (admin/user)
+        from dotenv import load_dotenv
+        load_dotenv()
+        default_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        
         hashed_pw = get_password_hash("1234")
         cursor.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable, is_locked, is_delete, is_approved)
-            VALUES (?, ?, ?, ?, ?, ?, 'Y', 'N', 'N', 'Y')
-        ''', ('admin', hashed_pw, '관리자', 'admin@naver.com', 'ROLE_ADMIN', timestamp))
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable, is_locked, is_delete, is_approved, telegram_chat_id)
+            VALUES (?, ?, ?, ?, ?, ?, 'Y', 'N', 'N', 'Y', ?)
+        ''', ('admin', hashed_pw, '관리자', 'admin@naver.com', 'ROLE_ADMIN', timestamp, default_chat_id))
         cursor.execute('''
-            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable, is_locked, is_delete, is_approved)
-            VALUES (?, ?, ?, ?, ?, ?, 'Y', 'N', 'N', 'Y')
-        ''', ('user', hashed_pw, '사용자', 'user@naver.com', 'ROLE_USER', timestamp))
+            INSERT INTO h_user (user_id, password, user_nm, user_email, role, last_cnn_dt, is_enable, is_locked, is_delete, is_approved, telegram_chat_id)
+            VALUES (?, ?, ?, ?, ?, ?, 'Y', 'N', 'N', 'Y', ?)
+        ''', ('user', hashed_pw, '사용자', 'user@naver.com', 'ROLE_USER', timestamp, default_chat_id))
         print(" - Seeded: Default users (admin, user / password: 1234)")
 
         conn.commit()

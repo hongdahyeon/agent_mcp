@@ -1,242 +1,4 @@
-# Tasks
-
-## 1. 문서 및 규칙 설정
-
-- [x] docs/rules.md 파일 생성
-- [x] docs/tasks.md 파일 생성
-
-## 2. 프로젝트 환경 구성
-
-- [x] Python 가상환경 구성 (Skipping explicit venv creation, installing directly)
-- [x] .gitignore 파일 생성
-- [x] requirements.txt 생성 (mcp 패키지)
-
-## 3. MCP Server 구현
-
-- [x] src/server.py 생성
-- [x] MCP Server 인스턴스 초기화 코드 작성
-- [x] Tool 데코레이터 및 핸들러 구현 (Basic Math)
-- [x] 서버 실행 진입점(Entry point) 작성
-
-## 4. 기능 상세 구현 (Todo)
-
-- [x] (사용자 정의) Tool 기능 구체화
-- [x] Tool 로직 구현
-
-## 5. 테스트 및 배포
-
-- [x] 로컬 연결 테스트 (Inspector 활용)
-- [x] README.md 사용법 작성
-
-## 6. GitHub 배포
-
-- [x] Git 초기화 및 커밋
-- [x] GitHub Repository 생성 가이드
-- [x] 원격 저장소 연결 및 푸시
-
-## 7. 웹 인터페이스 구축 (New)
-
-- [x] 웹 서버 구성 (FastAPI/SSE)
-- [x] HTML/JS 클라이언트 작성
-- [x] Add/Subtract Tool 연동 테스트
-
-## 8. 웹 인터페이스 고도화 (Refactor)
-
-- [x] UI 스타일링 (Tailwind CSS 적용)
-- [x] 대시보드 구현 (ECharts, 사용량/성공/실패 통계)
-- [x] 메뉴 구조 변경 (대시보드 vs 테스터)
-- [x] 코드 주석 한글화 (index.html, client.js)
-- [x] Favicon 추가
-- [x] 테스터 화면 레이아웃 개선 (Result 영역 추가)
-
-## 9. 26-01-14 Todo 수행
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. 대시보드 통계 개선 (도구별 성공/실패 차트)
-- [x] 2. 서버 사이드 로깅 구현 (logs/yyyy-mm-dd-hh:mm.txt)
-- [x] 3-x. 서버 기능 추가 (Hellouser 도구 및 로그 뷰어 API)
-- [x] 3-1. 도구 테스트 UI 개선 (Select Box 및 동적 입력 폼)
-- [x] 3-2. 결과 표시 개선 (JSON 포맷)
-- [x] 4. 로그 뷰어 메뉴 구현 (파일 목록 및 내용 조회)
-
-## 10. React Migration (Phase 5)
-
-- [x] 상세 마이그레이션 계획 수립 (implementation_plan.md)
-- [x] 1. Vite + React + TS 프로젝트 초기화 (src/frontend)
-- [x] 2. 기본 UI 골격 및 라우팅 구성 (Layout, Sidebar)
-- [x] 3. 커스텀 훅 구현 (useSSE, useMcpClient)
-- [x] 4. 기능별 컴포넌트 이식 (Dashboard, Tester, LogViewer)
-- [x] 5. 서버 연동 및 빌드 설정 (Python 정적 서빙 변경)
-- [x] 6. 마이그레이션 후 검증 및 디버깅 (SSE 연결 수정, ID 타입 체크 수정)
-
-## 11. DB & 로그인 기능 구현
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. SQLite DB 구조 설계 및 연동 (h_user, h_login_hist)
-- [x] 2. 초기 데이터 시딩 (Admin/User 계정)
-- [x] 3. Backend 로그인/인증 API 구현 (JWT or Session)
-- [x] 4. Frontend 로그인 페이지 구현
-- [x] 5. Frontend 인증 상태 관리 (Protected Route)
-- [x] 6. 기능 검증
-
-## 12. 유저 테이블 스키마 변경 (is_enable 추가)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. DB 스키마 변경 (h_user 테이블 is_enable 컬럼 추가)
-- [x] 2. Backend 로그인 로직 수정 (is_enable 체크)
-- [x] 3. 초기 데이터 시딩 추가 (user/1234, is_enable=N)
-- [x] 4. Frontend 로그인 에러 처리 (403: 계정 비활성화 메시지)
-- [x] 5. Frontend 테스트 및 검증
-
-## 13. 사용자 관리 페이지 구현 (Admin Only)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Backend API 구현 (목록, 추가, 수정, 중복체크)
-- [x] 2. Frontend 관리자 메뉴 및 접근 제어 처리
-- [x] 3. 사용자 목록 UI 구현 (테이블, 활성/비활성 토글)
-- [x] 4. 사용자 추가 모달 구현 (ID 중복체크)
-- [x] 5. 사용자 수정 모달 구현 (Row 클릭)
-- [x] 6. 기능 검증
-
-## 14. 로그인 세션 유지 구현
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Frontend: 로그인 성공 시 localStorage 저장
-- [x] 2. Frontend: App 초기화 시 localStorage 확인 및 복구
-- [x] 3. Frontend: 로그아웃 시 localStorage 제거
-- [x] 4. 기능 검증
-
-## 15. MCP Tool 사용 이력 저장 (New)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. DB 스키마 추가 (h_mcp_tool_usage 테이블) 및 저장 함수 구현
-- [x] 2. Server Side: Tool 실행 핸들러(log_tool_usage) 연동 및 로깅 구현
-- [x] 3. Frontend Support: Tool 호출 시 사용자 ID 전달 (Optional)
-- [x] 4. 기능 검증
-
-## 16. MCP Tool 사용 이력 조회 (Admin Only) (New)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Backend API 구현 (이력 조회, 페이징)
-- [x] 2. Frontend 컴포넌트 추가 (UsageHistory.tsx)
-- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly)
-- [x] 4. 기능 검증
-
-## 17. DB 연동 Tool 추가 (User Info) (New)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Server Side: `get_user_info` Tool 구현 (`src/server.py`)
-- [x] 2. DB Manager: 보안 처리 (비밀번호 제외 조회) 확인
-- [x] 3. 기능 검증 (Inspector 또는 Web Tester)
-
-## 18. 스키마/테이블 관리 메뉴 구현 (Admin Only) (New)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Backend API 구현
-  - [x] `GET /api/db/tables`: 전체 테이블 목록 조회
-  - [x] `GET /api/db/schema/{table_name}`: 특정 테이블 스키마 조회
-  - [x] `GET /api/db/data/{table_name}?limit=N`: 테이블 데이터 프리뷰 (limit 파라미터 지원)
-- [x] 2. Frontend 컴포넌트 구현 (SchemaManager.tsx)
-  - [x] 2-Layer Layout (Left: Table List, Right: Detail View)
-  - [x] Schema Info Table
-  - [x] Data Preview Table with Limit Input
-- [x] 3. Frontend 라우팅 및 메뉴 추가 (AdminOnly, App.tsx)
-- [x] 4. 기능 검증
-
-## 19. 사용자 토큰 관리 (Phase 1) (REMOVED)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. DB 스키마 생성 (Token Management)
-  - [x] `h_user_token`: 사용자별 API 토큰 관리 (token_value, expired_at 등)
-- [ ] 2. Backend API 구현 (Removed per user request)
-  - [ ] `create_user_token`: 안전한 랜덤 토큰 생성 및 DB 저장 (기존 토큰 만료 처리)
-  - [ ] `POST /api/user/token`: 토큰 발급 API
-  - [ ] `GET /api/user/token`: 현재 유효 토큰 조회 API
-- [ ] 3. Frontend UI 구현 (Removed)
-  - [ ] MyPage (내 정보) 컴포넌트 추가: 토큰 조회 및 발급 버튼 >> 온디맨드 API 키 (On-Demand API Key) 모델 적용
-  - [ ] 사이드바 하단 프로필 영역 클릭 시 MyPage 이동 처리
-- [ ] 4. 기능 검증
-
-## 20. 버그 수정: get_user_info DB 오류 (Completed)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. DB 경로 절대 경로화 (db_manager.py)
-- [x] 2. Server 구동 시 DB 초기화 로직 추가 (server.py)
-
-## 21. 도구 실행 보안 강화 (Phase 2) (Completed)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. SSE 연결 인증 (Authentication)
-  - [x] `GET /sse`: `token` 쿼리 파라미터 수신 및 유효성 검증 로직 추가
-  - [x] 유효하지 않은 토큰 접근 시 401 Unauthorized 반환
-- [x] 2. 사용자 바인딩 (User Binding)
-  - [x] 검증된 토큰으로부터 `user_uid` 식별 및 세션/컨텍스트 저장
-  - [x] `call_tool` 실행 시 인자(`_user_uid`) 대신 검증된 세션 유저 정보 사용
-- [x] 3. 관리자 권한 도구 보호
-  - [x] 권한 체크 데코레이터 또는 미들웨어 (핸들러 내 로직으로 구현)
-
-## 22. 사용량 제한 구현 (Phase 3) (Completed)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. DB 스키마 생성 (Usage Limits)
-  - [x] `h_mcp_tool_limit`: 사용자/등급(Role)별 제한 정책 테이블 (daily_limit, role, user_uid 등)
-  - [x] 초기 데이터 시딩 (ROLE_USER: 50회/일, ROLE_ADMIN: 무제한)
-- [x] 2. 사용량 집계 및 제한 API 구현
-  - [x] `GET /api/mcp/my-usage`: 내 오늘 사용량 및 잔여 횟수 조회
-  - [x] `GET /api/mcp/usage-stats`: (Admin) 사용자별/권한별 사용 통계 조회
-  - [x] 도구 실행 시(`call_tool`) 한도 체크 로직 연동
-- [x] 3. 사용자 UI 구현
-  - [x] 공통 Header: 오늘 사용량/잔여 횟수 뱃지 표시
-  - [x] Admin UsageHistory: 상단에 사용자별/권한별 통계 요약 테이블 추가
-
-## 23. DB Layer 리팩토링 (Phase 4)
-
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. `src/db` 패키지 생성 및 `connection.py` 구현
-- [x] 2. `h_user` 관련 로직 분리 (`user.py`)
-- [x] 3. `h_login_hist` 관련 로직 분리 (`login_hist.py`)
-- [x] 4. `h_mcp_tool_usage` 관련 로직 분리 (`mcp_tool_usage.py`)
-- [x] 5. `h_user_token` 관련 로직 분리 (`user_token.py`)
-- [x] 6. `h_mcp_tool_limit` 관련 로직 분리 (`mcp_tool_limit.py`)
-- [x] 7. Schema 관리 로직 분리 (`schema.py`)
-- [x] 8. `__init__.py` 작성 및 모듈 Expose
-- [x] 9. `sse_server.py` 및 기타 참조 파일 import 수정
-- [x] 10. `db_manager.py` 제거 및 테스트
-
-## 24. 버그 수정 및 최적화 (Troubleshooting) (Completed)
-
-- [x] Bcrypt hashing error & Invalid request parameters 해결 (#40)
-  - [x] bcrypt 라이브러리 버전 고정 (4.0.1)으로 Passlib 호환성 문제 해결
-  - [x] Frontend(Tester.tsx)에서 파라미터 타입 변환 로직 추가 (string -> int/bool)
-  - [x] Stdio (Claude Desktop) 연동을 위한 stdout 출력 제거 및 sys.path 보강
-- [x] 1. 근본적인 토큰 전송 로직 수정
-- [x] 2. DB Layer 리팩토링 마무리
-  - [x] `db_init_manager.py` -> `src/db/init_manager.py` 이동
-  - [x] `src/db/__init__.py`에 `init_db` 노출 및 Import 경로 수정
-- [x] 3. MCP Stdio 연결 오류 해결 (Cloud not attach)
-  - [x] 원인: `src/db/init_manager.py` (구 `db_init_manager.py`)의 `print()`(stdout) 출력이 JSON-RPC 통신 방해
-  - [x] 조치 2: `db_init_manager.py` -> `init_manager.py`로 이동 후, Stdio 연결 시 문제가 되는 내부 `print`들을 `sys.stderr`로 수정
-- [x] 4. Claude Desktop 연결 설정
-  - [x] `claude_desktop_config.json`을 `src/server.py` (Stdio 모드)로 실행하도록 수정
-  - [x] `server.py`의 `db_manager` 참조 오류 수정
-  - [x] `src/utils/server_audit.py` 문법 오류(IndentationError) 수정
-
-## 25. 편의 기능 구현 (Completed)
-
-- [x] "아이디 기억하기" 기능 구현 <!-- id: 0 -->
-  - [x] `docs/rules.md` 읽기 (완료) <!-- id: 1 -->
-  - [x] 로그인 페이지(`Login.tsx`) 분석 (완료) <!-- id: 2 -->
-  - [x] 구현 계획 수립 (`implementation_plan.md`) <!-- id: 3 -->
-  - [x] UI 수정: "아이디 기억하기" 체크박스 추가 <!-- id: 4 -->
-  - [x] 로직 구현: `localStorage`를 사용하여 아이디 저장 및 불러오기 <!-- id: 5 -->
-  - [x] 테스트: 기능 동작 확인 <!-- id: 6 -->
-
-- [x] Admin 기능 강화: 도구 사용 제한 관리 (New)
-- [x] 상세 구현 계획 수립 (implementation_plan.md)
-- [x] 1. Backend: Limit 관리 함수 추가 (mcp_tool_limit.py)
-  - [x] `get_limit_list`: 제한 목록 조회
-  - [x] `upsert_limit`: 제한 규칙 생성/수정 (User/Role)
-  - [x] `delete_limit`: 제한 규칙 삭제
+ㅇt`: 제한 규칙 삭제
 - [x] 2. API Endpoint 구현 (sse_server.py)
   - [x] `GET /api/mcp/limits`
   - [x] `POST /api/mcp/limits`
@@ -734,3 +496,613 @@
   - [x] `UsageHistory.tsx` 내 내보내기 버튼 추가 및 API 연동
   - [x] `OpenApiStats.tsx` 내 내보내기 버튼 추가 및 API 연동
 - [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 79. 로그 정기 삭제 및 압축 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend: 로그 목록 조회 시 '오늘' 로그 식별 로직 추가
+- [x] 2. Backend: 로그 다중 파일 압축 API (`/api/system/logs/archive`) 구현
+- [x] 3. Frontend: 로그 목록 다중 선택 UI 및 체크박스 추가
+- [x] 4. Frontend: 압축 파일명 입력 및 압축 실행 기능 구현
+- [x] 5. 최종 검증 및 문서 업데이트
+
+## 80. API 문서화 자동화 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. FastAPI 인스턴스 메타데이터(Title, Description, Version) 추가
+- [x] 2. 서버 시작 로그에 Swagger UI/ReDoc 접속 주소 출력 로직 추가
+- [x] 3. MCP REST API Proxy 엔드포인트 Pydantic 모델(Request/Response) 적용
+  - [x] 4. 신규 엔드포인트: `GET /api/mcp/proxy/tools` (사용 가능한 도구 목록 조회) 구현
+  - [x] 5. Swagger UI 인증(Authorize) 버튼 활성화 및 보안 레이아웃 최적화
+  - [x] 6. 기능 검증 (tests/verify_api_docs.py) 완료
+
+## 81. Jenkins Telegram Integration (New)
+
+- [x] Telegram 봇 생성 및 API Token/Chat ID 획득
+- [x] Jenkins 자격 증명(Credentials) 등록 (`telegram-token`, `telegram-chat-id`)
+- [x] Jenkinsfile 내 `sendTelegramNotification` 함수 구현 및 에러 핸들링 적용
+- [x] CI/CD 파이프라인 빌드 결과(성공/실패) 실시간 알림 연동
+
+## 82. 백엔드 시스템 Telegram 연동 (New)
+
+- [x] `python-dotenv`, `httpx` 패키지 설치 및 환경 변수(.env) 설정
+- [x] `src/utils/telegram_bot.py` 비동기 메시지 발송 모듈 구현
+- [x] `src/utils/notification_helper.py` 내 SSE 알림과 Telegram 동시 발송 로직 통합
+- [x] 서버 시작 시 환경 변수 로드 로직 추가 (`src/sse_server.py`)
+
+## 83. 사용자별 Telegram Chat ID 관리 및 DB 확장 (New)
+
+- [x] `h_user` 테이블 `telegram_chat_id` 컬럼 추가 (`init_manager.py`)
+- [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
+- [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
+- [x] 기능 검증 (tests/test_telegram_notify.py) 완료
+ 
+## 84. 관리자 수동 알림 Telegram 연동 (New)
+
+- [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
+- [x] `src/routers/notification.py` 내 관리자 발송 API 연동
+- [x] 기능 검증 및 테스트
+우[x] 18. 최종 마무리 및 검토 완료
+- [x] 19. Backend: `GET /api/openapi` 목록 조회 권한을 모든 유저로 확대 (일반 유저도 목록 조회 및 사용 가능)
+- [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
+- [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
+- [x] 22. 유저 권한으로 기능 동작 확인 및 `App.tsx` 렌더링 버그 수정 완료
+- [x] 23. Backend: `/api/execute/{tool_id}` 라우터를 `execution.py`로 분리
+- [x] 24. Backend: `src/sse_server.py`에 신규 라우터 등록
+- [x] 25. 기능 동작 테스트 (기존 기능 유지 확인)
+
+## 52. 사이드바 및 레이아웃 개선
+
+- [x] 1. 접이식 사이드바 상태 관리 및 토글 버튼 구현
+- [x] 2. 1024px 미만 화면 자동 접힘 반응형 로직 적용
+- [x] 3. 사이드바 접힘 시 UI 최적화 (라벨 숨김, 아이콘 정렬)
+
+## 53. OpenAPI 가이드 및 에디터 고도화
+
+- [x] 1. OpenAPI 사용 제한 목록 가독성 개선 (`target_name` 표시)
+- [x] 2. DB 마이그레이션: `h_openapi` 테이블 `description_info` 컬럼 추가
+- [x] 3. 백엔드 `OpenApiUpsertRequest` 모델 필드 추가 및 저장 오류 수정
+- [x] 4. 프론트엔드 탭 방식(편집/미리보기) 마크다운 에디터 UI 구현
+- [x] 5. HTML 태그(`rehype-raw`) 및 GFM(`remark-gfm`) 렌더링 지원 전면 적용
+- [x] 6. 일반 사용자용 가이드 보기 모달(`prose` 테마) 적용
+
+## 54. 계정 잠금 기능 및 관리자 해제 기능 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_user` 테이블 `is_locked`, `login_fail_count` 컬럼 추가 및 마이그레이션 (`sqlite3` 임포트 오류 수정 포함)
+- [x] 2. Backend: `auth.py` 로그인 로직 수정 (5회 실패 시 잠금, 성공 시 초기화)
+- [x] 3. Backend: `user.py` 및 `users.py` 수정 (관리자용 잠금 해제 기능 및 계정 생성 로직 고도화)
+- [x] 4. Frontend: `Login.tsx` 잠금 메시지 처리 및 오류 수정
+- [x] 5. Frontend: `Users.tsx` 계정 잠금 상태 표시 및 해제 기능 추가
+- [x] 6. 기능 검증 완료
+
+## 55. OpenAPI 상세 정보 PDF 내보내기 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1.  Dependency: `requirements.txt`에 `fpdf2` 추가
+- [x] 2.  Backend: `src/utils/pdf_generator.py` 구현 (한글 폰트, HTML 태그 제거, 동적 테이블)
+- [x] 3.  Backend: `src/routers/openapi.py` 내 PDF 내보내기 API (`/api/openapi/{tool_id}/export`) 구현 (Admin 전용 서비스 키 포함)
+- [x] 4.  Frontend: `OpenApiManager.tsx`에 PDF 다운로드 버튼 추가 및 연동
+- [x] 5.  기능 검증 및 UI 최적화 완료
+
+## 56. 다크 모드(Dark Mode) 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1.  Tailwind CSS 다크 모드 설정 (class strategy)
+- [x] 2.  테마 상태 관리 훅(useTheme) 및 localStorage 연동
+- [x] 3.  헤더 내 테마 전환 토클 버튼 추가
+- [x] 4.  전역 컴포넌트(Sidebar, Dashboard, Modal 등) 다크 모드 스타일 적용
+- [x] 5.  기능 검증 완료
+
+## 57. OpenAPI 메타데이터 관리 기능 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `openapi_meta.py` 구현 (카테고리/태그 수정 및 안전한 삭제 로직)
+- [x] 2. Backend: 신규 관리 API 엔드포인트 구현 (`PUT`, `DELETE`, `GET by-meta`)
+- [x] 3. Frontend: `OpenApiMetaManager.tsx` 컴포넌트 구현 (관리자 전용)
+- [x] 4. Frontend: `App.tsx` 메뉴 연동 및 `OpenApiManager.tsx` 중복 UI 정리
+- [x] 5. 기능 검증 및 린트 오류 수정 완료
+
+## 58. OpenAPI PDF 내보내기 기능 보완 (Refinement)
+
+- [x] 1. Backend: `get_openapi_by_tool_id` 수정 (카테고리명 및 태그 정보 포함)
+- [x] 2. Utils: `pdf_generator.py` 수정 (문서 내 카테고리와 태그 항목 추가)
+- [x] 3. Frontend: 도구 목록 및 상세 타입 정의(`OpenApiConfig`) 업데이트로 데이터 정합성 확보
+- [x] 4. 기능 검증 완료
+
+## 59. DB 백업 및 복구 기능 구현 (New)
+
+- [x] 상세 구현 계획 수정 반영 (implementation_plan.md)
+- [x] 1. Backend: DB 백업 생성 API 구현 (`POST /api/admin/db/backup`)
+- [x] 2. Backend: 백업 파일 목록 조회 API 구현 (`GET /api/admin/db/backups`)
+- [x] 3. Backend: 특정 파일 선택 복구 API 구현 (`POST /api/admin/db/restore/{filename}`)
+- [x] 4. Frontend: DB 백업 관리 UI 구현 (목록, 생성 버튼)
+- [x] 5. 기능 테스트 및 검증
+
+## 60. db_reset.py 임포트 오류 수정 (Hotfix)
+
+- [x] db_reset.py 임포트 오류 원인 분석 (`get_password_hash` 누락 및 `sys.path` 계산 착오)
+- [x] db_reset.py 및 db_inspect.py 경로 로직 수정 (4단계 위로 수정하여 프로젝트 루트 확보)
+- [x] 폴백(Fallback) 임포트 로직 강화 및 검증
+
+## 61. UI/UX 개선 및 버그 수정 (Completed)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. 각 메뉴별 테이블 높이 상향 및 기본 행 수 확대 (10 -> 20)
+  - [x] UsageHistory, OpenApiManager, LimitManagement, OpenApiStats 적용
+- [x] 2. 다크모드(Dark Mode) 지원 확대 및 UI 개선
+  - [x] Autocomplete(검색), Pagination(페이지네이션) 다크모드 스타일 보정
+  - [x] 내 정보(My Page) 화면 다크모드 전면 지원
+- [x] 3. OpenApiStats 화면 `TypeError` 수정 및 로직 개선
+  - [x] API 엔드포인트 분리 (/api/openapi/stats vs /api/openapi/meta-stats)
+  - [x] Frontend Optional Chaining을 통한 방어 코드 적용
+- [x] 4. 프로젝트 관리 도구(`db_reset.py`, `db_inspect.py`) 개선 및 오류 수정
+  - [x] 경로 인식 로직 수정 및 임포트 오류(AttributeError 등) 완벽 해결
+- [x] 5. 최종 검증 및 tasks.md 문서 업데이트
+
+## 62. 내 정보 관리 화면에 도구 사용 이력 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: 특정 사용자의 일일 도구 사용량을 집계하는 `get_specific_user_tool_usage` 구현
+- [x] 2. Backend: `/api/mcp/my-usage` API가 도구별 상세 사용량을 반환하도록 수정
+- [x] 3. Frontend: `UserUsage.ts` 타입 정의(`MyMcpUsage`) 추가
+- [x] 4. Frontend: `MyPage.tsx` UI 수정 및 '오늘의 일반 MCP 도구 사용 현황' 카드 추가
+- [x] 5. 최종 기능 검증 및 문서 업데이트
+
+## 63. 대시보드 새로고침 기능 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Frontend: `useMcp.ts` 훅에서 `refreshStats` 기능 노출
+- [x] 2. Frontend: `App.tsx`에서 대시보드로 새로고침 함수 전달
+- [x] 3. Frontend: `Dashboard.tsx` 상단 헤더 및 새로고침 버튼 UI 구현
+- [x] 4. 최종 기능 검증 및 문서 업데이트
+
+## 64. 대시보드 시스템 헬스 체크 및 스케줄러 관리 기능 추가 (Completed)
+
+- [x] Backend: `src/scheduler.py`, `src/utils/mailer.py` 점검 및 제어 로직 추가
+- [x] Backend: `src/routers/system.py` health & scheduler API 구현
+- [x] Frontend: `SchedulerManager.tsx` 구현 및 대시보드 UI 연동
+- [x] 최종 기능 검증 및 문서 업데이트
+
+## 65. 대시보드 시각화 확정 (Heatmap & 사용자 상세 분석) (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: 시간대별/요일별 사용 통계 DB 함수 구현 (`mcp_tool_usage.py`, `openapi_usage.py`)
+- [x] 2. Backend: 특정 유저의 Top 5 도구 사용량 조회 함수 구현
+- [x] 3. Backend: API 엔드포인트 확장 (`/mcp/stats`, `/mcp/user-tool-stats`, `/openapi/stats`, `/openapi/user-tool-stats`)
+- [x] 4. Frontend: UsageStats 및 OpenApiStats 타입 정의 업데이트
+- [x] 5. Frontend: 메인 대시보드 Heatmap 차트 및 2단 레이아웃 사용자 상세 분석 구현
+- [x] 6. Frontend: OpenAPI 통계 Heatmap 차트 및 사용자/토큰 상세 분석 구현
+- [x] 7. 최종 검증 및 버그 수정 (`mcp.py` 임포트 오류 해결)
+- [ ] 8. UI, 데이터 조회 부분 이상한지 체크 필요
+
+## 66. MCP 및 OpenAPI 로깅/통계 고도화 (New)
+
+- [x] 1. `h_mcp_tool_usage`: `token_id` 값 저장 추가 (DB 스키마 및 `audit_log` 연동)
+- [x] 2. 외부 토큰 사용 시 'external user' 매핑 로직 제거 및 실제 토큰 식별 적용
+- [x] 3. 사용량 히트맵(7x24) 통계 구현 및 차트 적용 (Dashboard/OpenAPI)
+- [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
+- [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
+- [x] 6. 최종 검증 및 문서 업데이트
+
+## 67. Email OTP 모듈 구현 (New)
+
+- [x] 1. DB: h_email_otp 테이블 생성 및 관리 로직 구현 (db/email_otp.py)
+- [x] 2. Backend: OTP 생성, 발송, 검증 비즈니스 로직 구현 (utils/otp_manager.py)
+- [x] 3. API: OTP 발송 및 검증 전용 엔드포인트 구현 (routers/auth.py)
+- [x] 4. Integration: 회원가입 시 이메일 OTP 필수 검증 로직 연동
+- [x] 5. Admin UI: OTP 발송 및 인증 이력 조회 화면 구현 (OtpHistory.tsx)
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 68. User Email 통합 및 고도화 (New)
+
+- [x] 1. DB: `h_user` 테이블 `user_email` 컬럼 추가 및 마이그레이션 (`src/db/migrate_user_email.py`)
+- [x] 2. Backend: `user_email` 기반 중복 체크 API 익스포트 및 가입 로직 연동
+- [x] 3. Frontend: 사용자 관리(Users.tsx) 내 이메일 필드 추가 및 인증 프로세스 통합
+- [x] 4. Frontend: 회원가입 시 이메일 인증 필수화 및 UI 개선
+- [x] 5. Frontend: 내 정보(MyPage.tsx) 이메일 정보 노출
+- [x] 6. 최종 검증 및 테스트 완료
+
+## 69. 계정 잠금 로직 개선 (Bug Fix)
+
+- [x] 1. Backend: `auth.py` 에러 메시지 개선 (프론트엔드 인식용 '잠금' 키워드 추가)
+- [x] 2. Frontend: `Login.tsx` 내 계정 잠금 상태 인식 로직 강화 (KOR/ENG 키워드 지원)
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 70. 내 정보 조회 로직 개선 (Session -> DB)
+
+- [x] 1. Backend: `/api/users/me` 엔드포인트 신설 (DB 연동 최신 정보 반환)
+- [x] 2. Frontend: `MyPage.tsx`에서 세션 대신 `/me` API를 통한 최신 프로필 정보 조회
+- [x] 3. 기능 검증 및 테스트 완료
+
+## 71. 사용자 삭제 및 승인 관리 기능 오류 수정
+
+- [x] 1. Backend: `UserUpdateRequest` 모델 필드 보완 (`is_delete`, `is_approved`)
+- [x] 2. 기능 검증 (삭제 및 승인 토글 정상 동작 확인)
+
+## 72. 사용자 초기화 플래그 설정 고도화 (New)
+
+- [x] 상세 구현 계획 추가 (`docs/implementation_plan.md`)
+- [x] `db_reset.py` 수정: `admin`, `user` 계정 생성 시 상태 플래그(`is_enable`, `is_locked`, `is_delete`, `is_approved`) 설정 로직 추가
+- [x] 기능 검증 및 문서 업데이트 완료
+
+## 73. 실시간 알림 시스템 구현 및 UI 개선 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: SSE(Server-Sent Events) 기반 실시간 알림 스트리밍 구현 (`NotificationManager`)
+- [x] 2. Backend: 알림 생성, 조회, 읽음, 삭제 API 구현 및 SSE 연동
+- [x] 3. Frontend: `useNotifications` 훅 및 `NotificationBell`, `NotificationModal` 컴포넌트 개발
+- [x] 4. UX: 알림 보낸 이(Sender) 정보 표시 및 모달 내 버튼 즉시 전환 로직 적용
+- [x] 5. UI: 스케줄러 관리 화면 버튼 넘침(Overflow) 현상 수정
+- [x] 6. Security: 일반 사용자의 시스템 헬스 API 접근 차단 및 UI 숨김 처리
+- [x] 최종 검증 및 문서 업데이트 완료
+
+## 74. 외부 SSE 접근 및 토큰 제어 고도화 (New)
+
+- [x] 1. 외부 토큰(sk\_...) 기반 MCP 도구 사용량 제한 로직 구현 (Security)
+  - [x] `token_id` 기준 사용량 집계 및 제한 정책 연동
+- [x] 2. 외부 접속 세션 관리 개선 및 가이드 배포
+- [x] 3. 기능 검증
+
+## 75. 알림 센터(Notification Center) 고도화 (New)
+
+- [x] 1. 실시간 사용 알림 헬퍼 로직 구현 (`notification_helper.py`)
+- [x] 2. 사용량 임계치 알림 로직 구현 (MCP/OpenAPI)
+  - [x] 사용량 체크 및 단계별(80%, 90%, 100%) 알림 발송 로직 추가
+  - [x] 중복 알림 방지 로직 (일일 1회 등) 반영
+- [x] 3. 스케줄러 결과 알림 연동
+  - [x] 메일 예약 발송 완료 시 해당 사용자에게 알림 전송
+- [x] 4. 계정 잠금 알림 연동
+  - [x] 로그인 실패로 인한 잠금 발생 시 시스템 알림 생성
+- [x] 5. 기능 검증 및 UI 확인
+
+## 76. MCP REST API Proxy 구현 (v)
+
+- [x] 신규 엔드포인트: `POST /api/mcp/proxy/{tool_nm}` 구현
+- [x] 인증 유지: JWT 및 외부 보안 토큰 연동 (통합 인증)
+- [x] 기능 통합: 기존 MCP 도구 사용 로직(사용량 체크, Audit Log) 연동
+- [x] 결과 반환: JSON 형식의 즉시 응답 제공
+
+## 77. 외부 토큰별 도구 권한 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Database Implementation
+  - [x] `h_access_token_tool_map`, `h_access_token_openapi_map` 테이블 생성
+  - [x] 기존 토큰들에 대한 전체 권한 부여 마이그레이션 (`migration_token_tools.py`)
+- [x] 2. Backend Implementation
+  - [x] 신규 토큰 생성(`create_access_token`) 및 신규 도구 등록 시 자동 권한 매핑 로직 추가
+  - [x] 권한 체크 유틸리티(`check_access_token_permission`) 구현
+  - [x] 3단계 보안 프로세스(권한->한도->실행) 적용 (`call_tool`, `api_execute_openapi`)
+  - [x] 토큰별 권한 관리 전용 API 라우터(`token.py`) 구현 및 등록
+- [x] 3. Frontend Implementation
+  - [x] `AccessTokenManager.tsx` 내 '권한 설정' 버튼 및 상세 제어 모달 UI 구현
+  - [x] 도구별(Custom/OpenAPI) 체크박스 연동 및 실시간 권한 저장 기능 구현
+  - [x] **[Troubleshooting]**: 미정의 함수 오류 및 잘못된 API 경로(`/api/tools`) 수정 완료
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 78. 감사 로그 내보내기 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend Implementation
+  - [x] `pandas`, `openpyxl` 의존성 추가 및 설치 > pip install pandas openpyxl
+  - [x] `src/routers/export.py` 신규 라우터 및 엔드포인트 구현 (CSV/Excel 지원)
+  - [x] `src/server.py` 에 라우터 등록
+- [x] 2. Database Implementation
+  - [x] `get_all_tool_usage_logs`, `get_all_openapi_usage_logs` 구현
+- [x] 3. Frontend Implementation
+  - [x] `UsageHistory.tsx` 내 내보내기 버튼 추가 및 API 연동
+  - [x] `OpenApiStats.tsx` 내 내보내기 버튼 추가 및 API 연동
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 79. 로그 정기 삭제 및 압축 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend: 로그 목록 조회 시 '오늘' 로그 식별 로직 추가
+- [x] 2. Backend: 로그 다중 파일 압축 API (`/api/system/logs/archive`) 구현
+- [x] 3. Frontend: 로그 목록 다중 선택 UI 및 체크박스 추가
+- [x] 4. Frontend: 압축 파일명 입력 및 압축 실행 기능 구현
+- [x] 5. 최종 검증 및 문서 업데이트
+
+## 80. API 문서화 자동화 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. FastAPI 인스턴스 메타데이터(Title, Description, Version) 추가
+- [x] 2. 서버 시작 로그에 Swagger UI/ReDoc 접속 주소 출력 로직 추가
+- [x] 3. MCP REST API Proxy 엔드포인트 Pydantic 모델(Request/Response) 적용
+  - [x] 4. 신규 엔드포인트: `GET /api/mcp/proxy/tools` (사용 가능한 도구 목록 조회) 구현
+  - [x] 5. Swagger UI 인증(Authorize) 버튼 활성화 및 보안 레이아웃 최적화
+  - [x] 6. 기능 검증 (tests/verify_api_docs.py) 완료
+
+## 81. Jenkins Telegram Integration (New)
+
+- [x] Telegram 봇 생성 및 API Token/Chat ID 획득
+- [x] Jenkins 자격 증명(Credentials) 등록 (`telegram-token`, `telegram-chat-id`)
+- [x] Jenkinsfile 내 `sendTelegramNotification` 함수 구현 및 에러 핸들링 적용
+- [x] CI/CD 파이프라인 빌드 결과(성공/실패) 실시간 알림 연동
+
+## 82. 백엔드 시스템 Telegram 연동 (New)
+
+- [x] `python-dotenv`, `httpx` 패키지 설치 및 환경 변수(.env) 설정
+- [x] `src/utils/telegram_bot.py` 비동기 메시지 발송 모듈 구현
+- [x] `src/utils/notification_helper.py` 내 SSE 알림과 Telegram 동시 발송 로직 통합
+- [x] 서버 시작 시 환경 변수 로드 로직 추가 (`src/sse_server.py`)
+
+## 83. 사용자별 Telegram Chat ID 관리 및 DB 확장 (New)
+
+- [x] `h_user` 테이블 `telegram_chat_id` 컬럼 추가 (`init_manag우[x] 18. 최종 마무리 및 검토 완료
+- [x] 19. Backend: `GET /api/openapi` 목록 조회 권한을 모든 유저로 확대 (일반 유저도 목록 조회 및 사용 가능)
+- [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
+- [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
+- [x] 22. 유저 권한으로 기능 동작 확인 및 `App.tsx` 렌더링 버그 수정 완료
+- [x] 23. Backend: `/api/execute/{tool_id}` 라우터를 `execution.py`로 분리
+- [x] 24. Backend: `src/sse_server.py`에 신규 라우터 등록
+- [x] 25. 기능 동작 테스트 (기존 기능 유지 확인)
+
+## 52. 사이드바 및 레이아웃 개선
+
+- [x] 1. 접이식 사이드바 상태 관리 및 토글 버튼 구현
+- [x] 2. 1024px 미만 화면 자동 접힘 반응형 로직 적용
+- [x] 3. 사이드바 접힘 시 UI 최적화 (라벨 숨김, 아이콘 정렬)
+
+## 53. OpenAPI 가이드 및 에디터 고도화
+
+- [x] 1. OpenAPI 사용 제한 목록 가독성 개선 (`target_name` 표시)
+- [x] 2. DB 마이그레이션: `h_openapi` 테이블 `description_info` 컬럼 추가
+- [x] 3. 백엔드 `OpenApiUpsertRequest` 모델 필드 추가 및 저장 오류 수정
+- [x] 4. 프론트엔드 탭 방식(편집/미리보기) 마크다운 에디터 UI 구현
+- [x] 5. HTML 태그(`rehype-raw`) 및 GFM(`remark-gfm`) 렌더링 지원 전면 적용
+- [x] 6. 일반 사용자용 가이드 보기 모달(`prose` 테마) 적용
+
+## 54. 계정 잠금 기능 및 관리자 해제 기능 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `h_user` 테이블 `is_locked`, `login_fail_count` 컬럼 추가 및 마이그레이션 (`sqlite3` 임포트 오류 수정 포함)
+- [x] 2. Backend: `auth.py` 로그인 로직 수정 (5회 실패 시 잠금, 성공 시 초기화)
+- [x] 3. Backend: `user.py` 및 `users.py` 수정 (관리자용 잠금 해제 기능 및 계정 생성 로직 고도화)
+- [x] 4. Frontend: `Login.tsx` 잠금 메시지 처리 및 오류 수정
+- [x] 5. Frontend: `Users.tsx` 계정 잠금 상태 표시 및 해제 기능 추가
+- [x] 6. 기능 검증 완료
+
+## 55. OpenAPI 상세 정보 PDF 내보내기 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1.  Dependency: `requirements.txt`에 `fpdf2` 추가
+- [x] 2.  Backend: `src/utils/pdf_generator.py` 구현 (한글 폰트, HTML 태그 제거, 동적 테이블)
+- [x] 3.  Backend: `src/routers/openapi.py` 내 PDF 내보내기 API (`/api/openapi/{tool_id}/export`) 구현 (Admin 전용 서비스 키 포함)
+- [x] 4.  Frontend: `OpenApiManager.tsx`에 PDF 다운로드 버튼 추가 및 연동
+- [x] 5.  기능 검증 및 UI 최적화 완료
+
+## 56. 다크 모드(Dark Mode) 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1.  Tailwind CSS 다크 모드 설정 (class strategy)
+- [x] 2.  테마 상태 관리 훅(useTheme) 및 localStorage 연동
+- [x] 3.  헤더 내 테마 전환 토클 버튼 추가
+- [x] 4.  전역 컴포넌트(Sidebar, Dashboard, Modal 등) 다크 모드 스타일 적용
+- [x] 5.  기능 검증 완료
+
+## 57. OpenAPI 메타데이터 관리 기능 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: `openapi_meta.py` 구현 (카테고리/태그 수정 및 안전한 삭제 로직)
+- [x] 2. Backend: 신규 관리 API 엔드포인트 구현 (`PUT`, `DELETE`, `GET by-meta`)
+- [x] 3. Frontend: `OpenApiMetaManager.tsx` 컴포넌트 구현 (관리자 전용)
+- [x] 4. Frontend: `App.tsx` 메뉴 연동 및 `OpenApiManager.tsx` 중복 UI 정리
+- [x] 5. 기능 검증 및 린트 오류 수정 완료
+
+## 58. OpenAPI PDF 내보내기 기능 보완 (Refinement)
+
+- [x] 1. Backend: `get_openapi_by_tool_id` 수정 (카테고리명 및 태그 정보 포함)
+- [x] 2. Utils: `pdf_generator.py` 수정 (문서 내 카테고리와 태그 항목 추가)
+- [x] 3. Frontend: 도구 목록 및 상세 타입 정의(`OpenApiConfig`) 업데이트로 데이터 정합성 확보
+- [x] 4. 기능 검증 완료
+
+## 59. DB 백업 및 복구 기능 구현 (New)
+
+- [x] 상세 구현 계획 수정 반영 (implementation_plan.md)
+- [x] 1. Backend: DB 백업 생성 API 구현 (`POST /api/admin/db/backup`)
+- [x] 2. Backend: 백업 파일 목록 조회 API 구현 (`GET /api/admin/db/backups`)
+- [x] 3. Backend: 특정 파일 선택 복구 API 구현 (`POST /api/admin/db/restore/{filename}`)
+- [x] 4. Frontend: DB 백업 관리 UI 구현 (목록, 생성 버튼)
+- [x] 5. 기능 테스트 및 검증
+
+## 60. db_reset.py 임포트 오류 수정 (Hotfix)
+
+- [x] db_reset.py 임포트 오류 원인 분석 (`get_password_hash` 누락 및 `sys.path` 계산 착오)
+- [x] db_reset.py 및 db_inspect.py 경로 로직 수정 (4단계 위로 수정하여 프로젝트 루트 확보)
+- [x] 폴백(Fallback) 임포트 로직 강화 및 검증
+
+## 61. UI/UX 개선 및 버그 수정 (Completed)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. 각 메뉴별 테이블 높이 상향 및 기본 행 수 확대 (10 -> 20)
+  - [x] UsageHistory, OpenApiManager, LimitManagement, OpenApiStats 적용
+- [x] 2. 다크모드(Dark Mode) 지원 확대 및 UI 개선
+  - [x] Autocomplete(검색), Pagination(페이지네이션) 다크모드 스타일 보정
+  - [x] 내 정보(My Page) 화면 다크모드 전면 지원
+- [x] 3. OpenApiStats 화면 `TypeError` 수정 및 로직 개선
+  - [x] API 엔드포인트 분리 (/api/openapi/stats vs /api/openapi/meta-stats)
+  - [x] Frontend Optional Chaining을 통한 방어 코드 적용
+- [x] 4. 프로젝트 관리 도구(`db_reset.py`, `db_inspect.py`) 개선 및 오류 수정
+  - [x] 경로 인식 로직 수정 및 임포트 오류(AttributeError 등) 완벽 해결
+- [x] 5. 최종 검증 및 tasks.md 문서 업데이트
+
+## 62. 내 정보 관리 화면에 도구 사용 이력 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. DB: 특정 사용자의 일일 도구 사용량을 집계하는 `get_specific_user_tool_usage` 구현
+- [x] 2. Backend: `/api/mcp/my-usage` API가 도구별 상세 사용량을 반환하도록 수정
+- [x] 3. Frontend: `UserUsage.ts` 타입 정의(`MyMcpUsage`) 추가
+- [x] 4. Frontend: `MyPage.tsx` UI 수정 및 '오늘의 일반 MCP 도구 사용 현황' 카드 추가
+- [x] 5. 최종 기능 검증 및 문서 업데이트
+
+## 63. 대시보드 새로고침 기능 추가 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Frontend: `useMcp.ts` 훅에서 `refreshStats` 기능 노출
+- [x] 2. Frontend: `App.tsx`에서 대시보드로 새로고침 함수 전달
+- [x] 3. Frontend: `Dashboard.tsx` 상단 헤더 및 새로고침 버튼 UI 구현
+- [x] 4. 최종 기능 검증 및 문서 업데이트
+
+## 64. 대시보드 시스템 헬스 체크 및 스케줄러 관리 기능 추가 (Completed)
+
+- [x] Backend: `src/scheduler.py`, `src/utils/mailer.py` 점검 및 제어 로직 추가
+- [x] Backend: `src/routers/system.py` health & scheduler API 구현
+- [x] Frontend: `SchedulerManager.tsx` 구현 및 대시보드 UI 연동
+- [x] 최종 기능 검증 및 문서 업데이트
+
+## 65. 대시보드 시각화 확정 (Heatmap & 사용자 상세 분석) (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: 시간대별/요일별 사용 통계 DB 함수 구현 (`mcp_tool_usage.py`, `openapi_usage.py`)
+- [x] 2. Backend: 특정 유저의 Top 5 도구 사용량 조회 함수 구현
+- [x] 3. Backend: API 엔드포인트 확장 (`/mcp/stats`, `/mcp/user-tool-stats`, `/openapi/stats`, `/openapi/user-tool-stats`)
+- [x] 4. Frontend: UsageStats 및 OpenApiStats 타입 정의 업데이트
+- [x] 5. Frontend: 메인 대시보드 Heatmap 차트 및 2단 레이아웃 사용자 상세 분석 구현
+- [x] 6. Frontend: OpenAPI 통계 Heatmap 차트 및 사용자/토큰 상세 분석 구현
+- [x] 7. 최종 검증 및 버그 수정 (`mcp.py` 임포트 오류 해결)
+- [ ] 8. UI, 데이터 조회 부분 이상한지 체크 필요
+
+## 66. MCP 및 OpenAPI 로깅/통계 고도화 (New)
+
+- [x] 1. `h_mcp_tool_usage`: `token_id` 값 저장 추가 (DB 스키마 및 `audit_log` 연동)
+- [x] 2. 외부 토큰 사용 시 'external user' 매핑 로직 제거 및 실제 토큰 식별 적용
+- [x] 3. 사용량 히트맵(7x24) 통계 구현 및 차트 적용 (Dashboard/OpenAPI)
+- [x] 4. 사용자/토큰별 Top 5 사용량 상세 분석 기능 구현 (관리자 전용)
+- [x] 5. OpenAPI Proxy 실행 시 DB 저장 파라미터(ServiceKey 등) 자동 병합 로직 추가
+- [x] 6. 최종 검증 및 문서 업데이트
+
+## 67. Email OTP 모듈 구현 (New)
+
+- [x] 1. DB: h_email_otp 테이블 생성 및 관리 로직 구현 (db/email_otp.py)
+- [x] 2. Backend: OTP 생성, 발송, 검증 비즈니스 로직 구현 (utils/otp_manager.py)
+- [x] 3. API: OTP 발curity: 일반 사용자의 시스템 헬스 API 접근 차단 및 UI 숨김 처리
+- [x] 최종 검증 및 문서 업데이트 완료
+
+## 74. 외부 SSE 접근 및 토큰 제어 고도화 (New)
+
+- [x] 1. 외부 토큰(sk\_...) 기반 MCP 도구 사용량 제한 로직 구현 (Security)
+  - [x] `token_id` 기준 사용량 집계 및 제한 정책 연동
+- [x] 2. 외부 접속 세션 관리 개선 및 가이드 배포
+- [x] 3. 기능 검증
+
+## 75. 알림 센터(Notification Center) 고도화 (New)
+
+- [x] 1. 실시간 사용 알림 헬퍼 로직 구현 (`notification_helper.py`)
+- [x] 2. 사용량 임계치 알림 로직 구현 (MCP/OpenAPI)
+  - [x] 사용량 체크 및 단계별(80%, 90%, 100%) 알림 발송 로직 추가
+  - [x] 중복 알림 방지 로직 (일일 1회 등) 반영
+- [x] 3. 스케줄러 결과 알림 연동
+  - [x] 메일 예약 발송 완료 시 해당 사용자에게 알림 전송
+- [x] 4. 계정 잠금 알림 연동
+  - [x] 로그인 실패로 인한 잠금 발생 시 시스템 알림 생성
+- [x] 5. 기능 검증 및 UI 확인
+
+## 76. MCP REST API Proxy 구현 (v)
+
+- [x] 신규 엔드포인트: `POST /api/mcp/proxy/{tool_nm}` 구현
+- [x] 인증 유지: JWT 및 외부 보안 토큰 연동 (통합 인증)
+- [x] 기능 통합: 기존 MCP 도구 사용 로직(사용량 체크, Audit Log) 연동
+- [x] 결과 반환: JSON 형식의 즉시 응답 제공
+
+## 77. 외부 토큰별 도구 권한 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Database Implementation
+  - [x] `h_access_token_tool_map`, `h_access_token_openapi_map` 테이블 생성
+  - [x] 기존 토큰들에 대한 전체 권한 부여 마이그레이션 (`migration_token_tools.py`)
+- [x] 2. Backend Implementation
+  - [x] 신규 토큰 생성(`create_access_token`) 및 신규 도구 등록 시 자동 권한 매핑 로직 추가
+  - [x] 권한 체크 유틸리티(`check_access_token_permission`) 구현
+  - [x] 3단계 보안 프로세스(권한->한도->실행) 적용 (`call_tool`, `api_execute_openapi`)
+  - [x] 토큰별 권한 관리 전용 API 라우터(`token.py`) 구현 및 등록
+- [x] 3. Frontend Implementation
+  - [x] `AccessTokenManager.tsx` 내 '권한 설정' 버튼 및 상세 제어 모달 UI 구현
+  - [x] 도구별(Custom/OpenAPI) 체크박스 연동 및 실시간 권한 저장 기능 구현
+  - [x] **[Troubleshooting]**: 미정의 함수 오류 및 잘못된 API 경로(`/api/tools`) 수정 완료
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 78. 감사 로그 내보내기 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend Implementation
+  - [x] `pandas`, `openpyxl` 의존성 추가 및 설치 > pip install pandas openpyxl
+  - [x] `src/routers/export.py` 신규 라우터 및 엔드포인트 구현 (CSV/Excel 지원)
+  - [x] `src/server.py` 에 라우터 등록
+- [x] 2. Database Implementation
+  - [x] `get_all_tool_usage_logs`, `get_all_openapi_usage_logs` 구현
+- [x] 3. Frontend Implementation
+  - [x] `UsageHistory.tsx` 내 내보내기 버튼 추가 및 API 연동
+  - [x] `OpenApiStats.tsx` 내 내보내기 버튼 추가 및 API 연동
+- [x] 4. 최종 검증 및 문서 업데이트 (`walkthrough.md`)
+
+## 79. 로그 정기 삭제 및 압축 관리 구현 (New)
+
+- [x] 상세 구현 계획 수립 (`implementation_plan.md`)
+- [x] 1. Backend: 로그 목록 조회 시 '오늘' 로그 식별 로직 추가
+- [x] 2. Backend: 로그 다중 파일 압축 API (`/api/system/logs/archive`) 구현
+- [x] 3. Frontend: 로그 목록 다중 선택 UI 및 체크박스 추가
+- [x] 4. Frontend: 압축 파일명 입력 및 압축 실행 기능 구현
+- [x] 5. 최종 검증 및 문서 업데이트
+
+## 80. API 문서화 자동화 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. FastAPI 인스턴스 메타데이터(Title, Description, Version) 추가
+- [x] 2. 서버 시작 로그에 Swagger UI/ReDoc 접속 주소 출력 로직 추가
+- [x] 3. MCP REST API Proxy 엔드포인트 Pydantic 모델(Request/Response) 적용
+  - [x] 4. 신규 엔드포인트: `GET /api/mcp/proxy/tools` (사용 가능한 도구 목록 조회) 구현
+  - [x] 5. Swagger UI 인증(Authorize) 버튼 활성화 및 보안 레이아웃 최적화
+  - [x] 6. 기능 검증 (tests/verify_api_docs.py) 완료
+
+## 81. Jenkins Telegram Integration (New)
+
+- [x] Telegram 봇 생성 및 API Token/Chat ID 획득
+- [x] Jenkins 자격 증명(Credentials) 등록 (`telegram-token`, `telegram-chat-id`)
+- [x] Jenkinsfile 내 `sendTelegramNotification` 함수 구현 및 에러 핸들링 적용
+- [x] CI/CD 파이프라인 빌드 결과(성공/실패) 실시간 알림 연동
+
+## 82. 백엔드 시스템 Telegram 연동 (New)
+
+- [x] `python-dotenv`, `httpx` 패키지 설치 및 환경 변수(.env) 설정
+- [x] `src/utils/telegram_bot.py` 비동기 메시지 발송 모듈 구현
+- [x] `src/utils/notification_helper.py` 내 SSE 알림과 Telegram 동시 발송 로직 통합
+- [x] 서버 시작 시 환경 변수 로드 로직 추가 (`src/sse_server.py`)
+
+## 83. 사용자별 Telegram Chat ID 관리 및 DB 확장 (New)
+
+- [x] `h_user` 테이블 `telegram_chat_id` 컬럼 추가 (`init_manager.py`)
+- [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
+- [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
+- [x] 기능 검증 (tests/test_telegram_notify.py) 완료
+ 
+## 84. 관리자 수동 알림 Telegram 연동 (New)
+
+- [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
+- [x] `src/routers/notification.py` 내 관리자 발송 API 연동
+- [x] 기능 검증 및r.py`)
+- [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
+- [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
+- [x] 기능 검증 (tests/test_telegram_notify.py) 완료
+ 
+## 84. 관리자 수동 알림 Telegram 연동 (New)
+
+- [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
+- [x] `src/routers/notification.py` 내 관리자 발송 API 연동
+- [x] 기능 검증 및 테스트
+
+## 85. 내 정보 관리 화면 수정 (Modal 및 Email 인증) (Completed)
+
+- [x] 내 정보(MyPage.tsx) 수정 UI를 모달(Modal) 방식으로 개편 (사용자 관리와 통일)
+- [x] 이메일 변경 시 인증 프로세스 통합 (중복 체크 -> OTP 발송 -> OTP 검증)
+- [x] 이름 및 텔레그램 ID 수정 기능 추가
+- [x] 프로필 수정 완료 후 로컬 세션(localStorage) 실시간 갱신 로직 적용
+- [x] OTP 관련 API URL 경로 오류 수정 (/api/auth/... -> /auth/...)
+- [x] 최종 검증 및 테스트 완료
+
+## 86. Jenkins 브랜치 병합 자동화 고도화 (New)
+
+- [x] `Jenkinsfile` 내 `parameters` 블록 추가 (SOURCE_BRANCH, TARGET_BRANCH)
+- [x] 병합 스테이지(`Automated Merge`)가 파라미터 기반으로 동작하도록 수정
+- [x] 성공/실패 텔레그램 알림 메시지에 브랜치 정보 포함
+- [x] 기능 검증 완료

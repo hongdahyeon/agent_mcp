@@ -253,7 +253,7 @@ function App() {
       label: '기능',
       items: [
         { id: 'tester', label: '도구 테스터', icon: Terminal },
-        { id: 'logs', label: '로그 뷰어', icon: FileText },
+        { id: 'logs', label: '로그 뷰어', icon: FileText, adminOnly: true },
         { id: 'email', label: '메일 발송', icon: Send },
         { id: 'file-manager', label: '파일 관리', icon: File }
       ]
@@ -440,7 +440,7 @@ function App() {
         <div className="flex-1 overflow-y-auto p-8 relative">
           {activeView === 'dashboard' && <Dashboard stats={stats} theme={theme} role={user.role} onRefresh={refreshStats} />}
           {activeView === 'tester' && <Tester tools={availableTools} sendRpc={sendRpc} lastResult={lastResult} refreshTools={refreshTools} />}
-          {activeView === 'logs' && <LogViewer />}
+          {activeView === 'logs' && user.role === 'ROLE_ADMIN' && <LogViewer />}
           {activeView === 'email' && user && <EmailSender />}
           {activeView === 'email-history' && user.role === 'ROLE_ADMIN' && <EmailHistory />}
           {activeView === 'history' && <LoginHistViewer />}
