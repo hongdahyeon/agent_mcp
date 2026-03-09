@@ -1649,8 +1649,29 @@ Jenkins CI/CD 파이프라인의 빌드 및 배포 결과를 텔레그램으로 
  - **[MODIFY] `src/routers/notification.py`**
    - `send_notification` 함수에서 직접 DB와 SSE를 호출하던 로직을 공통 헬퍼(`send_dual_notification`)를 사용하도록 변경.
  
- ### Verification Plan
- 
- 1. **Code Review**: `notification_helper`가 Telegram 발송 로직을 포함하고 있는지 확인.
- 2. **Manual Test**: 관리자 화면에서 알림 발송 시 로그에 Telegram 발송 관련 로그가 찍히는지 확인.
- 3. **Regression Test**: 기존 시스템 알림(사용량 초과 등)이 여전히 잘 동작하는지 확인.
+---
+
+## Phase 29: My Page Profile Update (Completed)
+
+### Goal
+
+내 정보(My Page)에서 이름, 이메일, 텔레그램 ID를 수정할 수 있는 기능을 추가하고, 이메일 변경 시 중복 체크 및 OTP 인증 프로세스를 통합합니다.
+
+### Proposed Changes
+
+#### 1. Backend: DB & API
+
+- **[MODIFY] `src/db/user.py`**: `update_user`에 `telegram_chat_id` 필드 추가.
+- **[MODIFY] `src/routers/users.py`**: `api_update_my_profile` (`PUT /api/users/me`) 신설 및 `UserUpdateRequest` 확장.
+
+#### 2. Frontend: MyPage.tsx
+
+- 이름, 이메일, 텔레그램 ID 수정 가능한 폼 구현.
+- 이메일 수정 시 중복 체크(`check-email`) 및 OTP 인증(`otp/send`, `otp/verify`) 플로우 구현.
+- 수정 완료 후 `PUT /api/users/me` 호출 및 로컬 세션 갱신.
+
+### Verification Plan
+
+1. 이름/텔레그램 ID 수정 후 MyPage 재진입 시 값 유지 확인.
+2. 이메일 수정 시 중복 시 차단 및 OTP 인증 필수 여부 확인.
+3. 수정 실패/성공 시 사용자 피드백(알림) 확인.
