@@ -1099,3 +1099,10 @@
 - [x] 프로필 수정 완료 후 로컬 세션(localStorage) 실시간 갱신 로직 적용
 - [x] OTP 관련 API URL 경로 오류 수정 (/api/auth/... -> /auth/...)
 - [x] 최종 검증 및 테스트 완료
+
+## 86. Jenkins 브랜치 병합 자동화 고도화 (New)
+
+- [x] `Jenkinsfile` 내 `parameters` 블록 추가 (SOURCE_BRANCH, TARGET_BRANCH)
+- [x] 병합 스테이지(`Automated Merge`)가 파라미터 기반으로 동작하도록 수정
+- [x] 성공/실패 텔레그램 알림 메시지에 브랜치 정보 포함
+- [x] 기능 검증 완료
