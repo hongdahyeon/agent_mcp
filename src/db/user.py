@@ -153,6 +153,10 @@ def update_user(user_id: str, update_data: dict):
         fields.append("is_approved = ?")
         values.append(update_data['is_approved'])
     
+    if 'telegram_chat_id' in update_data:
+        fields.append("telegram_chat_id = ?")
+        values.append(update_data['telegram_chat_id'])
+    
     if 'login_fail_count' in update_data:
         fields.append("login_fail_count = ?")
         values.append(update_data['login_fail_count'])

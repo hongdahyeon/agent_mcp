@@ -13,6 +13,7 @@ export interface User {
     is_approved?: string;
     login_fail_count?: number;
     last_cnn_dt?: string;
+    telegram_chat_id?: string; // 추가
     login_ts?: number; // 세션 로그인 timestamp
 }
 
@@ -39,4 +40,5 @@ export interface SessionUser {
     user_id: string;
     user_nm: string;
     user_email?: string;
+    telegram_chat_id?: string; // 추가
 }

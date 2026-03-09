@@ -28,6 +28,7 @@ class UserCreateRequest(BaseModel):
 class UserUpdateRequest(BaseModel):
     user_nm: str | None = None
     user_email: str | None = None # 추가
+    telegram_chat_id: str | None = None # 추가
     role: str | None = None
     is_enable: str | None = None
     is_approved: str | None = None
@@ -40,6 +41,26 @@ class UserUpdateRequest(BaseModel):
 async def api_get_my_profile(current_user: dict = Depends(get_current_user_jwt)):
     """현재 로그인한 사용자의 전체 프로필 조회 (DB 연동)."""
     return current_user
+
+# 현재 사용자 정보 수정 (Self-update)
+@router.put("/me")
+async def api_update_my_profile(req: UserUpdateRequest, current_user: dict = Depends(get_current_user_jwt)):
+    """현재 로그인한 사용자의 프로필 수정 (이름, 이메일, 텔레그램 ID)."""
+    user_id = current_user['user_id']
+    
+    # 수정 가능한 필드 제한 (이름, 이메일, 텔레그램 ID만 허용 권장이나 편의상 Request 필드 활용)
+    update_data = req.dict(exclude_unset=True)
+    
+    # 보안: 권한이나 계정 상태 등은 본인이 수정 불가하도록 관리자 전용과 차별화 필요할 수 있음
+    # 여기서는 이름, 이메일, 텔레그램 ID 위주로 처리
+    allowed_fields = ['user_nm', 'user_email', 'telegram_chat_id']
+    safe_update_data = {k: v for k, v in update_data.items() if k in allowed_fields}
+    
+    if not safe_update_data:
+        return {"success": True, "message": "No fields to update"}
+
+    update_user(user_id, safe_update_data)
+    return {"success": True, "message": "프로필이 업데이트되었습니다."}
 
 # 모든 사용자 조회
 @router.get("")
