@@ -1106,3 +1106,10 @@
 - [x] 병합 스테이지(`Automated Merge`)가 파라미터 기반으로 동작하도록 수정
 - [x] 성공/실패 텔레그램 알림 메시지에 브랜치 정보 포함
 - [x] 기능 검증 완료
+
+## 87. Jenkins 파이썬 실행 경로 공통화 (New)
+
+- [x] `Jenkinsfile` 내 하드코딩된 `PYTHON_EXE` 경로 제거
+- [x] Jenkins Node 환경 변수(`PYTHON_EXE`) 참조 및 `python` 폴백(Fallback) 로직 적용
+- [x] 환경별(본체, 노트북) 독립적 파이썬 경로 설정 가이드 작성
+- [x] 기능 검증 완료
