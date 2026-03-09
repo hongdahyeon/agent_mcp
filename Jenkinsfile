@@ -11,18 +11,32 @@ pipeline {
     }
 
     parameters {
-        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: 'Source branch to merge from (e.g., home, note)')
+        string(name: 'SOURCE_BRANCH', defaultValue: 'note', description: 'Source branch to merge from (e.g., home, note)')
         string(name: 'TARGET_BRANCH', defaultValue: 'work', description: 'Target branch to merge into (e.g., work)')
     }
 
     stages {
+        // stage('Backend Setup') {
+        //     steps {
+        //         bat """
+        //         if not exist venv (
+        //             "%PYTHON_EXE%" -m venv venv
+        //         )
+        //         venv\\Scripts\\activate && pip install -r requirements.txt
+        //         """
+        //     }
+        // }
         stage('Backend Setup') {
             steps {
                 bat """
-                if not exist venv (
-                    "%PYTHON_EXE%" -m venv venv
-                )
-                venv\\Scripts\\activate && pip install -r requirements.txt
+                @echo off
+                :: 시스템에 설치된 python을 사용하거나, Jenkins 환경 변수를 활용하세요
+                python -m venv venv
+                if errorlevel 1 exit /b 1
+                
+                :: 가상환경 활성화 후 패키지 설치
+                call venv\\Scripts\\activate
+                pip install -r requirements.txt
                 """
             }
         }
