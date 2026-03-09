@@ -116,13 +116,13 @@ pipeline {
                 def now = new Date().format("yyyy-MM-dd HH:mm", TimeZone.getTimeZone('Asia/Seoul'))
                 if (env.CASE_TYPE == "SYNC_FROM_WORK") {
                     echo 'Sync from work completed.'
-                    sendTelegramNotification("[${now}]\n[v] CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
                 } else if (env.CASE_TYPE == "MERGE_TO_WORK") {
                     echo 'Automated Merge Succeeded!'
-                    sendTelegramNotification("[${now}]\n[v] CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Build and Automated Merge completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
                 } else {
                     echo 'Build Succeeded (No special merge scenario).'
-                    sendTelegramNotification("[${now}]\n[v] CI/CD Success: Build completed (${env.GIT_BRANCH ?: 'unknown'})")
+                    sendTelegramNotification("[${now}] [v] CI/CD Success: Build completed (${env.GIT_BRANCH ?: 'unknown'})")
                 }
             }
         }
@@ -130,7 +130,7 @@ pipeline {
             script {
                 def now = new Date().format("yyyy-MM-dd HH:mm", TimeZone.getTimeZone('Asia/Seoul'))
                 echo 'Build or Merge Failed.'
-                sendTelegramNotification("[${now}]\n[x] CI/CD Failed: Error during pipeline execution. Check Jenkins logs.")
+                sendTelegramNotification("[${now}] [x] CI/CD Failed: Error during pipeline execution. Check Jenkins logs.")
             }
         }
     }
