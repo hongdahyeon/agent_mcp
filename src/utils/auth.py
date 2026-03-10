@@ -6,10 +6,20 @@ from typing import Union
 # bcrypt 알고리즘 사용, deprecated="auto"로 설정하여 구버전 호환성 확보
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
+
 # JWT 설정 (JWT Configuration)
-SECRET_KEY = "your-secret-key"  # 실제 운영 환경에서는 환경 변수 등으로 안전하게 관리해야 함
+# 운영 환경에서는 반드시 .env의 SECRET_KEY를 사용해야 함
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY must be set in .env file")
+
 ALGORITHM = "HS256"             # JWT 서명 알고리즘
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 # 기본 토큰 만료 시간 (분)
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 # 기본 토큰 만료 시간 (30분)
 
 """
     auth.py

@@ -1687,4 +1687,81 @@ Jenkins의 브랜치 병합 로직을 파라미터화하여 다양한 브랜치 
 ### Implemented Changes
  
 - **[MODIFY] [Jenkinsfile](file:///d:/hong/9.%20project/agent_mcp/Jenkinsfile)**: `SOURCE_BRANCH`, `TARGET_BRANCH` 파라미터 추가 및 로직 연동.
-- **Telegram Notification**: 알림 메시지에 브랜치 정보 동적 반영.
+- Telegram Notification: 알림 메시지에 브랜치 정보 동적 반영.
+
+---
+
+## Phase 55: MCP 도구 토큰 별 사용량 제한 구현 [Completed]
+
+### Goal
+
+특정 액세스 토큰(External Token)별로 MCP 도구 호출 횟수를 제한할 수 있도록 관리 UI를 고도화하고 서비스 안정성을 강화합니다.
+
+### Implemented Changes
+
+- **Type Definition Expansion**: `Limit` 및 `LimitFormData` 타입에 `TOKEN` 대상 유형을 추가했습니다.
+- **Limit Management UI (`LimitManagement.tsx`)**:
+  - 대상 유형 선택 시 `TOKEN` 옵션을 추가하고, 토큰 선택 시 ID가 아닌 실제 토큰 이름을 표시하도록 개선했습니다.
+  - 리스트 뷰에서도 토큰 ID를 기반으로 이름을 실시간 매핑하여 가독성을 높였습니다.
+  - 외부에서 `target_type`과 `target_id` 파라미터를 통해 진입 시 자동으로 설정 모달이 열리는 기능을 추가했습니다.
+- **Access Token Manager (`AccessTokenManager.tsx`)**:
+  - 각 토큰 옆에 '한도 설정' 단축 아이콘(시계 모양)을 추가하여, 클릭 시 즉시 해당 토큰의 한도 설정 화면으로 이동할 수 있도록 편의성을 개선했습니다.
+
+### Verification Plan
+
+1. 토큰 관리 화면에서 한도 설정 아이콘 클릭 시 해당 토큰이 선택된 상태로 모달이 열리는지 확인.
+2. 특정 토큰에 대해 횟수 제한 설정 후, 해당 토큰으로 MCP 프록시 요청 시 제한이 정상 작동하는지 확인.
+3. 리스트에서 설정된 토크별 한도 규칙이 토큰 이름과 함께 정상적으로 표시되는지 확인.
+
+---
+
+## Phase 56: OpenAPI 파라미터 입력 UI 개선 (Key-Value 에디터) [Completed]
+
+### Goal
+
+OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에 직접 JSON으로 입력해야 했던 번거로움을 해결하기 위해, 항목별로 Key-Value를 입력할 수 있는 사용자 친화적인 에디터를 도입합니다.
+
+### Implemented Changes
+
+- **Key-Value Editor UI Implementation**:
+  - `OpenApiManager.tsx` 내에 개별 파라미터 항목을 추가(`+`) 및 삭제(`Trash`)할 수 있는 UI를 구현했습니다.
+  - 사용자는 'Key-Value' 모드와 'Raw JSON' 모드를 자유롭게 전환하며 작업할 수 있습니다.
+- **State & Logic Synchronization**:
+  - `paramItems` 상태를 도입하여 입력된 항목들을 실시간 관리하며, 저장 시 자동으로 유효한 JSON 객체로 변환(`JSON.stringify`)하여 서버에 전송합니다.
+  - 기존의 복잡한 JSON 데이터가 있을 경우 에디터 진입 시 자동으로 파싱하여 리스트 형태로 시각화합니다.
+- **Code Quality & Type Safety**:
+  - 주요 데이터 모델(`OpenApiConfig`, `MetaItem` 등)에 대한 타입 정의를 강화하여 `any` 타입을 제거하고 린트 오류를 해결했습니다.
+  - 테이블 레이아웃 렌더링 시 발생하던 JSX 구조 오류를 수정하여 UI 안정성을 확보했습니다.
+
+### Verification Plan
+
+1. **신규 등록 테스트**: Key-Value 모드에서 여러 항목을 추가하고 저장한 뒤, DB 또는 테스터에서 올바른 JSON 형식으로 저장되었는지 확인.
+2. **기존 데이터 로드 테스트**: 이미 JSON이 입력된 API를 수정 모드로 열었을 때, 항목 리스트가 자동으로 채워지는지 확인.
+3. **모드 전환 테스트**: Key-Value 모드와 Raw JSON 모드 간 전환 시 데이터 유실 없이 동기화되는지 확인.
+
+---
+
+## Phase 57: MCP 도구 로딩 동적화 및 OpenAPI 통합 [Planning]
+
+### Goal
+
+현재 MCP 서버는 시작 시점에 정적으로 도구를 등록(Stdio)하거나, OpenAPI 도구를 MCP 도구 목록에서 누락하고 있습니다. 이를 해결하기 위해 모든 도구 로딩을 실시간 DB 조회 방식으로 통일하고, OpenAPI로 등록된 API들도 개별 MCP 도구로서 에이전트가 즉시 인식하고 사용할 수 있도록 통합합니다.
+
+### Proposed Changes
+
+#### 1. Unified Dynamic Loading (server.py & mcp_server_impl.py)
+- **[MODIFY] `server.py`**:
+  - `FastMCP` 라이브러리를 사용하던 방식에서 `mcp.server.Server`를 사용하는 방식으로 전환하여 `list_tools`와 `call_tool` 핸들러를 수동 제어합니다.
+  - 이를 통해 Stdio 모드(Claude Desktop 등)에서도 에이전트가 도구 목록을 요청할 때마다 DB의 최신 상태를 반영할 수 있습니다.
+- **[MODIFY] `mcp_server_impl.py`**:
+  - `list_tools` 함수에 `h_openapi` 테이블 조회 로직을 추가하여 등록된 모든 OpenAPI 명세를 MCP 도구 형식으로 반환합니다.
+
+#### 2. OpenAPI Execution via MCP
+- **[MODIFY] `mcp_server_impl.py` (call_tool)**:
+  - 호출된 도구 이름이 `h_openapi`에 등록된 `tool_id`인 경우, `execution.py`의 프록시 실행 로직을 호출하여 실제 API 요청을 수행하도록 통합합니다.
+  - 외부 토큰 권한(`check_access_token_permission`) 및 사용량 제한(`get_openapi_limit`) 로직을 그대로 적용합니다.
+
+### Verification Plan
+- **Custom Tool Hot-reload**: 신규 동적 도구 생성 후 `list_tools` 응답에 즉시 포함되는지 확인.
+- **OpenAPI Tool Integration**: `h_openapi`에 등록한 API가 MCP 도구 목록에 나타나고, AI Agent가 이를 통해 실제 데이터를 가져오는지 확인.
+- **Security**: MCP를 통해 실행되는 OpenAPI 도구 역시 기존의 토큰 권한 및 사용량 제한이 정상 작동하는지 검증.

@@ -7,10 +7,10 @@ try:
     from src.utils.mailer import EmailSender
     from src.utils.notification_helper import send_system_notification
 except ImportError:
-    # Fallback for direct execution testing
-    from db.email_manager import get_pending_scheduled_emails, update_email_status
-    from utils.mailer import EmailSender
-    from utils.notification_helper import send_system_notification
+    # Absolute path fallback to ensure it works when run from project root or as a module
+    from src.db.email_manager import get_pending_scheduled_emails, update_email_status
+    from src.utils.mailer import EmailSender
+    from src.utils.notification_helper import send_system_notification
 
 logger = logging.getLogger(__name__)
 

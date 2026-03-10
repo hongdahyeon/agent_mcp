@@ -71,19 +71,15 @@ def get_admin_usage_stats() -> list[dict]:
     """관리자용: 모든 사용자의 금일 사용량 및 제한 정보 통계."""
     conn = get_db_connection()
     
+    stats = []
+    
     # 1. 전체 활성 유저 조회
     users = conn.execute("SELECT uid, user_id, user_nm, role FROM h_user WHERE is_enable='Y'").fetchall()
-    
-    stats = []
     for user in users:
         uid = user['uid']
         role = user['role']
-        
-        # 사용량 (재사용)
-        usage_count = get_user_daily_usage(uid)
-        
-        # 제한량 (재사용)
-        limit = get_user_limit(uid, role)
+        usage_count = get_user_daily_usage(user_uid=uid)
+        limit = get_user_limit(user_uid=uid, role=role)
         
         remaining = -1 if limit == -1 else (limit - usage_count)
         if remaining < 0 and limit != -1: remaining = 0
@@ -94,6 +90,27 @@ def get_admin_usage_stats() -> list[dict]:
             "role": role,
             "usage": usage_count,
             "limit": limit,
+            "remaining": remaining
+        })
+        
+    # 2. 전체 활성 토큰 조회 및 추가 (Phase 48+ 연계)
+    tokens = conn.execute("SELECT id, name FROM h_access_token WHERE is_delete='N' AND can_use='Y'").fetchall()
+    for tk in tokens:
+        tk_id = tk['id']
+        tk_name = tk['name']
+        
+        usage_count = get_user_daily_usage(token_id=tk_id)
+        limit = get_user_limit(token_id=tk_id) # 토큰 개별 제한
+        
+        remaining = -1 if limit == -1 else (limit - usage_count)
+        if remaining < 0 and limit != -1: remaining = 0
+        
+        stats.append({
+            "user_id": f"token:{tk_name}",
+            "user_nm": f"[Token] {tk_name}",
+            "role": "EXTERNAL_TOKEN",
+            "usage": usage_count,
+            "limit": min(limit, 0) if limit == 0 else limit, # 0이면 사용불가 표시 유도
             "remaining": remaining
         })
         

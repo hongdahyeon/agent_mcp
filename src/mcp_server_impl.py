@@ -2,94 +2,111 @@
 mcp_server_impl.py
 ==================
 
-이 파일은 MCP(Model Context Protocol) 서버의 핵심 구현부로, 
-정적(Static) 도구와 DB기반 동적(Dynamic) 도구를 통합하여 관리하고 실행하는 역할을 합니다.
+본 파일은 MCP(Model Context Protocol) 서버의 핵심 구현부
+외부 AI 에이전트와 관리자 플랫폼(Admin Platform) 모두에서 접근 가능한 공통 인터페이스 역할을 수행.
+정적(Static) 도구와 DB 기반 동적(Dynamic) 도구(Custom Tool, OpenAPI)를 통합 관리하고 실행.
 
 # 주요 기능:
-1. 도구 통합 관리: 정적 도구 목록과 DB(h_custom_tool)에서 로드한 동적 도구를 합쳐서 에이전트에게 제공합니다.
+1. 도구 통합 관리: 정적 도구 목록과 DB(h_custom_tool) 로드 동적 도구를 에이전트에 통합 제공
 2. 실행 제어 및 보안 (call_tool):
-   - 공통: 모든 도구 실행 시 유효한 토큰(token) 및 사용자 인증 상태를 체크합니다.
-   - 사용량 제한: 사용자의 일일 도구 사용량을 체크하여 제한을 적용합니다.
-   - 실행 이력: 모든 도구 호출 결과와 성공 여부를 DB에 기록합니다.
+   - 인증 체크: 토큰 및 사용자 유효성 검증
+   - 사용량 제한: 일일 사용량 체크 및 임계치 알림
+   - 이력 기록: 실행 결과 및 성공 여부 DB 저장
 
-# 도구 유형별 처리 방식:
-1. 정적 도구 (Static Tools):
-   - 미리 정의된 파이썬 함수를 직접 호출합니다.
-   - 권한 체크: 특정 도구(예: get_user_info)는 ROLE_ADMIN과 같은 특정 역할이 필요합니다.
-   - 파라미터 처리: 입력받은 인자로 연산을 수행하거나 메일 발송, 시간 조회 등을 처리합니다.
-   - 로그 기록: 성공/실패 여부와 결과를 DB에 로그로 남깁니다.
-
-2. 동적 도구 (Dynamic Tools):
-   - DB에 등록된 SQL 또는 PYTHON 코드를 실행합니다.
-   - 유형 체크: 실행 시 도구의 타입(SQL vs PYTHON)을 확인하여 적절한 Executor를 호출합니다.
-   - 에러 처리: 코드 실행 중 발생하는 예외를 잡아내어 에러 메시지를 반환하고 로그로 기록합니다.
-
-# 등록된 정적 도구 목록:
-(1) add: 두 숫자를 더합니다.
-(2) subtract: 두 숫자를 뺍니다.
-(3) hellouser: 사용자 이름을 입력받아 인사말을 반환합니다.
-(4) get_user_info: (Admin 전용) 사용자 ID로 상세 정보를 조회합니다.
-(5) get_current_time: 시스템의 현재 날짜와 시간을 조회합니다.
-(6) send_email: 이메일을 즉시 또는 예약 발송합니다.
-(7) get_tool_analysis: OpenAPI 도구의 규격을 분석하고 샘플 호출 보고서를 생성합니다.
+# 도구 유형:
+1. 정적(Static): 미리 정의된 파이썬 함수 직접 호출 (add, subtract 등)
+    - 등록된 정적 도구 목록:
+        (1) add: 두 숫자를 더합니다.
+        (2) subtract: 두 숫자를 뺍니다.
+        (3) hellouser: 사용자 이름을 입력받아 인사말을 반환합니다.
+        (4) get_user_info: (Admin 전용) 사용자 ID로 상세 정보를 조회합니다.
+        (5) get_current_time: 시스템의 현재 날짜와 시간을 조회합니다.
+        (6) send_email: 이메일을 즉시 또는 예약 발송합니다.
+        (7) get_tool_analysis: OpenAPI 도구의 규격을 분석하고 샘플 호출 보고서를 생성합니다.
+2. 동적(Dynamic): DB(h_custom_tool)에 등록된 SQL/Python 코드 실행
+3. OpenAPI: 외부 API 규격을 MCP로 래핑하여 실행
 """
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 import logging
 import json
+import httpx
+
+# DB 및 유틸리티 모듈 유연한 임포트 처리
 try:
     from src.db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
         get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens,
-        log_email, update_email_status
+        log_email, update_email_status,
+        get_openapi_list, get_openapi_by_tool_id, get_openapi_limit,
+        get_user_openapi_daily_usage, log_openapi_usage,
+        check_access_token_permission
     )
     from src.tool_executor import execute_sql_tool, execute_python_tool
     from src.utils.context import get_current_user
     from src.utils.mailer import EmailSender
     from src.scheduler import add_scheduled_job
     from src.utils.notification_helper import send_system_notification
+    logger_prefix = "[SRC-IMPORT]"
 except ImportError:
-    from db import (
+    # This block is problematic for some environments, but let's keep it with absolute paths if possible
+    from src.db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
         get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens,
-        log_email, update_email_status
+        log_email, update_email_status,
+        get_openapi_list, get_openapi_by_tool_id, get_openapi_limit,
+        get_user_openapi_daily_usage, log_openapi_usage,
+        check_access_token_permission
     )
-    from tool_executor import execute_sql_tool, execute_python_tool
-    from utils.context import get_current_user
-    from utils.mailer import EmailSender
-    from scheduler import add_scheduled_job
-    from utils.notification_helper import send_system_notification
+    from src.tool_executor import execute_sql_tool, execute_python_tool
+    from src.utils.context import get_current_user
+    from src.utils.mailer import EmailSender
+    from src.scheduler import add_scheduled_job
+    from src.utils.notification_helper import send_system_notification
+    logger_prefix = "[LOCAL-IMPORT]"
 
 logger = logging.getLogger(__name__)
+print(f"{logger_prefix} DB and utilities loaded successfully.")
 
+# 전역 MCP 서버 인스턴스 초기화
 mcp = Server("agent-mcp-sse")
 
-# Tool 목록 조회
+# ==========================================
+# 1. 도구 목록 조회 (list_tools)
+# ==========================================
 @mcp.list_tools()
 async def list_tools():
-    # 1. 정적 도구 목록 정의
+    """정적/동적/OpenAPI 도구 전체 목록 구성 및 반환"""
+    
+    # [1] 정적 도구 목록 정의
     static_tools = [
         Tool(
             name="add",
-            description="Add two numbers",
+            description="""
+                [Server-side Math] 두 개의 숫자(number)를 입력받아 그 합을 정확히 반환합니다.
+                서버 로직상의 연산이 필요할 때 반드시 사용합니다.
+            """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "a": {"type": "integer"},
-                    "b": {"type": "integer"}
+                    "a": {"type": "number"},
+                    "b": {"type": "number"}
                 },
                 "required": ["a", "b"]
             }
         ),
         Tool(
             name="subtract",
-            description="Subtract two numbers",
+            description="""
+                [Server-side Math] 두 개의 숫자(number)를 입력받아 차이를 반환합니다.
+                정확한 산술 결과가 필요할 때 사용합니다.
+            """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "a": {"type": "integer"},
-                    "b": {"type": "integer"}
+                    "a": {"type": "number"},
+                    "b": {"type": "number"}
                 },
                 "required": ["a", "b"]
             }
@@ -97,8 +114,8 @@ async def list_tools():
         Tool(
             name="hellouser",
             description="""
-                사용자 이름을 입력받아 인사말을 반환합니다. 
-                '인사' 또는 '안녕'이라는 키워드로 사용하더라도 이 도구를 통해 응답을 생성해야 합니다.
+                사용자 이름을 입력받아 인사말을 반환합니다.
+                '인사' 또는 '안녕' 요청 시 응답 생성에 활용합니다.
             """,
             inputSchema={
                 "type": "object",
@@ -111,21 +128,20 @@ async def list_tools():
         Tool(
             name="get_user_info",
             description="""
-                DB에서 특정 사용자의 상세 정보를 조회합니다. (비밀번호 제외)
-                '사용자 정보', '유저 정보' 조회 요청 시 이 도구를 사용합니다.
-                파라미터로 조회할 사용자의 정확한 ID(user_id)가 필요합니다.
+                DB에서 특정 사용자의 상세 정보를 조회합니다. (보안상 비밀번호 제외)
+                정확한 user_id 입력이 필요합니다.
             """,
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "user_id": {"type": "string", "description": "조회할 사용자의 ID (예: 'admin', 'user')"}
+                    "user_id": {"type": "string", "description": "조회할 유저 ID"}
                 },
                 "required": ["user_id"]
             }
         ),
         Tool(
             name="get_current_time",
-            description="현재 시스템의 날짜와 시간을 조회합니다. 예약 이메일 설정 시 현재 시간을 기준으로 계산하기 위해 사용합니다.",
+            description="시스템 서버의 현재 날짜와 시간을 조회합니다. 예약 기능의 기준 시간 확인용입니다.",
             inputSchema={
                 "type": "object",
                 "properties": {}
@@ -160,12 +176,25 @@ async def list_tools():
                 "required": ["tool_id"]
             }
         ),
+        Tool(
+            name="refresh_tools",
+            description="""
+                [System] 도구 목록을 최신 상태로 강제 새로고침합니다.
+                관리자 플랫폼에서 새로운 도구를 추가한 후, 에이전트가 즉시 인식하게 하려면 이 도구를 실행하시면 됩니다.
+            """,
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
     ]
     
+    # 정적 도구 설명문 공백 제거
     for t in static_tools:
         t.description = t.description.strip()
 
-    # 2. 동적 도구 목록 로드 (DB)
+    # [2] 동적 도구 로드 (h_custom_tool 테이블 기반)
     dynamic_tools = []
     try:
         active_tools = get_active_tools()
@@ -174,6 +203,7 @@ async def list_tools():
             tool_name = tool_data['name']
             desc_agent = tool_data['description_agent'] or ""
             
+            # 도구별 파라미터 정보 획득 및 JSON Schema 생성
             params = get_tool_params(tool_id)
             properties = {}
             required = []
@@ -208,108 +238,172 @@ async def list_tools():
             )
     except Exception as e:
         logger.error(f"Failed to load dynamic tools: {e}")
-        pass
 
-    return static_tools + dynamic_tools
+    # [3] OpenAPI 도구 목록 로드 (h_openapi 테이블 기반)
+    openapi_tools = []
+    try:
+        # 단일 페이지에 넉넉한 사이즈로 전체 조회
+        openapi_res = get_openapi_list(page=1, size=1000)
+        for api in openapi_res.get('items', []):
+            tool_id = api['tool_id']
+            name_ko = api['name_ko']
+            desc_agent = api['description_agent'] or f"{name_ko} API 도구"
+            
+            # 파라미터 스키마 파싱 처리
+            properties = {}
+            required = []
+            if api.get('params_schema'):
+                try:
+                    schema = json.loads(api['params_schema'])
+                    # 단층형 Key-Value 구조인 경우 (에디터 입력 표준)
+                    if isinstance(schema, dict):
+                        for k, v in schema.items():
+                            properties[k] = {
+                                "type": "string",
+                                "description": f"{k} 파라미터 (기본값/설명: {v})"
+                            }
+                except: pass
+            
+            openapi_tools.append(
+                Tool(
+                    name=tool_id,
+                    description=f"[OpenAPI] {desc_agent}",
+                    inputSchema={
+                        "type": "object",
+                        "properties": properties,
+                        "required": required
+                    }
+                )
+            )
+    except Exception as e:
+        logger.error(f"Failed to load OpenAPI tools: {e}")
 
-# Tool 실행
+    # 도구 리스트 취합 및 통계 로그 출력
+    all_tools = static_tools + dynamic_tools + openapi_tools
+    msg = f"Returning {len(all_tools)} tools (Static: {len(static_tools)}, Dynamic: {len(dynamic_tools)}, OpenAPI: {len(openapi_tools)})"
+    logger.info(msg)
+    print(f"[DEBUG] {msg}")
+    return all_tools
+
+# ==========================================
+# 2. 도구 실행 처리 (call_tool)
+# ==========================================
 @mcp.call_tool()
 async def call_tool(name: str, arguments: dict):
+    """요청 및 인증 정보 확인 후 해당 도구 실행 및 결과 반환"""
+    
     log_msg = f"Tool execution requested: {name} with args {arguments}"
     logger.info(log_msg)
     print(f"[DEBUG] {log_msg}")
     
-    # [1] Context에서 사용자 정보 가져오기
+    # [1-1] 사용자 인증 정보 획득 (Context 기반) 및 필요한 권한 함수 임포트
     current_user = get_current_user()
-    print(f"current_user:: {current_user}")
     
-    user_uid = None
-    token_id = None
-    
-    if current_user:
-        user_uid = current_user.get('uid')
-        token_id = current_user.get('_token_id')
-        logger.info(f"Tool executed by authenticated user/token: {current_user['user_id']} ({current_user['role']})")
-    else:
-        logger.warning("Tool execution blocked: Unauthenticated")
-        return [TextContent(type="text", text="Error: Authentication required to execute tools. Please refresh token.")]
-        
-    # [1-1] 외부 토큰 권한 체크 (New 26.03.05)
-    # - 토큰 접근 시 허용된 도구인지 매핑 테이블 확인
-    if token_id:
-        from src.db import check_access_token_permission, get_active_tools
-        
-        # 관리자 전용 정적 도구 등은 기본적으로 차단 (설정된 것만 허용)
-        # 하지만 사용자의 요청이 'h_custom_tool', 'h_openapi'에 대해 선택 가능하게 하는 것이 핵심이므로
-        # 해당 테이블들에 등록된 도구인 경우 매핑 여부를 확인합니다.
-        
-        # (1) 커스텀 도구(DB)인지 확인
-        active_custom_tools = get_active_tools()
-        is_custom_tool = any(t['name'] == name for t in active_custom_tools)
-        
-        if is_custom_tool:
-            if not check_access_token_permission(token_id, name, "CUSTOM"):
-                logger.warning(f"Access Denied: Token({token_id}) has no permission for Custom Tool '{name}'")
-                return [TextContent(type="text", text=f"Error: Access Denied. Token has NO permission for '{name}'.")]
-        
-        # (2) 정적 도구(Static)의 경우: 관리자가 명시적으로 허용한 것만 (추후 확장 가능)
-        # 현재는 Custom/OpenAPI 위주로 제어하므로 정적 도구는 기본 허용 정책 유지 또는 명시적 체크
-        # get_user_info 같은 민감 도구는 이미 role 체크(270라인)로 보호됨.
-        
-    # [2] 사용량 제한 체크
-    # user_uid 또는 token_id를 기반으로 한도 체크
-    daily_usage = get_user_daily_usage(user_uid=user_uid, token_id=token_id)
-    daily_limit = get_user_limit(user_uid=user_uid, role=current_user.get('role'), token_id=token_id)
-    
-    # 만일 무제한 사용이 아닌 경우 체크
-    if daily_limit != -1:
-        if daily_usage >= daily_limit:
-            logger.warning(f"Tool execution blocked: Daily limit exceeded (UID:{user_uid}/TokenID:{token_id}, Usage: {daily_usage}/{daily_limit})")
-            return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}). Please contact admin.")]
-        
-        # [임계치 알림 체크] - 실행 전 체크 (N회 도달 시 알림)
-        # =>> 80%, 90%, 100% 임계치 도달 시 알림
-        for threshold in [0.8, 0.9, 1.0]:
-            target_count = int(daily_limit * threshold)
-            if daily_usage + 1 == target_count:
-                title = "MCP 사용량 임계치 도달"
-                message = f"현재 MCP 도구 사용량이 일일 제한({daily_limit}회)의 {int(threshold*100)}%({target_count}회)에 도달했습니다."
-                # 알림은 계정 유저에게만 (토큰 유저는 수신 불가하므로)
-                if user_uid:
-                    send_system_notification(receive_user_uid=user_uid, title=title, message=message)
-
-    # [3] 도구 실행 준비
-    tool_args = arguments.copy()
-    if "_user_uid" in tool_args:
-            del tool_args["_user_uid"]
-
-    # [4] 도구 실행
+    # 도구 권한 검증 함수 동적 임포트 (NameError 방지)
     try:
-        result_val = ""
-        is_success = False
+        from src.db import check_access_token_permission
+    except ImportError:
+        from db import check_access_token_permission
+    
+    # [1-2] Stdio/Claude Desktop 환경 대응 (환경변수 'token' 기반 세션 복구 시도)
+    if not current_user:
+        import os
+        from src.db.access_token import get_user_by_active_token
+        token_env = os.environ.get('token')
+        if token_env:
+            try:
+                user = get_user_by_active_token(token_env)
+                if user:
+                    current_user = dict(user)
+                    logger.info(f"Authenticated via ENV token: {current_user['user_id']}")
+            except Exception as e_auth:
+                logger.error(f"Fallback auth error: {e_auth}")
+    
+    # [1-3] 인증 실패 시 차단
+    if not current_user:
+        logger.warning("Tool execution blocked: Unauthenticated")
+        return [TextContent(type="text", text="Error: Authentication required (invalid or missing token).")]
+        
+    user_uid = current_user.get('uid')
+    token_id = current_user.get('_token_id')
+    user_id = current_user.get('user_id')
+    role = current_user.get('role')
 
-        if "get_user_info" in name:
-            if not current_user or current_user.get('role') != 'ROLE_ADMIN':
-                result_val = "WARN: Admin privileges required for this tool"
+    # [2] 전체 일일 사용량 제한 확인 (User/Token 통합)
+    # 가용성 확보를 위한 시스템 도구(refresh_tools 등)는 제한 체크에서 제외
+    is_system_tool = name in ["refresh_tools"]
+    
+    daily_usage = get_user_daily_usage(user_uid=user_uid, token_id=token_id)
+    daily_limit = get_user_limit(user_uid=user_uid, role=role, token_id=token_id)
+    
+    if not is_system_tool and daily_limit != -1 and daily_usage >= daily_limit:
+        logger.warning(f"Limit exceeded: {daily_usage}/{daily_limit}")
+        return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}).")]
+
+    # 임계치(80%, 90%, 100%) 도달 시 시스템 알림 발송 (시스템 도구가 아닐 때만)
+    if not is_system_tool and daily_limit != -1 and user_uid:
+        for threshold in [0.8, 0.9, 1.0]:
+            if daily_usage + 1 == int(daily_limit * threshold):
+                send_system_notification(
+                    receive_user_uid=user_uid, 
+                    title="MCP 사용량 임계치 도달", 
+                    message=f"MCP 도구 사용량이 제한의 {int(threshold*100)}%에 근접/도달함."
+                )
+
+    # 내부 처리용 인자 제거 및 복사
+    tool_args = arguments.copy()
+    if "_user_uid" in tool_args: del tool_args["_user_uid"]
+
+    try:
+        # ------------------------------------------
+        # Case 1: 정적 도구(Static Tool) 실행 로직
+        # ------------------------------------------
+        if name == "add":
+            # 덧셈 결과 반환 및 로그 기록
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a + b)
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "subtract":
+            # 뺄셈 결과 반환 및 로그 기록
+            a = tool_args.get("a", 0)
+            b = tool_args.get("b", 0)
+            result_val = str(a - b)
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "hellouser":
+            # 인사말 생성
+            user_name = tool_args.get("name", "User")
+            result_val = f"Hello {user_name}"
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "get_user_info":
+            # Admin 권한 체크 및 사용자 상세 정보 조회
+            if role != 'ROLE_ADMIN':
+                return [TextContent(type="text", text="Error: Admin privileges required.")]
+            target_id = tool_args.get("user_id")
+            target_user = get_user(target_id)
+            if not target_user:
+                result_val = f"User not found: {target_id}"
+                is_success = False
             else:
-                target_id = tool_args.get("user_id")
-                if not target_id:
-                    result_val = "Missing user_id parameter"
-                else:
-                    target_user = get_user(target_id)
-                    if not target_user:
-                        result_val = f"User not found with ID: {target_id}"
-                    else:
-                        user_dict = dict(target_user)
-                        if 'password' in user_dict: del user_dict['password']
-                        result_val = json.dumps(user_dict, default=str, ensure_ascii=False)
-                        is_success = True
-            
+                user_dict = dict(target_user)
+                if 'password' in user_dict: del user_dict['password']
+                result_val = json.dumps(user_dict, default=str, ensure_ascii=False)
+                is_success = True
             if user_uid or token_id:
                 log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
         if name == "get_current_time":
+            # 서버 시간 문자열 반환
             from datetime import datetime
             now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             result_val = f"현재 서버 시간: {now_str}"
@@ -318,56 +412,30 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(type="text", text=result_val)]
 
         if name == "send_email":
+            # 즉시 발송 혹은 예약 발송 처리
             recipient = tool_args.get("recipient")
             subject = tool_args.get("subject") or "AI Assistant Message"
             content = tool_args.get("content")
-            scheduled_at = tool_args.get("scheduled_at") # YYYY-MM-DD HH:mm
+            scheduled_at = tool_args.get("scheduled_at")
             
-            # 예약 시간 형식 보정 (YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm:00)
-            formatted_scheduled_dt = None
-            if scheduled_at:
-                if len(scheduled_at) == 16: # YYYY-MM-DD HH:mm
-                    formatted_scheduled_dt = f"{scheduled_at}:00"
-                else:
-                    formatted_scheduled_dt = scheduled_at
-            
-            is_scheduled = bool(formatted_scheduled_dt)
+            # 시간 형식 보정 (초 단위 추가)
+            formatted_dt = f"{scheduled_at}:00" if scheduled_at and len(scheduled_at) == 16 else scheduled_at
+            is_scheduled = bool(formatted_dt)
             
             try:
-                # user_uid=None 전달 (AI 발신임을 표시)
-                log_id = log_email(
-                    user_uid=None,
-                    recipient=recipient,
-                    subject=subject,
-                    content=content,
-                    is_scheduled=is_scheduled,
-                    scheduled_dt=formatted_scheduled_dt
-                )
-                
+                log_id = log_email(user_uid=None, recipient=recipient, subject=subject, content=content, is_scheduled=is_scheduled, scheduled_dt=formatted_dt)
                 if not is_scheduled:
-                    # 즉시 발송 처리
                     sender = EmailSender()
-                    success, error_msg = sender.send_immediate(recipient, subject, content)
-                    new_status = 'SENT' if success else 'FAILED'
-                    update_email_status(log_id, new_status, error_msg)
-                    
-                    if success:
-                        result_val = f"이메일 즉시 발송 완료 (Log ID: {log_id})"
-                        is_success = True
-                    else:
-                        result_val = f"이메일 발송 실패: {error_msg} (Log ID: {log_id})"
-                        is_success = False
+                    success, err = sender.send_immediate(recipient, subject, content)
+                    update_email_status(log_id, 'SENT' if success else 'FAILED', err)
+                    result_val = f"이메일 발송 완료 (Log ID: {log_id})" if success else f"이메일 발송 실패: {err}"
+                    is_success = success
                 else:
-                    # 스케줄러 등록
-                    try:
-                        add_scheduled_job(log_id, formatted_scheduled_dt)
-                        result_val = f"이메일 발송 예약 완료 (Log ID: {log_id}, 시간: {formatted_scheduled_dt})"
-                        is_success = True
-                    except Exception as e_sched:
-                        result_val = f"이메일 예약 기록 완료했으나 스케줄러 등록 실패: {str(e_sched)} (Log ID: {log_id})"
-                        is_success = True
-            except Exception as e:
-                result_val = f"이메일 처리 중 오류 발생: {str(e)}"
+                    add_scheduled_job(log_id, formatted_dt)
+                    result_val = f"이메일 예약 완료 (Log ID: {log_id}, 시간: {formatted_dt})"
+                    is_success = True
+            except Exception as e_em:
+                result_val = f"이메일 처리 오류: {str(e_em)}"
                 is_success = False
             
             if user_uid or token_id:
@@ -375,79 +443,137 @@ async def call_tool(name: str, arguments: dict):
             return [TextContent(type="text", text=result_val)]
 
         if name == "get_tool_analysis":
+            # OpenAPI 도구 분석 및 보고서 생성 보고
+            from src.utils.openapi_analyzer import analyze_openapi_tool
+            target_tid = tool_args.get("tool_id")
+            analysis = await analyze_openapi_tool(target_tid)
+            result_val = json.dumps(analysis, ensure_ascii=False, indent=2)
+            is_success = (analysis.get("status") == "success")
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
+            return [TextContent(type="text", text=result_val)]
+
+        if name == "refresh_tools":
+            # 도구 목록 변경 통보 발송 (Claude 등 클라이언트에 새로고침 유도)
             try:
-                from src.utils.openapi_analyzer import analyze_openapi_tool
-            except ImportError:
-                from utils.openapi_analyzer import analyze_openapi_tool
-            
-            tool_id_to_analyze = tool_args.get("tool_id")
-            if not tool_id_to_analyze:
-                result_val = "Error: Missing tool_id parameter"
-            else:
-                analysis_result = await analyze_openapi_tool(tool_id_to_analyze)
-                result_val = json.dumps(analysis_result, ensure_ascii=False, indent=2)
-                # 도구 분석 결과의 status가 success인 경우에만 성공으로 처리
-                is_success = (analysis_result.get("status") == "success")
+                await mcp.request_context.session.send_tool_list_changed()
+                result_val = "도구 목록 새로고침 신호를 전송했습니다. 에이전트가 곧 목록을 갱신합니다."
+                is_success = True
+            except Exception as e_rf:
+                result_val = f"새로고침 신호 전송 실패: {str(e_rf)}"
+                is_success = False
             
             if user_uid or token_id:
                 log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
-        if name == "add":
-            a = tool_args.get("a", 0)
-            b = tool_args.get("b", 0)
-            result_val = str(a + b)
-            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
-            return [TextContent(type="text", text=result_val)]
+        # ------------------------------------------
+        # Case 2: OpenAPI 도구 실행 로직
+        # ------------------------------------------
+        openapi_config = get_openapi_by_tool_id(name)
+        if openapi_config:
+            # [2-1] 외부 액세스 토큰 권한 체크
+            if token_id:
+                if not check_access_token_permission(token_id, name, "OPENAPI"):
+                    logger.warning(f"Access Denied: Token {token_id} lacks permission for OpenAPI {name}")
+                    return [TextContent(type="text", text=f"Error: Access Denied for this OpenAPI tool ('{name}').")]
             
-        elif name == "subtract":
-            a = tool_args.get("a", 0)
-            b = tool_args.get("b", 0)
-            result_val = str(a - b)
-            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
-            return [TextContent(type="text", text=result_val)]
+            # [2-2] OpenAPI별 개별 사용량 제한 확인
+            openapi_max = get_openapi_limit(user_uid=user_uid, user_id=user_id, token_id=token_id, role=role)
+            if openapi_max != -1:
+                openapi_usage = get_user_openapi_daily_usage(user_uid=user_uid, token_id=token_id)
+                if openapi_usage >= openapi_max:
+                    return [TextContent(type="text", text=f"Error: OpenAPI '{name}' limit exceeded.")]
+
+            # 파라미터 병합 (DB 설정값 + 런타임 입력값)
+            params = {}
+            if openapi_config.get('params_schema'):
+                try:
+                    db_params = json.loads(openapi_config['params_schema'])
+                    if isinstance(db_params, dict): params.update(db_params)
+                except: pass
+            params.update(tool_args)
+
+            # API 호출 세부 설정 (Method, URL, Auth)
+            method = openapi_config['method'].upper()
+            target_url = openapi_config['api_url']
+            headers = {}
+            auth_type = openapi_config['auth_type']
+            auth_param = openapi_config['auth_param_nm'] or "serviceKey"
+            auth_key = openapi_config['auth_key_val']
+
+            # 인증 방식에 따른 파라미터 보정
+            if auth_type == "SERVICE_KEY":
+                from urllib.parse import unquote
+                params[auth_param] = unquote(auth_key)
+            elif auth_type == "BEARER":
+                headers["Authorization"] = f"Bearer {auth_key}"
+
+            # 실제 HTTP 요청 실행 (비동기 처리)
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
+                if method == "GET":
+                    response = await client.get(target_url, params=params, headers=headers)
+                elif "POST" in method:
+                    response = await client.post(target_url, json=tool_args, params=params, headers=headers)
+                else:
+                    response = await client.request(method, target_url, params=params, headers=headers)
+                
+                status_code = response.status_code
+                res_text = response.text
+                is_success = 200 <= status_code < 300
+                
+                # XML 응답일 경우 JSON으로 변환 시도
+                final_text = res_text
+                if "xml" in response.headers.get("Content-Type", "").lower():
+                    try:
+                        import xmltodict
+                        final_text = json.dumps(xmltodict.parse(res_text), ensure_ascii=False)
+                    except: pass
+
+                # OpenAPI 실행 로그 및 통계 DB 기록
+                log_openapi_usage({
+                    "user_uid": user_uid, "token_id": token_id, "tool_id": name,
+                    "method": method, "url": str(response.url), "status_code": status_code,
+                    "success": 'SUCCESS' if is_success else 'FAIL', "ip_addr": "MCP-INTERNAL"
+                })
+                return [TextContent(type="text", text=final_text)]
+
+        # ------------------------------------------
+        # Case 3: Custom 도구(SQL/Python) 실행 로직
+        # ------------------------------------------
+        active_custom_tools = get_active_tools()
+        print(active_custom_tools)
+        target_tool = next((t for t in active_custom_tools if t['name'] == name), None)
+        
+        if target_tool:
+            # [3-1] 외부 액세스 토큰 권한 체크
+            if token_id:
+                if not check_access_token_permission(token_id, name, "CUSTOM"):
+                    logger.warning(f"Access Denied: Token {token_id} lacks permission for Custom Tool {name}")
+                    return [TextContent(type="text", text=f"Error: Access Denied for this Custom tool ('{name}').")]
+
+            # [3-2] Custom 도구 타입별 Executor 호출
+            tool_type = target_tool['tool_type']
+            definition = target_tool['definition']
             
-        elif name == "hellouser":
-            user_name = tool_args.get("name", "User")
-            result_val = f"Hello {user_name}"
-            if user_uid or token_id: log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=True, result=result_val)
+            if tool_type == 'SQL':
+                result_raw = await execute_sql_tool(definition, tool_args)
+                result_val = str(result_raw)
+            elif tool_type == 'PYTHON':
+                result_raw = await execute_python_tool(definition, tool_args)
+                result_val = str(result_raw)
+            else:
+                return [TextContent(type="text", text=f"Error: Unknown tool type '{tool_type}'")]
+            
+            # 실행 성공 여부 판단 및 로그 기록
+            is_success = not result_val.startswith("Error")
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
-        # Dynamic Tools
-        try:
-            active_tools = get_active_tools()
-            target_tool = next((t for t in active_tools if t['name'] == name), None)
-            
-            if target_tool:
-                tool_type = target_tool['tool_type']
-                definition = target_tool['definition']
-                
-                if tool_type == 'SQL':
-                    result_raw = await execute_sql_tool(definition, tool_args)
-                    result_val = str(result_raw)
-                elif tool_type == 'PYTHON':
-                    result_raw = await execute_python_tool(definition, tool_args)
-                    result_val = str(result_raw)
-                else:
-                    return [TextContent(type="text", text=f"Error: Unknown tool type '{tool_type}'")]
-                
-                is_success = True
-                if result_val.startswith("Error"):
-                    is_success = False
-                
-                if user_uid or token_id:
-                    log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
-                return [TextContent(type="text", text=result_val)]
-        except Exception as e:
-            logger.error(f"Dynamic tool execution error: {e}")
-            
-        return [TextContent(type="text", text=f"DEBUG FAIL: Unknown tool '{name}'")]
+        # 해당 이름의 도구가 존재하지 않거나 비활성화된 경우
+        return [TextContent(type="text", text=f"Error: Tool '{name}' not found or inactive.")]
     
     except Exception as e:
-        error_msg = f"Tool execution failed: {name} - {str(e)}"
-        logger.error(error_msg)
-        if user_uid or token_id:
-            try:
-                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=False, result=str(e))
-            except: pass
+        logger.error(f"Execution error: {e}")
         return [TextContent(type="text", text=f"Error: {str(e)}")]

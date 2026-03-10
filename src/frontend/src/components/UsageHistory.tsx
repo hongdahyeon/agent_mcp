@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X, Download, Globe, User as UserIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
 import { getAuthHeaders } from '../utils/auth';
@@ -136,14 +136,14 @@ export function UsageHistory() {
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
-            
+
             // Get filename from header if possible, or use default
             const contentDisposition = res.headers.get('Content-Disposition');
             let filename = `mcp_usage_export.${format === 'csv' ? 'csv' : 'xlsx'}`;
             if (contentDisposition && contentDisposition.includes("filename*=UTF-8''")) {
                 filename = decodeURIComponent(contentDisposition.split("filename*=UTF-8''")[1]);
             }
-            
+
             a.download = filename;
             document.body.appendChild(a);
             a.click();
@@ -202,24 +202,51 @@ export function UsageHistory() {
                                 ) : stats.length === 0 ? (
                                     <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-500">통계 데이터 없음</td></tr>
                                 ) : (
-                                    stats.map(s => (
-                                        <tr key={s.user_id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-slate-100">{s.user_nm} <span className="text-gray-400 dark:text-slate-500 font-normal">({s.user_id})</span></td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.role}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-slate-100 font-bold">{s.usage}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '무제한' : s.limit}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '-' : s.remaining}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                {s.limit !== -1 && s.remaining === 0 ? (
-                                                    <span className="text-red-600 dark:text-red-400 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">한도 초과</span>
-                                                ) : s.limit !== -1 && s.remaining < 5 ? (
-                                                    <span className="text-orange-600 dark:text-orange-400 font-medium text-xs bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">임박</span>
-                                                ) : (
-                                                    <span className="text-green-600 dark:text-green-400 font-medium text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">정상</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
+                                    stats.map(s => {
+                                        const isToken = s.user_id.startsWith('token:');
+                                        return (
+                                            <tr key={s.user_id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-slate-100">
+                                                    <div className="flex items-center">
+                                                        {isToken ? (
+                                                            <Globe className="w-3.5 h-3.5 mr-1.5 text-purple-500" />
+                                                        ) : (
+                                                            <UserIcon className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
+                                                        )}
+                                                        <span>{s.user_nm}</span>
+                                                        <span className={clsx(
+                                                            "ml-2 text-xs font-normal px-1.5 py-0.5 rounded",
+                                                            isToken ? "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                                        )}>
+                                                            {s.user_id}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">
+                                                    <span className={clsx(
+                                                        "text-xs px-2 py-1 rounded-full",
+                                                        s.role === 'ROLE_ADMIN' ? "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400" :
+                                                            s.role === 'EXTERNAL_TOKEN' ? "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400" :
+                                                                "bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-slate-400"
+                                                    )}>
+                                                        {s.role}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 dark:text-slate-100 font-bold">{s.usage}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '무제한' : s.limit}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '-' : s.remaining}</td>
+                                                <td className="px-6 py-4 text-sm">
+                                                    {s.limit !== -1 && s.remaining === 0 ? (
+                                                        <span className="text-red-600 dark:text-red-400 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">한도 초과</span>
+                                                    ) : s.limit !== -1 && s.remaining < 5 ? (
+                                                        <span className="text-orange-600 dark:text-orange-400 font-medium text-xs bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">임박</span>
+                                                    ) : (
+                                                        <span className="text-green-600 dark:text-green-400 font-medium text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">정상</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -229,13 +256,13 @@ export function UsageHistory() {
                 {/* 필터 바 (Filter Bar) - flex-none */}
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-wrap gap-4 items-end flex-none transition-colors duration-300">
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">사용자 ID</label>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">사용자/토큰 검색</label>
                         <input
                             type="text"
                             value={searchUserId}
                             onChange={(e) => setSearchUserId(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="사용자 ID 검색..."
+                            placeholder="ID 또는 토큰명 검색..."
                             className="px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-64 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                         />
                     </div>
@@ -337,63 +364,74 @@ export function UsageHistory() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    logs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
-                                                {log.reg_dt}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="ml-0">
-                                                        <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{log.user_nm}</div>
-                                                        <div className="text-xs text-gray-500 dark:text-slate-500">{log.user_id}</div>
+                                    logs.map((log) => {
+                                        const isToken = log.user_id.startsWith('token:');
+                                        return (
+                                            <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+                                                    {log.reg_dt}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+                                                        <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center mr-3 text-gray-500 dark:text-slate-400">
+                                                            {isToken ? <Globe className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
+                                                        </div>
+                                                        <div className="ml-0">
+                                                            <div className="text-sm font-medium text-gray-900 dark:text-slate-100">{log.user_nm}</div>
+                                                            <div className={clsx(
+                                                                "text-[10px] px-1.5 py-0.5 rounded inline-block",
+                                                                isToken ? "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" : "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
+                                                            )}>
+                                                                {log.user_id}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
-                                                    {log.tool_nm}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {log.tool_success === 'SUCCESS' ? (
-                                                    <div className="flex items-center text-green-600 dark:text-green-400 text-sm">
-                                                        <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                                                        성공
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
+                                                        {log.tool_nm}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {log.tool_success === 'SUCCESS' ? (
+                                                        <div className="flex items-center text-green-600 dark:text-green-400 text-sm">
+                                                            <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                                                            성공
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center text-red-600 dark:text-red-400 text-sm">
+                                                            <XCircle className="w-4 h-4 mr-1.5" />
+                                                            실패
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 max-w-xs">
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="truncate" title={log.tool_params}>{log.tool_params}</span>
+                                                        <button
+                                                            onClick={() => openJsonModal('파라미터 상세 (Parameters)', log.tool_params)}
+                                                            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
+                                                            title="상세 보기"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
                                                     </div>
-                                                ) : (
-                                                    <div className="flex items-center text-red-600 dark:text-red-400 text-sm">
-                                                        <XCircle className="w-4 h-4 mr-1.5" />
-                                                        실패
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 max-w-xs">
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="truncate" title={log.tool_result}>{log.tool_result}</span>
+                                                        <button
+                                                            onClick={() => openJsonModal('결과 상세 (Result)', log.tool_result)}
+                                                            className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
+                                                            title="상세 보기"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
                                                     </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 max-w-xs">
-                                                <div className="flex items-center space-x-2">
-                                                    <span className="truncate" title={log.tool_params}>{log.tool_params}</span>
-                                                    <button
-                                                        onClick={() => openJsonModal('파라미터 상세 (Parameters)', log.tool_params)}
-                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                                                        title="상세 보기"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 max-w-xs">
-                                                <div className="flex items-center space-x-2">
-                                                    <span className="truncate" title={log.tool_result}>{log.tool_result}</span>
-                                                    <button
-                                                        onClick={() => openJsonModal('결과 상세 (Result)', log.tool_result)}
-                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                                                        title="상세 보기"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
