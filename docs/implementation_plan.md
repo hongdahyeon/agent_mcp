@@ -1712,3 +1712,29 @@ Jenkins의 브랜치 병합 로직을 파라미터화하여 다양한 브랜치 
 1. 토큰 관리 화면에서 한도 설정 아이콘 클릭 시 해당 토큰이 선택된 상태로 모달이 열리는지 확인.
 2. 특정 토큰에 대해 횟수 제한 설정 후, 해당 토큰으로 MCP 프록시 요청 시 제한이 정상 작동하는지 확인.
 3. 리스트에서 설정된 토크별 한도 규칙이 토큰 이름과 함께 정상적으로 표시되는지 확인.
+
+---
+
+## Phase 56: OpenAPI 파라미터 입력 UI 개선 (Key-Value 에디터) [Completed]
+
+### Goal
+
+OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에 직접 JSON으로 입력해야 했던 번거로움을 해결하기 위해, 항목별로 Key-Value를 입력할 수 있는 사용자 친화적인 에디터를 도입합니다.
+
+### Implemented Changes
+
+- **Key-Value Editor UI Implementation**:
+  - `OpenApiManager.tsx` 내에 개별 파라미터 항목을 추가(`+`) 및 삭제(`Trash`)할 수 있는 UI를 구현했습니다.
+  - 사용자는 'Key-Value' 모드와 'Raw JSON' 모드를 자유롭게 전환하며 작업할 수 있습니다.
+- **State & Logic Synchronization**:
+  - `paramItems` 상태를 도입하여 입력된 항목들을 실시간 관리하며, 저장 시 자동으로 유효한 JSON 객체로 변환(`JSON.stringify`)하여 서버에 전송합니다.
+  - 기존의 복잡한 JSON 데이터가 있을 경우 에디터 진입 시 자동으로 파싱하여 리스트 형태로 시각화합니다.
+- **Code Quality & Type Safety**:
+  - 주요 데이터 모델(`OpenApiConfig`, `MetaItem` 등)에 대한 타입 정의를 강화하여 `any` 타입을 제거하고 린트 오류를 해결했습니다.
+  - 테이블 레이아웃 렌더링 시 발생하던 JSX 구조 오류를 수정하여 UI 안정성을 확보했습니다.
+
+### Verification Plan
+
+1. **신규 등록 테스트**: Key-Value 모드에서 여러 항목을 추가하고 저장한 뒤, DB 또는 테스터에서 올바른 JSON 형식으로 저장되었는지 확인.
+2. **기존 데이터 로드 테스트**: 이미 JSON이 입력된 API를 수정 모드로 열었을 때, 항목 리스트가 자동으로 채워지는지 확인.
+3. **모드 전환 테스트**: Key-Value 모드와 Raw JSON 모드 간 전환 시 데이터 유실 없이 동기화되는지 확인.

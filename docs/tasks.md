@@ -1122,3 +1122,10 @@
 - [x] 3. Frontend: `AccessTokenManager.tsx` 수정 (한도 설정 단축아이콘 추가)
 - [x] 4. Frontend: URL 파라미터를 통한 한도 설정 모달 자동 오픈 기능 구현
 - [x] 5. 최종 검증 및 문서 업데이트 완료
+
+## 89. OpenAPI 파라미터 입력 UI 개선 (Key-Value 에디터) (New)
+
+- [x] 1. Frontend: `OpenApiManager.tsx` 내 Key-Value 에디터 상태 및 로직 구현
+- [x] 2. Frontend: Key-Value / Raw JSON 모드 전환 기능 추가
+- [x] 3. Frontend: 항목 추가/삭제 및 JSON 자동 동기화 기능 구현
+- [x] 4. 기능 검증 및 린트 오류 수정 완료
