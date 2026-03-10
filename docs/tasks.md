@@ -1129,3 +1129,12 @@
 - [x] 2. Frontend: Key-Value / Raw JSON 모드 전환 기능 추가
 - [x] 3. Frontend: 항목 추가/삭제 및 JSON 자동 동기화 기능 구현
 - [x] 4. 기능 검증 및 린트 오류 수정 완료
+
+## 90. MCP 도구 로딩 동적화 및 OpenAPI 통합 (New)
+
+- [x] 1. Backend: `server.py` 및 `mcp_server_impl.py` 구조 분석
+- [x] 2. Backend: 실시간 DB 조회 기반 동적 로딩 전략 수립
+- [x] 3. Backend: `server.py` 리팩토링 (FastMCP -> Server 전환)
+- [x] 4. Backend: `list_tools`에 `h_openapi` 항목 통합
+- [x] 5. Backend: `call_tool` 내 OpenAPI 실행 로직 연동
+- [x] 6. 최종 검증 및 문서 업데이트

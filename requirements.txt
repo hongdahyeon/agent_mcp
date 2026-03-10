@@ -1,5 +1,6 @@
 mcp
 fastapi
+httpx
 uvicorn
 sse-starlette
 

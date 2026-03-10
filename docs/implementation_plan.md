@@ -1738,3 +1738,30 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 1. **신규 등록 테스트**: Key-Value 모드에서 여러 항목을 추가하고 저장한 뒤, DB 또는 테스터에서 올바른 JSON 형식으로 저장되었는지 확인.
 2. **기존 데이터 로드 테스트**: 이미 JSON이 입력된 API를 수정 모드로 열었을 때, 항목 리스트가 자동으로 채워지는지 확인.
 3. **모드 전환 테스트**: Key-Value 모드와 Raw JSON 모드 간 전환 시 데이터 유실 없이 동기화되는지 확인.
+
+---
+
+## Phase 57: MCP 도구 로딩 동적화 및 OpenAPI 통합 [Planning]
+
+### Goal
+
+현재 MCP 서버는 시작 시점에 정적으로 도구를 등록(Stdio)하거나, OpenAPI 도구를 MCP 도구 목록에서 누락하고 있습니다. 이를 해결하기 위해 모든 도구 로딩을 실시간 DB 조회 방식으로 통일하고, OpenAPI로 등록된 API들도 개별 MCP 도구로서 에이전트가 즉시 인식하고 사용할 수 있도록 통합합니다.
+
+### Proposed Changes
+
+#### 1. Unified Dynamic Loading (server.py & mcp_server_impl.py)
+- **[MODIFY] `server.py`**:
+  - `FastMCP` 라이브러리를 사용하던 방식에서 `mcp.server.Server`를 사용하는 방식으로 전환하여 `list_tools`와 `call_tool` 핸들러를 수동 제어합니다.
+  - 이를 통해 Stdio 모드(Claude Desktop 등)에서도 에이전트가 도구 목록을 요청할 때마다 DB의 최신 상태를 반영할 수 있습니다.
+- **[MODIFY] `mcp_server_impl.py`**:
+  - `list_tools` 함수에 `h_openapi` 테이블 조회 로직을 추가하여 등록된 모든 OpenAPI 명세를 MCP 도구 형식으로 반환합니다.
+
+#### 2. OpenAPI Execution via MCP
+- **[MODIFY] `mcp_server_impl.py` (call_tool)**:
+  - 호출된 도구 이름이 `h_openapi`에 등록된 `tool_id`인 경우, `execution.py`의 프록시 실행 로직을 호출하여 실제 API 요청을 수행하도록 통합합니다.
+  - 외부 토큰 권한(`check_access_token_permission`) 및 사용량 제한(`get_openapi_limit`) 로직을 그대로 적용합니다.
+
+### Verification Plan
+- **Custom Tool Hot-reload**: 신규 동적 도구 생성 후 `list_tools` 응답에 즉시 포함되는지 확인.
+- **OpenAPI Tool Integration**: `h_openapi`에 등록한 API가 MCP 도구 목록에 나타나고, AI Agent가 이를 통해 실제 데이터를 가져오는지 확인.
+- **Security**: MCP를 통해 실행되는 OpenAPI 도구 역시 기존의 토큰 권한 및 사용량 제한이 정상 작동하는지 검증.
