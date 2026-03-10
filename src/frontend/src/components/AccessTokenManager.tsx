@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Key, Plus, Trash2, Copy, Check, Settings, Shield, Globe } from 'lucide-react';
+import { Key, Plus, Trash2, Copy, Check, Settings, Shield, Globe, Clock } from 'lucide-react';
 import { getAuthHeaders } from '../utils/auth';
 import { Pagination } from './common/Pagination';
 
@@ -23,12 +23,12 @@ export function AccessTokenManager() {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const [totalItems, setTotalItems] = useState(0);
-    
+
     // Permission Modal States
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedToken, setSelectedToken] = useState<AccessToken | null>(null);
-    const [allTools, setAllTools] = useState<{id: number, name: string}[]>([]);
-    const [allOpenAPIs, setAllOpenAPIs] = useState<{id: number, name_ko: string, tool_id: string}[]>([]);
+    const [allTools, setAllTools] = useState<{ id: number, name: string }[]>([]);
+    const [allOpenAPIs, setAllOpenAPIs] = useState<{ id: number, name_ko: string, tool_id: string }[]>([]);
     const [allowedToolIds, setAllowedToolIds] = useState<number[]>([]);
     const [allowedOpenApiIds, setAllowedOpenApiIds] = useState<number[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -290,6 +290,13 @@ export function AccessTokenManager() {
                                                     <Settings className="w-4 h-4" />
                                                 </button>
                                                 <button
+                                                    onClick={() => window.location.href = `/mcp-limits?target_type=TOKEN&target_id=${token.id}`}
+                                                    className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                                                    title="사용 한도 설정"
+                                                >
+                                                    <Clock className="w-4 h-4" />
+                                                </button>
+                                                <button
                                                     onClick={() => handleDelete(token.id)}
                                                     className="text-red-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                     title="삭제"
@@ -350,14 +357,14 @@ export function AccessTokenManager() {
                                     </p>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setIsModalOpen(false)}
                                 className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full transition-all"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
-                        
+
                         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                             {/* Custom Tools Section */}
                             <section>
@@ -422,7 +429,7 @@ export function AccessTokenManager() {
                                 </div>
                             </section>
                         </div>
-                        
+
                         <div className="p-6 border-t border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
                             <button
                                 onClick={() => setIsModalOpen(false)}

@@ -1687,4 +1687,28 @@ Jenkins의 브랜치 병합 로직을 파라미터화하여 다양한 브랜치 
 ### Implemented Changes
  
 - **[MODIFY] [Jenkinsfile](file:///d:/hong/9.%20project/agent_mcp/Jenkinsfile)**: `SOURCE_BRANCH`, `TARGET_BRANCH` 파라미터 추가 및 로직 연동.
-- **Telegram Notification**: 알림 메시지에 브랜치 정보 동적 반영.
+- Telegram Notification: 알림 메시지에 브랜치 정보 동적 반영.
+
+---
+
+## Phase 55: MCP 도구 토큰 별 사용량 제한 구현 [Completed]
+
+### Goal
+
+특정 액세스 토큰(External Token)별로 MCP 도구 호출 횟수를 제한할 수 있도록 관리 UI를 고도화하고 서비스 안정성을 강화합니다.
+
+### Implemented Changes
+
+- **Type Definition Expansion**: `Limit` 및 `LimitFormData` 타입에 `TOKEN` 대상 유형을 추가했습니다.
+- **Limit Management UI (`LimitManagement.tsx`)**:
+  - 대상 유형 선택 시 `TOKEN` 옵션을 추가하고, 토큰 선택 시 ID가 아닌 실제 토큰 이름을 표시하도록 개선했습니다.
+  - 리스트 뷰에서도 토큰 ID를 기반으로 이름을 실시간 매핑하여 가독성을 높였습니다.
+  - 외부에서 `target_type`과 `target_id` 파라미터를 통해 진입 시 자동으로 설정 모달이 열리는 기능을 추가했습니다.
+- **Access Token Manager (`AccessTokenManager.tsx`)**:
+  - 각 토큰 옆에 '한도 설정' 단축 아이콘(시계 모양)을 추가하여, 클릭 시 즉시 해당 토큰의 한도 설정 화면으로 이동할 수 있도록 편의성을 개선했습니다.
+
+### Verification Plan
+
+1. 토큰 관리 화면에서 한도 설정 아이콘 클릭 시 해당 토큰이 선택된 상태로 모달이 열리는지 확인.
+2. 특정 토큰에 대해 횟수 제한 설정 후, 해당 토큰으로 MCP 프록시 요청 시 제한이 정상 작동하는지 확인.
+3. 리스트에서 설정된 토크별 한도 규칙이 토큰 이름과 함께 정상적으로 표시되는지 확인.

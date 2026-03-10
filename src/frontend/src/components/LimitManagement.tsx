@@ -10,7 +10,8 @@ import {
     Settings,
     Clock,
     RefreshCw,
-    X
+    X,
+    Key
 } from 'lucide-react';
 import type { Limit, LimitFormData } from '../types/TargetLimitUsageMng';
 
@@ -43,6 +44,22 @@ export function LimitManagement() {
 
     const [processing, setProcessing] = useState(false);
     const [userList, setUserList] = useState<User[]>([]);
+    const [tokenList, setTokenList] = useState<{ id: number, name: string }[]>([]);
+
+    const fetchTokens = useCallback(async () => {
+        try {
+            const res = await fetch('/api/access-tokens?page=1&size=100', {
+                headers: getAuthHeaders()
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.items) setTokenList(data.items);
+                else if (data.tokens) setTokenList(data.tokens);
+            }
+        } catch (e) {
+            console.error("Failed to fetch tokens for select box", e);
+        }
+    }, []);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -82,7 +99,24 @@ export function LimitManagement() {
     useEffect(() => {
         fetchLimits(page, pageSize);
         fetchUsers();
-    }, [fetchLimits, fetchUsers, page, pageSize]);
+        fetchTokens();
+    }, [fetchLimits, fetchUsers, fetchTokens, page, pageSize]);
+
+    useEffect(() => {
+        // URL 파라미터 체크 (토큰 관리 등에서 바로 넘어온 경우)
+        const params = new URLSearchParams(window.location.search);
+        const targetType = params.get('target_type');
+        const targetId = params.get('target_id');
+
+        if (targetType === 'TOKEN' && targetId) {
+            setFormData(prev => ({
+                ...prev,
+                target_type: 'TOKEN',
+                target_id: targetId
+            }));
+            setIsModalOpen(true);
+        }
+    }, []);
 
     const handleOpenModal = (limit: Limit | null = null) => {
         if (limit) {
@@ -217,17 +251,22 @@ export function LimitManagement() {
                                                 <div className="flex items-center">
                                                     {limit.target_type === 'ROLE' ? (
                                                         <Shield className="w-4 h-4 text-purple-500 mr-2" />
+                                                    ) : limit.target_type === 'TOKEN' ? (
+                                                        <Key className="w-4 h-4 text-amber-500 mr-2" />
                                                     ) : (
                                                         <UserIcon className="w-4 h-4 text-blue-500 mr-2" />
                                                     )}
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${limit.target_type === 'ROLE'
-                                                        ? 'bg-purple-100 text-purple-800'
-                                                        : 'bg-blue-100 text-blue-800'
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${limit.target_type === 'ROLE' ? 'bg-purple-100 text-purple-800' :
+                                                        limit.target_type === 'TOKEN' ? 'bg-amber-100 text-amber-800' :
+                                                            'bg-blue-100 text-blue-800'
                                                         }`}>
                                                         {limit.target_type}
                                                     </span>
                                                     <span className="ml-2 text-sm font-medium text-gray-900 dark:text-slate-100">
-                                                        {limit.target_id}
+                                                        {limit.target_type === 'TOKEN'
+                                                            ? (tokenList.find(t => String(t.id) === limit.target_id)?.name || limit.target_id)
+                                                            : limit.target_id
+                                                        }
                                                     </span>
                                                 </div>
                                             </td>
@@ -316,15 +355,16 @@ export function LimitManagement() {
                                             <select
                                                 className="block w-full border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                                 value={formData.target_type}
-                                                onChange={(e) => setFormData({ ...formData, target_type: e.target.value as 'USER' | 'ROLE' })}
+                                                onChange={(e) => setFormData({ ...formData, target_type: e.target.value as 'USER' | 'ROLE' | 'TOKEN', target_id: '' })}
                                             >
                                                 <option value="USER">USER</option>
                                                 <option value="ROLE">ROLE</option>
+                                                <option value="TOKEN">TOKEN</option>
                                             </select>
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                                {formData.target_type === 'USER' ? '사용자 선택' : '역할 선택'}
+                                                {formData.target_type === 'USER' ? '사용자 선택' : formData.target_type === 'TOKEN' ? '토큰 선택' : '역할 선택'}
                                             </label>
                                             {formData.target_type === 'USER' ? (
                                                 <select
@@ -337,6 +377,20 @@ export function LimitManagement() {
                                                     {userList.map(user => (
                                                         <option key={user.uid} value={user.user_id}>
                                                             {user.user_nm} ({user.user_id})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            ) : formData.target_type === 'TOKEN' ? (
+                                                <select
+                                                    required
+                                                    className="block w-full border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                                                    value={formData.target_id}
+                                                    onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
+                                                >
+                                                    <option value="">토큰을 선택하세요</option>
+                                                    {tokenList.map(token => (
+                                                        <option key={token.id} value={token.id}>
+                                                            {token.name} (ID: {token.id})
                                                         </option>
                                                     ))}
                                                 </select>
