@@ -14,10 +14,12 @@ try:
     from src.db.init_manager import init_db
     from src.mcp_server_impl import mcp
     from mcp.server.stdio import stdio_server
+    from mcp.server.lowlevel.server import NotificationOptions
 except ImportError:
     from db.init_manager import init_db
     from mcp_server_impl import mcp
     from mcp.server.stdio import stdio_server
+    from mcp.server.lowlevel.server import NotificationOptions
 
 async def main():
     # 1. DB 초기화
@@ -29,7 +31,9 @@ async def main():
         await mcp.run(
             read_stream,
             write_stream,
-            mcp.create_initialization_options()
+            mcp.create_initialization_options(
+                notification_options=NotificationOptions(tools_changed=True)
+            )
         )
 
 if __name__ == "__main__":

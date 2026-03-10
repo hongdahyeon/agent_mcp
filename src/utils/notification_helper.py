@@ -2,12 +2,10 @@ import logging
 import asyncio
 try:
     from src.db.notification import create_notification, get_unread_count
-    from src.routers.notification import notification_manager
     from src.utils.telegram_bot import send_telegram_message
 except ImportError:
-    from db.notification import create_notification, get_unread_count
-    from routers.notification import notification_manager
-    from utils.telegram_bot import send_telegram_message
+    from src.db.notification import create_notification, get_unread_count
+    from src.utils.telegram_bot import send_telegram_message
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +45,11 @@ def send_dual_notification(
         )
         
         # 2. 실시간 SSE 전송
+        try:
+            from src.routers.notification import notification_manager
+        except ImportError:
+            from routers.notification import notification_manager
+            
         notification_manager.notify(receive_user_uid, {
             "type": "new_notification",
             "id": notify_id,

@@ -22,8 +22,8 @@ mcp_server_impl.py
         (4) get_user_info: (Admin 전용) 사용자 ID로 상세 정보를 조회합니다.
         (5) get_current_time: 시스템의 현재 날짜와 시간을 조회합니다.
         (6) send_email: 이메일을 즉시 또는 예약 발송합니다.
-(7) get_tool_analysis: OpenAPI 도구의 규격을 분석하고 샘플 호출 보고서를 생성합니다.
-2. 동적(Dynamic): DB에 등록된 SQL/Python 코드 실행
+        (7) get_tool_analysis: OpenAPI 도구의 규격을 분석하고 샘플 호출 보고서를 생성합니다.
+2. 동적(Dynamic): DB(h_custom_tool)에 등록된 SQL/Python 코드 실행
 3. OpenAPI: 외부 API 규격을 MCP로 래핑하여 실행
 """
 
@@ -50,7 +50,8 @@ try:
     from src.utils.notification_helper import send_system_notification
     logger_prefix = "[SRC-IMPORT]"
 except ImportError:
-    from db import (
+    # This block is problematic for some environments, but let's keep it with absolute paths if possible
+    from src.db import (
         get_active_tools, get_tool_params, get_user, log_tool_usage,
         get_user_daily_usage, get_user_limit, get_all_access_tokens as get_all_user_tokens,
         log_email, update_email_status,
@@ -58,11 +59,11 @@ except ImportError:
         get_user_openapi_daily_usage, log_openapi_usage,
         check_access_token_permission
     )
-    from tool_executor import execute_sql_tool, execute_python_tool
-    from utils.context import get_current_user
-    from utils.mailer import EmailSender
-    from scheduler import add_scheduled_job
-    from utils.notification_helper import send_system_notification
+    from src.tool_executor import execute_sql_tool, execute_python_tool
+    from src.utils.context import get_current_user
+    from src.utils.mailer import EmailSender
+    from src.scheduler import add_scheduled_job
+    from src.utils.notification_helper import send_system_notification
     logger_prefix = "[LOCAL-IMPORT]"
 
 logger = logging.getLogger(__name__)
@@ -173,6 +174,18 @@ async def list_tools():
                     "tool_id": {"type": "string", "description": "분석할 OpenAPI 도구 ID (ex: 'get_info')"}
                 },
                 "required": ["tool_id"]
+            }
+        ),
+        Tool(
+            name="refresh_tools",
+            description="""
+                [System] 도구 목록을 최신 상태로 강제 새로고침합니다.
+                관리자 플랫폼에서 새로운 도구를 추가한 후, 에이전트가 즉시 인식하게 하려면 이 도구를 실행하시면 됩니다.
+            """,
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
             }
         ),
     ]
@@ -317,15 +330,18 @@ async def call_tool(name: str, arguments: dict):
     role = current_user.get('role')
 
     # [2] 전체 일일 사용량 제한 확인 (User/Token 통합)
+    # 가용성 확보를 위한 시스템 도구(refresh_tools 등)는 제한 체크에서 제외
+    is_system_tool = name in ["refresh_tools"]
+    
     daily_usage = get_user_daily_usage(user_uid=user_uid, token_id=token_id)
     daily_limit = get_user_limit(user_uid=user_uid, role=role, token_id=token_id)
     
-    if daily_limit != -1 and daily_usage >= daily_limit:
+    if not is_system_tool and daily_limit != -1 and daily_usage >= daily_limit:
         logger.warning(f"Limit exceeded: {daily_usage}/{daily_limit}")
         return [TextContent(type="text", text=f"Error: Daily usage limit exceeded ({daily_usage}/{daily_limit}).")]
 
-    # 임계치(80%, 90%, 100%) 도달 시 시스템 알림 발송
-    if daily_limit != -1 and user_uid:
+    # 임계치(80%, 90%, 100%) 도달 시 시스템 알림 발송 (시스템 도구가 아닐 때만)
+    if not is_system_tool and daily_limit != -1 and user_uid:
         for threshold in [0.8, 0.9, 1.0]:
             if daily_usage + 1 == int(daily_limit * threshold):
                 send_system_notification(
@@ -437,6 +453,20 @@ async def call_tool(name: str, arguments: dict):
                 log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
             return [TextContent(type="text", text=result_val)]
 
+        if name == "refresh_tools":
+            # 도구 목록 변경 통보 발송 (Claude 등 클라이언트에 새로고침 유도)
+            try:
+                await mcp.request_context.session.send_tool_list_changed()
+                result_val = "도구 목록 새로고침 신호를 전송했습니다. 에이전트가 곧 목록을 갱신합니다."
+                is_success = True
+            except Exception as e_rf:
+                result_val = f"새로고침 신호 전송 실패: {str(e_rf)}"
+                is_success = False
+            
+            if user_uid or token_id:
+                log_tool_usage(user_uid=user_uid, token_id=token_id, tool_nm=name, tool_params=str(tool_args), success=is_success, result=result_val)
+            return [TextContent(type="text", text=result_val)]
+
         # ------------------------------------------
         # Case 2: OpenAPI 도구 실행 로직
         # ------------------------------------------
@@ -512,6 +542,7 @@ async def call_tool(name: str, arguments: dict):
         # Case 3: Custom 도구(SQL/Python) 실행 로직
         # ------------------------------------------
         active_custom_tools = get_active_tools()
+        print(active_custom_tools)
         target_tool = next((t for t in active_custom_tools if t['name'] == name), None)
         
         if target_tool:
