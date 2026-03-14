@@ -54,7 +54,7 @@ pipeline {
                     
                     // 불필요한 시스템 출력 라인을 제거하고 순수 커밋 메시지만 추출
                     def messageLines = fullLog.split('\r?\n').findAll {
-                        !it.contains('git log -1') && !it.startsWith('C:\\') && !it.contains('Active code page: 65001') 
+                        !it.contains('git log -1') && !it.startsWith('C:\\') && !it.contains('Active code page: 65001')
                     }
                     def commitMessage = messageLines.join('\n').trim()
                     
@@ -69,9 +69,9 @@ pipeline {
                     
                     // Scenario 2: 타겟 브랜치(work)의 내용을 현재 브랜치로 가져온 경우 (동기화)
                     // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 막아 무한 루프를 방지
-                    if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains("Merge branch 'work'")) {
+                    if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains('Merge branch \'work\'')) {
                         
-                        echo ">>> Scenario 2: Sync from 'work' to '${currentBranch}' detected. Skipping Auto-Merge."
+                        echo ">>> [Scenario 2] Sync from 'work' to '${currentBranch}' detected. Skipping Auto-Merge to prevent infinite loop."
                         env.CASE_TYPE = "SYNC_FROM_WORK"
                         env.ACTUAL_SOURCE = "work"
                         env.ACTUAL_TARGET = currentBranch
@@ -82,7 +82,7 @@ pipeline {
                     // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 막아 무한 루프를 방지
                     else if (currentBranch == "work") {
                         
-                        echo ">>> Direct push to 'work' detected. Skipping automated merge."
+                        echo ">>> Direct push to 'work' detected. Skipping automated merge process."
                         env.CASE_TYPE = "DIRECT_WORK_PUSH"
                         env.SKIP_PUSH = "true"
 
@@ -91,14 +91,14 @@ pipeline {
                     // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 진행
                     else {
 
-                        echo ">>> Scenario 1: Automated Merge from '${currentBranch}' to 'work' detected."
+                        echo ">>> [Scenario 1] Starting Automated Merge from '${currentBranch}' to 'work'."
                         env.CASE_TYPE = "MERGE_TO_WORK"
                         def cleanSource = currentBranch
                         def cleanTarget = "work"
                         
                         env.ACTUAL_SOURCE = cleanSource
                         env.ACTUAL_TARGET = cleanTarget
-                        env.SKIP_PUSH = "false"
+                        env.SKIP_PUSH = "false" // work로 최종 push 진행
 
                         // Credentials를 이용한 안전한 Git Push
                         withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
