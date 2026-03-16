@@ -2,20 +2,20 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'node' // Jenkins 'Global Tool Configuration'에 등록된 Node.js 이름
+        nodejs 'node' // Node.js name registered in Jenkins 'Global Tool Configuration'
     }
 
     environment {
-        // 프로젝트별 GitHub 저장소 URL (https:// 제외하고 처리하도록 하단 로직 구성)
+        // Project-specific GitHub repository URL (Logic below handles URL without https://)
         REPO_URL = "https://github.com/hongdahyeon/agent_mcp.git"
 
-        // Jenkins 실행 환경에 따라 python 또는 python.exe 경로 지정
+        // Path to python or python.exe depending on the Jenkins environment
         PYTHON_EXE = "${env.PYTHON_EXE ?: 'python'}"
     }
 
     parameters {
-        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: '머지 대상이 되는 소스 브랜치')
-        string(name: 'TARGET_BRANCH', defaultValue: 'work', description: '최종 머지될 타겟 브랜치')
+        string(name: 'SOURCE_BRANCH', defaultValue: 'home', description: 'Source branch for merging')
+        string(name: 'TARGET_BRANCH', defaultValue: 'work', description: 'Target branch for the final merge')
     }
 
     stages {
@@ -34,7 +34,7 @@ pipeline {
 
         stage('Frontend Build') {
             steps {
-                // 프론트엔드 경로가 src/frontend인 점 반영
+                // Frontend path is src/frontend
                 dir('src/frontend') {
                     echo ">>> Starting Frontend Build..."
                     bat """
@@ -48,27 +48,27 @@ pipeline {
             steps {
                 script {
 
-                    // [1번 스크립트 핵심 이식] Windows 환경 한글 깨짐 방지 및 로그 추출
-                    // chcp 65001: UTF-8 코드페이지로 변경하여 한글 커밋 메시지 정상 인식
+                    // [Ported from Script 1] Extract logs and prevent character encoding issues in Windows
+                    // chcp 65001: Change to UTF-8 code page to correctly recognize Korean commit messages
                     def fullLog = bat(script: '@echo off && chcp 65001 > nul && git log -1 --pretty=%%B', returnStdout: true).trim()
                     
-                    // 불필요한 시스템 출력 라인을 제거하고 순수 커밋 메시지만 추출
+                    // Remove unnecessary system output and extract only the commit message
                     def messageLines = fullLog.split('\r?\n').findAll {
                         !it.contains('git log -1') && !it.startsWith('C:\\') && !it.contains('Active code page: 65001')
                     }
                     def commitMessage = messageLines.join('\n').trim()
                     
-                    // 현재 빌드를 유발한 브랜치명 확인
+                    // Check the branch that triggered the current build
                     def rawBranch = env.GIT_BRANCH ?: "home"
                     def currentBranch = rawBranch.replace('origin/', '').trim()
                     
                     echo ">>> Current Branch: ${currentBranch}"
                     echo ">>> Extracted Commit Message: ${commitMessage}"
 
-                    // --- 시나리오 판별 로직 --- //
+                    // --- Scenario Determination Logic --- //
                     
-                    // Scenario 2: 타겟 브랜치(work)의 내용을 현재 브랜치로 가져온 경우 (동기화)
-                    // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 막아 무한 루프를 방지
+                    // Scenario 2: Case where 'work' branch content is pulled into the current branch (Sync)
+                    // => Prevent {PUSH} to 'work' branch to avoid infinite loops
                     if (commitMessage.contains('from hongdahyeon/work') || commitMessage.contains('Merge branch \'work\'')) {
                         
                         echo ">>> [Scenario 2] Sync from 'work' to '${currentBranch}' detected. Skipping Auto-Merge to prevent infinite loop."
@@ -78,8 +78,8 @@ pipeline {
                         env.SKIP_PUSH = "true"
 
                     }
-                    // 직접 'work' 브랜치에 푸시한 경우 (자동 머지 생략)
-                    // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 막아 무한 루프를 방지
+                    // Direct push to 'work' branch (Skip automated merge)
+                    // => Prevent {PUSH} to 'work' branch to avoid infinite loops
                     else if (currentBranch == "work") {
                         
                         echo ">>> Direct push to 'work' detected. Skipping automated merge process."
@@ -87,8 +87,8 @@ pipeline {
                         env.SKIP_PUSH = "true"
 
                     }
-                    // Scenario 1: 일반 브랜치에서 작업 후 'work'로 자동 머지 진행
-                    // => 해당 경우에는 타겟 브랜치(work)로의 {PUSH}를 진행
+                    // Scenario 1: Regular branch work followed by automated merge to 'work'
+                    // => Proceed with {PUSH} to the 'work' branch
                     else {
 
                         echo ">>> [Scenario 1] Starting Automated Merge from '${currentBranch}' to 'work'."
@@ -98,9 +98,9 @@ pipeline {
                         
                         env.ACTUAL_SOURCE = cleanSource
                         env.ACTUAL_TARGET = cleanTarget
-                        env.SKIP_PUSH = "false" // work로 최종 push 진행
+                        env.SKIP_PUSH = "false" // Proceed with final push to 'work'
 
-                        // Credentials를 이용한 안전한 Git Push
+                        // Secure Git Push using Credentials
                         withCredentials([usernamePassword(credentialsId: 'github-login', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
                             bat """
                             @echo off
@@ -131,7 +131,7 @@ pipeline {
         success {
             script {
                 def now = new Date().format("yyyy-MM-dd HH:mm", TimeZone.getTimeZone('Asia/Seoul'))
-                // 상황별 맞춤형 텔레그램 알림
+                // Custom Telegram notification for each scenario
                 if (env.CASE_TYPE == "SYNC_FROM_WORK") {
                     sendTelegramNotification("[${now}][V] CI/CD Success: Sync from work completed (${env.ACTUAL_SOURCE} -> ${env.ACTUAL_TARGET})")
                 
@@ -154,12 +154,12 @@ pipeline {
 }
 
 /**
- * 텔레그램 알림 전송 함수
- * @param message 전송할 메시지 내용
+ * Function to send Telegram notifications
+ * @param message Message content to send
  */
 def sendTelegramNotification(String message) {
     try {
-        // 1번 스크립트의 안전한 URL 인코딩 방식 사용
+        // Use secure URL encoding method from Script 1
         withCredentials([string(credentialsId: 'telegram-token', variable: 'TOKEN'),
                          string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID')]) {
             bat """
