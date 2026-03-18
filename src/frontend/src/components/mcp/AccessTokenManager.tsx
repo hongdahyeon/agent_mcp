@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Key, Plus, Trash2, Copy, Check, Settings, Shield, Globe, Clock } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 interface AccessToken {
     id: number;

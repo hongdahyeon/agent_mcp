@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Database, RotateCcw, Trash2, Plus, FileText, AlertTriangle, RefreshCw, History, Shield, CheckCircle2 } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface BackupFile {
     filename: string;

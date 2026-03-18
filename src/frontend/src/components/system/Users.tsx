@@ -10,9 +10,9 @@ import {
     X
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { User as UserType } from '../types/auth';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { User as UserType } from '../../types/auth';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 /*
 * 사용자 관리 화면에 대한 컴포넌트

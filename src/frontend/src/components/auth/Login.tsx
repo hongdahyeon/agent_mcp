@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { User } from '../types/auth';
+import type { User } from '../../types/auth';
 import { Lock, User as UserIcon, LogIn, AlertCircle, UserPlus } from 'lucide-react';
 import { SignupModal } from './SignupModal';
 

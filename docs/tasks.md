@@ -1138,3 +1138,11 @@
 - [x] 4. Backend: `list_tools`에 `h_openapi` 항목 통합
 - [x] 5. Backend: `call_tool` 내 OpenAPI 실행 로직 연동
 - [x] 6. 최종 검증 및 문서 업데이트
+
+## 91. 프론트엔드 컴포넌트 디렉토리 구조 재편 (New)
+
+- [x] 1. Planning: 메뉴 구조 분석 및 컴포넌트 매핑 완료
+- [x] 2. Execution: `src/frontend/src/components` 하위 디렉토리 생성 및 파일 이동
+- [x] 3. Execution: `App.tsx` 임포트 경로 업데이트
+- [x] 4. Execution: 컴포넌트 간 상대 임포트 경로 업데이트
+- [x] 5. Verification: 빌드 확인 및 도구별 화면 정상 작동 검증

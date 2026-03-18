@@ -1,8 +1,8 @@
 import { ShieldCheck, Clock, RefreshCw, XCircle, Mail, AlertCircle } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { OtpLog, OtpHistoryResponse } from '../types/otp';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { OtpLog, OtpHistoryResponse } from '../../types/otp';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 export const OtpHistory: React.FC = () => {
     const [logs, setLogs] = useState<OtpLog[]>([]);

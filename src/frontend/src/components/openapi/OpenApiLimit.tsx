@@ -9,9 +9,9 @@ import {
     Shield,
     Key
 } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import type { OpenApiLimit } from '../types/openapi';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import type { OpenApiLimit } from '../../types/openapi';
+import { Pagination } from '../common/Pagination';
 import clsx from 'clsx';
 
 interface ExternalToken {

@@ -1,8 +1,8 @@
 import clsx from 'clsx';
 import { AlertCircle, Columns, Database, FileText, RefreshCw, Table } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 /**
  * 스키마 및 데이터 관리 컴포넌트

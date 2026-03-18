@@ -1,8 +1,8 @@
 import { AlertCircle, Calendar, CheckCircle, Clock, Eye, RefreshCw, RotateCw, Send, XCircle } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import type { EmailLog } from '../types/emailSend';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { EmailLog } from '../../types/emailSend';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 
 export const EmailSender: React.FC = () => {
