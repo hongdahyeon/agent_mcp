@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import { CheckCircle, History, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { LoginHistory } from '../types/auth';
+import type { LoginHistory } from '../../types/auth';
 
-import { Pagination } from './common/Pagination';
+import { Pagination } from '../common/Pagination';
 
 /* 
 * 로그인 이력 화면에 대한 컴포넌트

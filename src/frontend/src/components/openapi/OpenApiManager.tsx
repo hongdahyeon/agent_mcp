@@ -3,10 +3,10 @@ import { Globe, Plus, Trash2, Edit2, Play, Save, X, Link as LinkIcon, FileText, 
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
-import Autocomplete from './common/Autocomplete';
-import type { OpenApiConfig, UploadedFile } from '../types/openApiConfig';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
+import Autocomplete from '../common/Autocomplete';
+import type { OpenApiConfig, UploadedFile } from '../../types/openApiConfig';
 
 interface MetaItem {
     id: number | string;

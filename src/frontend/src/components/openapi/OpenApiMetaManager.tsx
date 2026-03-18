@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Tag, Folder, Edit2, Trash2, X, Check, Search, ChevronRight, AlertCircle, Info } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface MetaItem {
     id: number | string;

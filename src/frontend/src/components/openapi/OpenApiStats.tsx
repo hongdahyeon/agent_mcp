@@ -15,9 +15,9 @@ import {
     BarChart,
     Download
 } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import type { OpenApiUsageLog, OpenApiStats } from '../types/openapi';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import type { OpenApiUsageLog, OpenApiStats } from '../../types/openapi';
+import { Pagination } from '../common/Pagination';
 import clsx from 'clsx';
 
 interface Props {

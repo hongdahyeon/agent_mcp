@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import type { Tool } from '../types';
+import type { Tool } from '../../types';
 import { Play, RotateCcw, RefreshCw, Copy, Check } from 'lucide-react';
 
 /* 

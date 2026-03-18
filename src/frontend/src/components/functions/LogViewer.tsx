@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, RefreshCw, Archive, CheckSquare, Square, FileArchive, ArrowUpCircle, Download } from 'lucide-react';
-import type { LogFileResponse, LogContentResponse, LogFileInfo } from '../types';
+import type { LogFileResponse, LogContentResponse, LogFileInfo } from '../../types';
 import clsx from 'clsx';
-import { getAuthHeaders } from '../utils/auth';
+import { getAuthHeaders } from '../../utils/auth';
 
 /* 
 * 로그 이력 보기 화면에 대한 컴포넌트

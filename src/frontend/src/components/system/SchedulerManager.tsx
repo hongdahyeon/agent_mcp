@@ -11,8 +11,8 @@ import {
   AlertCircle,
   CheckCircle2
 } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import type { SchedulerJob, SystemHealth } from '../types/system';
+import { getAuthHeaders } from '../../utils/auth';
+import type { SchedulerJob, SystemHealth } from '../../types/system';
 import { clsx } from 'clsx';
 
 export default function SchedulerManager() {

@@ -1,8 +1,8 @@
 import { AlertCircle, CheckCircle, Clock, Eye, RefreshCw, XCircle } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EmailLog } from '../types/emailSend';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { EmailLog } from '../../types/emailSend';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 export const EmailHistory: React.FC = () => {
     const [logs, setLogs] = useState<EmailLog[]>([]);
