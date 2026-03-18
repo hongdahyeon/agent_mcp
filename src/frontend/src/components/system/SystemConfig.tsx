@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Settings, Plus, Edit2, Trash2, Save, X, Search } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
-import type { SystemConfig, ConfigFormData } from '../types/systemConfig';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
+import type { SystemConfig, ConfigFormData } from '../../types/systemConfig';
 
 
 export function SystemConfig() {

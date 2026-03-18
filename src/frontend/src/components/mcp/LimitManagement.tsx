@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { User } from '../types/auth';
+import type { User } from '../../types/auth';
 import {
     AlertCircle,
     Plus,
@@ -13,10 +13,10 @@ import {
     X,
     Key
 } from 'lucide-react';
-import type { Limit, LimitFormData } from '../types/TargetLimitUsageMng';
+import type { Limit, LimitFormData } from '../../types/TargetLimitUsageMng';
 
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 export function LimitManagement() {
     const [limits, setLimits] = useState<Limit[]>([]);

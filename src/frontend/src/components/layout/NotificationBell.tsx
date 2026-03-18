@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X, Check, Trash2, Info, User } from 'lucide-react';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotifications } from '../../hooks/useNotifications';
 import { clsx } from 'clsx';
-import type { Notification } from '../types/notification';
+import type { Notification } from '../../types/notification';
 
 interface NotificationModalProps {
   notification: Notification;

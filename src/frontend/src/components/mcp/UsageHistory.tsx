@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import { AlertCircle, CheckCircle2, RefreshCw, Search, XCircle, History, Eye, X, Download, Globe, User as UserIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { UsageHistoryResponse, UsageLog, UsageStats } from '../types/UserUsage';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { UsageHistoryResponse, UsageLog, UsageStats } from '../../types/UserUsage';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 
 export function UsageHistory() {

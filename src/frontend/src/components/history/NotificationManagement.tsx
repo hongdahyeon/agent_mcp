@@ -11,8 +11,8 @@ import {
     Search
 } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 interface NotificationLog {
     id: number;

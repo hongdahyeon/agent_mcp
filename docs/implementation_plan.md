@@ -1765,3 +1765,34 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 - **Custom Tool Hot-reload**: 신규 동적 도구 생성 후 `list_tools` 응답에 즉시 포함되는지 확인.
 - **OpenAPI Tool Integration**: `h_openapi`에 등록한 API가 MCP 도구 목록에 나타나고, AI Agent가 이를 통해 실제 데이터를 가져오는지 확인.
 - **Security**: MCP를 통해 실행되는 OpenAPI 도구 역시 기존의 토큰 권한 및 사용량 제한이 정상 작동하는지 검증.
+
+---
+
+## Phase 58: 프론트엔드 컴포넌트 디렉토리 구조 재편 (Restructure Frontend) [Completed]
+
+### Goal
+
+`App.tsx`에 정의된 논리적 메뉴 그룹에 맞춰 `src/frontend/src/components` 디렉토리 내의 수많은 컴포넌트 파일들을 체계적으로 분류하고 재배치하여 코드 유지보수성을 향상시킵니다.
+
+### Proposed Changes
+
+#### 1. Directory Restructuring
+- `src/frontend/src/components/` 하위에 다음 카테고리별 디렉토리 생성 및 파일 이동:
+  - `dashboard/`: `Dashboard.tsx`
+  - `functions/`: `Tester.tsx`, `LogViewer.tsx`, `EmailSender.tsx`, `FileManager.tsx`
+  - `history/`: `LoginHistViewer.tsx`, `EmailHistory.tsx`, `OtpHistory.tsx`, `NotificationManagement.tsx`
+  - `openapi/`: `OpenApiManager.tsx`, `OpenApiMetaManager.tsx`, `OpenApiStats.tsx`, `OpenApiLimit.tsx`
+  - `mcp/`: `CustomTools.tsx`, `UsageHistory.tsx`, `LimitManagement.tsx`, `AccessTokenManager.tsx`
+  - `system/`: `SchemaManager.tsx`, `DbBackupManager.tsx`, `SchedulerManager.tsx`, `SystemConfig.tsx`, `Users.tsx`
+  - `auth/`: `Login.tsx`, `SignupModal.tsx`, `MyPage.tsx`
+  - `layout/`: `NotificationBell.tsx`
+
+#### 2. Import Updates
+- **`App.tsx`**: 모든 컴포넌트 임포트 경로를 신규 디렉토리 구조에 맞게 수정.
+- **Components**: 서로를 참조하거나 `common/` 디렉토리를 참조하는 상대 경로(`./...`)를 수정 (예: `../common/...` 또는 `../mcp/...`).
+
+### Verification Plan
+
+1. **Build Test**: `npm run build` 실행 시 모듈 참조 오류가 발생하지 않는지 확인.
+2. **Runtime Test**: 각 메뉴 클릭 시 해당 컴포넌트가 오류 없이 렌더링되는지 확인.
+3. **Import Check**: `grep` 등을 사용하여 잘못된 상대 경로가 남아있는지 전수 조사.

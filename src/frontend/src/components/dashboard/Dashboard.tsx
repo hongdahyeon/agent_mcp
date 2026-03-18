@@ -1,9 +1,9 @@
 import ReactECharts from 'echarts-for-react';
-import type { UsageStats } from '../types';
+import type { UsageStats } from '../../types';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Activity, RotateCw, User, BarChart } from 'lucide-react';
 import { clsx } from 'clsx';
-import { getAuthHeaders } from '../utils/auth';
+import { getAuthHeaders } from '../../utils/auth';
 
 /*
 * 메인 대시보드에 대한 컴포넌트

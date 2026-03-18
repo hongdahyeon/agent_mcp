@@ -1,6 +1,6 @@
 import { Download, File as FileIcon, FolderOpen, History, Upload, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { getAuthHeaders } from '../utils/auth';
+import { getAuthHeaders } from '../../utils/auth';
 
 interface UploadedFile {
     file_uid: number;

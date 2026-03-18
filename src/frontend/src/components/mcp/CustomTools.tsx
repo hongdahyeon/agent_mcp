@@ -3,9 +3,9 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code, RefreshCw
 } from 'lucide-react';
-import type { CustomTool, ToolParam, CustomToolFormData } from '../types/CustomToolMng';
-import { getAuthHeaders } from '../utils/auth';
-import { Pagination } from './common/Pagination';
+import type { CustomTool, ToolParam, CustomToolFormData } from '../../types/CustomToolMng';
+import { getAuthHeaders } from '../../utils/auth';
+import { Pagination } from '../common/Pagination';
 
 /**
  * 사용자 정의 도구 (Custom Tools) 관리 컴포넌트

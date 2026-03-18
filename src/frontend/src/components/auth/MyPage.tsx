@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Shield, Activity, Globe, CheckCircle2, AlertCircle, X, RefreshCw, User as UserIcon, Edit2, Terminal } from 'lucide-react';
-import { getAuthHeaders } from '../utils/auth';
-import type { SessionUser } from '../types/auth';
-import type { MyOpenApiUsage } from '../types/openapi';
-import type { MyMcpUsage } from '../types/UserUsage';
+import { getAuthHeaders } from '../../utils/auth';
+import type { SessionUser } from '../../types/auth';
+import type { MyOpenApiUsage } from '../../types/openapi';
+import type { MyMcpUsage } from '../../types/UserUsage';
 
 /**
  * 내 정보 (My Page) 컴포넌트
