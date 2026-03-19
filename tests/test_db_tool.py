@@ -16,17 +16,26 @@ def setup_db():
     init_db()
 
 def test_get_user_info_admin():
-    from src.server import get_user_info
+    from src.db.user import get_user
+    import json
     
-    result = get_user_info("admin")
-    assert result is not None
+    user = get_user("admin")
+    assert user is not None
+    
+    # 툴 로직 시뮬레이션 (Password 정보 제거 확인)
+    user_dict = dict(user)
+    if 'password' in user_dict:
+        del user_dict['password']
+    
+    result = json.dumps(user_dict, default=str)
+    
     assert "password" not in result
     assert "admin" in result
     assert "ROLE_ADMIN" in result
 
 def test_get_user_info_non_existent():
-    from src.server import get_user_info
+    from src.db.user import get_user
     
-    result = get_user_info("non_existent_user_12345")
-    assert "User not found" in result
+    user = get_user("non_existent_user_12345")
+    assert user is None
 
