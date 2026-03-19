@@ -45,6 +45,9 @@ pipeline {
         }
 
         stage('Testing') {
+            environment {
+                SECRET_KEY = "dummy_secret_for_ci_testing"
+            }
             steps {
                 echo ">>> Running Backend Tests (pytest)..."
                 bat """
