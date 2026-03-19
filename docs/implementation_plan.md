@@ -1846,8 +1846,8 @@ Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge
 
 #### 3. CI/CD Orchestration (`Jenkinsfile`)
 - **[MODIFY] `Jenkinsfile`**: `Frontend Build` 단계 이후에 `Testing` 단계를 신설했습니다.
-  - 백엔드: 가상환경 활성화 후 `pytest` 실행.
   - **[Fix]**: 테스트 실행 시 필수인 `SECRET_KEY` 환경 변수를 `Testing` 스테이지에 추가하여 인증 모듈 로드 에러를 방지했습니다.
+  - **[Fix]**: `test_db_tool.py`가 기존 데이터("admin")에 의존하지 않도록, 테스트 중 임시 유저를 생성하고 검증 후 삭제하는 **Self-contained** 방식으로 개선했습니다.
   - 프론트엔드: `npm run test`를 통한 테스트 수행.
   - 테스트 실패 시 파이프라인이 중단되어 안정성 없는 코드가 `work` 브랜치로 머지되는 것을 방지합니다.
 
