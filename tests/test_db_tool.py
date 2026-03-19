@@ -12,8 +12,8 @@ if project_root not in sys.path:
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
-    from src import db_init_manager
-    db_init_manager.init_db()
+    from src.db.init_manager import init_db
+    init_db()
 
 def test_get_user_info_admin():
     from src.server import get_user_info
