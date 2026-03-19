@@ -275,3 +275,53 @@ async def api_test_custom_tool(req: ToolTestRequest, current_user: dict = Depend
             raise HTTPException(status_code=400, detail="Unknown tool type")
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+# 동적 Tool 설정 내보내기 (JSON)
+@router.get("/mcp/custom-tools/export/json")
+async def api_export_custom_tools_json(current_user: dict = Depends(get_current_user_jwt)):
+    """동적 Tool 설정을 JSON 파일로 내보내기 (관리자 전용)."""
+    if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
+    
+    try:
+        # 모든 도구 가져오기 (충분히 큰 사이즈 설정하여 전체 조회)
+        tools_data = get_all_tools(page=1, size=1000)
+        tools = tools_data.get('items', [])
+        
+        export_data = []
+        for tool in tools:
+            tool_id = tool['id']
+            params = get_tool_params(tool_id)
+            
+            # 내보내기용 객체 구성 (불필요한 ID 등을 제외하고 핵심 설정만 포함)
+            tool_export = {
+                "name": tool['name'],
+                "tool_type": tool['tool_type'],
+                "definition": tool['definition'],
+                "description_user": tool['description_user'],
+                "description_agent": tool['description_agent'],
+                "is_active": tool['is_active'],
+                "params": [
+                    {
+                        "param_name": p['param_name'],
+                        "param_type": p['param_type'],
+                        "is_required": p['is_required'],
+                        "description": p['description']
+                    } for p in params
+                ]
+            }
+            export_data.append(tool_export)
+            
+        from fastapi.responses import JSONResponse
+        from datetime import datetime
+        filename = f"custom_tools_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        
+        return JSONResponse(
+            content=export_data,
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to export custom tools: {e}")
+        raise HTTPException(status_code=500, detail=f"내보내기 중 오류가 발생했습니다: {str(e)}")
+
