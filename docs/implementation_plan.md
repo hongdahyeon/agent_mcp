@@ -1796,3 +1796,31 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 1. **Build Test**: `npm run build` 실행 시 모듈 참조 오류가 발생하지 않는지 확인.
 2. **Runtime Test**: 각 메뉴 클릭 시 해당 컴포넌트가 오류 없이 렌더링되는지 확인.
 3. **Import Check**: `grep` 등을 사용하여 잘못된 상대 경로가 남아있는지 전수 조사.
+
+---
+
+## Phase 59: 사용자 정의 도구(Custom Tools) 내보내기 구현 [Completed]
+
+### Goal
+
+관리자가 생성한 SQL/Python 기반의 커스텀 도구 설정(정의 및 파라미터)을 JSON 파일로 내보낼 수 있는 기능을 제공하여 도구 설정의 백업 및 이동 편의성을 높입니다.
+
+### Implemented Changes
+
+#### 1. Backend Implementation
+- **[MODIFY] `src/routers/mcp.py`**:
+  - `GET /api/mcp/custom-tools/export/json` 엔드포인트를 추가했습니다.
+  - `get_all_tools`와 `get_tool_params`를 사용하여 모든 커스텀 도구의 메타데이터와 파라미터 정의를 하나의 JSON 구조로 통합합니다.
+  - `JSONResponse`와 `Content-Disposition` 헤더를 사용하여 브라우저에서 파일 다운로드가 즉시 시작되도록 처리했습니다.
+
+#### 2. Frontend Implementation
+- **[MODIFY] `src/frontend/src/components/mcp/CustomTools.tsx`**:
+  - 헤더 영역에 **'Export (JSON)'** 버튼을 추가했습니다.
+  - `handleExport` 함수를 구현하여 백엔드 API로부터 Blob 데이터를 받아 브라우저의 다운로드 기능을 트리거합니다.
+  - `lucide-react`의 `Download` 아이콘을 적용하여 시각적 직관성을 높였습니다.
+
+### Verification Plan
+
+1. **내보내기 실행**: 커스텀 도구 관리 화면에서 'Export (JSON)' 버튼 클릭 시 파일이 정상적으로 다운로드되는지 확인.
+2. **데이터 정합성**: 다운로드된 JSON 파일을 열어 도구 이름, 타입(SQL/PYTHON), 정의(Definition), 파라미터 리스트가 정확하게 포함되어 있는지 확인.
+3. **권한 체크**: 관리자(Admin) 권한이 없는 계정으로는 해당 API 호출 및 버튼 노출이 차단되는지 확인.

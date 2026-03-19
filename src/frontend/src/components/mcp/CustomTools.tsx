@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-    Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code, RefreshCw
+    Plus, Trash2, Edit2, Play, AlertCircle, X, Database, Code, RefreshCw, Download
 } from 'lucide-react';
 import type { CustomTool, ToolParam, CustomToolFormData } from '../../types/CustomToolMng';
 import { getAuthHeaders } from '../../utils/auth';
@@ -299,6 +299,36 @@ export function CustomTools() {
         }
     };
 
+    /** 도구 설정 내보내기 (Export) */
+    const handleExport = async () => {
+        try {
+            const res = await fetch('/api/mcp/custom-tools/export/json', {
+                headers: getAuthHeaders()
+            });
+            if (!res.ok) throw new Error('Export failed');
+            
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // 파일명 추출 (Content-Disposition 헤더에서)
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = 'custom_tools_export.json';
+            if (contentDisposition && contentDisposition.includes('filename=')) {
+                filename = contentDisposition.split('filename=')[1].split(';')[0].replace(/"/g, '');
+            }
+            
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (e) {
+            alert("내보내기 실패: " + e);
+        }
+    };
+
     // -------------------------------------------------------------------------
     // 4. UI 렌더링
     // -------------------------------------------------------------------------
@@ -317,13 +347,22 @@ export function CustomTools() {
                         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">SQL 쿼리나 스크립트 기반의 도구를 동적으로 생성하고 관리합니다.</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleOpenModal}
-                    className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-md"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    새 도구 만들기
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center px-4 py-2 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export (JSON)
+                    </button>
+                    <button
+                        onClick={handleOpenModal}
+                        className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-md"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        새 도구 만들기
+                    </button>
+                </div>
             </header>
 
             {/* 글로벌 에러 메시지 (API 에러 등) */}
