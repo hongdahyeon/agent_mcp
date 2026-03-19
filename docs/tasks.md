@@ -1146,3 +1146,10 @@
 - [x] 3. Execution: `App.tsx` 임포트 경로 업데이트
 - [x] 4. Execution: 컴포넌트 간 상대 임포트 경로 업데이트
 - [x] 5. Verification: 빌드 확인 및 도구별 화면 정상 작동 검증
+
+## 92. 사용자 정의 도구(Custom Tools) 내보내기 구현 (New)
+
+- [x] 상세 구현 계획 수립 (implementation_plan.md)
+- [x] 1. Backend: JSON 내보내기 API (`GET /api/mcp/custom-tools/export/json`) 구현
+- [x] 2. Frontend: `CustomTools.tsx` 내 'Export (JSON)' 버튼 추가 및 다운로드 로직 연동
+- [x] 3. 기능 검증 및 문서 업데이트
