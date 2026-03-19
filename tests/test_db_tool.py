@@ -1,6 +1,7 @@
 ## 파일 설명
 ## >> mcp_tool: get_user_info 사용이 잘 되는지 체크
 
+import pytest
 import sys
 import os
 
@@ -9,26 +10,23 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# Create dummy DB if needed (init_db)
-# Create dummy DB if needed (init_db)
-from src import db_init_manager
-db_init_manager.init_db()
+@pytest.fixture(scope="module", autouse=True)
+def setup_db():
+    from src import db_init_manager
+    db_init_manager.init_db()
 
-# Import the server function
-from src.server import get_user_info
-
-# Test
-print("Testing get_user_info('admin')...")
-try:
-    result = get_user_info("admin")
-    print(f"Result: {result}")
+def test_get_user_info_admin():
+    from src.server import get_user_info
     
-    if "password" in result:
-        print("FAIL: Password found in result!")
-    elif "admin" in result and "ROLE_ADMIN" in result:
-        print("SUCCESS: User info retrieved safely.")
-    else:
-        print("FAIL: User info seems incomplete or wrong.")
-        
-except Exception as e:
-    print(f"ERROR: {e}")
+    result = get_user_info("admin")
+    assert result is not None
+    assert "password" not in result
+    assert "admin" in result
+    assert "ROLE_ADMIN" in result
+
+def test_get_user_info_non_existent():
+    from src.server import get_user_info
+    
+    result = get_user_info("non_existent_user_12345")
+    assert "User not found" in result
+

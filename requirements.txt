@@ -26,3 +26,7 @@ fpdf2
 # Export to CSV/Excel
 pandas
 openpyxl
+
+# Testing
+pytest
+pytest-asyncio
