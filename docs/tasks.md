@@ -1153,3 +1153,10 @@
 - [x] 1. Backend: JSON 내보내기 API (`GET /api/mcp/custom-tools/export/json`) 구현
 - [x] 2. Frontend: `CustomTools.tsx` 내 'Export (JSON)' 버튼 추가 및 다운로드 로직 연동
 - [x] 3. 기능 검증 및 문서 업데이트
+
+## 93. CI/CD 파이프라인 테스트 단계(Testing Stage) 추가 (New)
+
+- [x] Backend: `pytest` 및 `pytest-asyncio` 도입 및 기존 테스트 스크립트 리팩토링
+- [x] Frontend: `vitest` 도입 및 기본 Sanity Test 추가
+- [x] Jenkins: `Jenkinsfile` 내 `Testing` 스테이지 추가 (빌드 후 머지 전 테스트 수행)
+- [x] 프로젝트 문서 업데이트

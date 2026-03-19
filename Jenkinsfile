@@ -44,6 +44,25 @@ pipeline {
             }
         }
 
+        stage('Testing') {
+            environment {
+                SECRET_KEY = "dummy_secret_for_ci_testing"
+            }
+            steps {
+                echo ">>> Running Backend Tests (pytest)..."
+                bat """
+                venv\\Scripts\\activate && pytest tests/test_db_tool.py tests/test_dynamic_tool_loading.py tests/test_telegram_notify.py
+                """
+                
+                echo ">>> Running Frontend Tests (vitest)..."
+                dir('src/frontend') {
+                    bat """
+                    npm run test
+                    """
+                }
+            }
+        }
+
         stage('Automated Merge (Gatekeeper)') {
             steps {
                 script {
