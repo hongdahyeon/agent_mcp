@@ -1824,3 +1824,35 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 1. **내보내기 실행**: 커스텀 도구 관리 화면에서 'Export (JSON)' 버튼 클릭 시 파일이 정상적으로 다운로드되는지 확인.
 2. **데이터 정합성**: 다운로드된 JSON 파일을 열어 도구 이름, 타입(SQL/PYTHON), 정의(Definition), 파라미터 리스트가 정확하게 포함되어 있는지 확인.
 3. **권한 체크**: 관리자(Admin) 권한이 없는 계정으로는 해당 API 호출 및 버튼 노출이 차단되는지 확인.
+
+---
+
+## Phase 60: CI/CD 파이프라인 테스트 단계(Testing Stage) 추가 [Completed]
+
+### Goal
+
+Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge) 전 백엔드와 프론트엔드의 주요 기능이 정상 작동하는지 자동으로 검증합니다.
+
+### Implemented Changes
+
+#### 1. Backend Testing Framework (`pytest`)
+- **[MODIFY] `requirements.txt`**: `pytest` 및 `pytest-asyncio` 의존성을 추가했습니다.
+- **[REFACTOR] `tests/`**: 기존의 비정규 테스트 스크립트들을 `pytest` 규격에 맞게 리팩토링했습니다.
+  - `test_db_tool.py`, `test_dynamic_tool_loading.py`, `test_telegram_notify.py` 연동 완료.
+
+#### 2. Frontend Testing Framework (`vitest`)
+- **[MODIFY] `src/frontend/package.json`**: `vitest` 및 `jsdom` 의존성을 추가하고 `test` 스크립트를 정의했습니다.
+- **[NEW] `src/frontend/src/tests/sanity.test.ts`**: 프론트엔드 환경의 기본적인 작동을 보장하는 Sanity Test를 추가했습니다.
+
+#### 3. CI/CD Orchestration (`Jenkinsfile`)
+- **[MODIFY] `Jenkinsfile`**: `Frontend Build` 단계 이후에 `Testing` 단계를 신설했습니다.
+  - **[Fix]**: 테스트 실행 시 필수인 `SECRET_KEY` 환경 변수를 `Testing` 스테이지에 추가하여 인증 모듈 로드 에러를 방지했습니다.
+  - **[Fix]**: `test_db_tool.py`가 기존 데이터("admin")에 의존하지 않도록, 테스트 중 임시 유저를 생성하고 검증 후 삭제하는 **Self-contained** 방식으로 개선했습니다.
+  - 프론트엔드: `npm run test`를 통한 테스트 수행.
+  - 테스트 실패 시 파이프라인이 중단되어 안정성 없는 코드가 `work` 브랜치로 머지되는 것을 방지합니다.
+
+### Verification Plan
+
+1. **Jenkins 실행**: Jenkins에서 빌드를 유발하여 `Testing` 단계가 추가된 것을 확인.
+2. **테스트 실패 감지**: 고의로 테스트 코드를 실패하게 만든 후, 파이프라인이 `Automated Merge` 단계로 넘어가지 않고 중단되는지 확인.
+3. **병합 보호**: 모든 테스트가 통과했을 때만 최종적으로 `work` 브랜치에 코드가 반영되는지 확인.
