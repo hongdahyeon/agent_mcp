@@ -49,9 +49,9 @@ pipeline {
                 SECRET_KEY = "dummy_secret_for_ci_testing"
             }
             steps {
-                echo ">>> Running Backend Tests (pytest)..."
+                echo ">>> Running CI Integration Tests (pytest)..."
                 bat """
-                venv\\Scripts\\activate && pytest tests/test_db_tool.py tests/test_dynamic_tool_loading.py tests/test_telegram_notify.py
+                venv\\Scripts\\activate && pytest tests/jenkins/test_ci_integration.py
                 """
                 
                 echo ">>> Running Frontend Tests (vitest)..."
