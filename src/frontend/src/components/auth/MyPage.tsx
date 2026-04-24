@@ -216,7 +216,7 @@ export function MyPage() {
         : 0;
 
     return (
-        <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-500 font-pretendard">
+        <div className="flex flex-col space-y-6 animate-in fade-in duration-500 font-pretendard">
             {/* 상단 헤더 영역 */}
             <header className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
@@ -402,6 +402,9 @@ export function MyPage() {
                     )}
                 </div>
             </div>
+            
+            {/* 하단 여백 추가 */}
+            <div className="h-20" />
 
             {/* 프로필 수정 모달 */}
             {isModalOpen && (
