@@ -361,7 +361,7 @@ export function Users() {
     if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 font-pretendard">
+        <div className="flex flex-col space-y-4 font-pretendard">
             <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
                     <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20">
@@ -517,6 +517,9 @@ export function Users() {
                     />
                 </div>
             </div>
+            
+            {/* 하단 여백 추가 */}
+            <div className="h-10 flex-none" />
 
 
 

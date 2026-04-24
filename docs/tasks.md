@@ -1160,3 +1160,11 @@
 - [x] Frontend: `vitest` 도입 및 기본 Sanity Test 추가
 - [x] Jenkins: `Jenkinsfile` 내 `Testing` 스테이지 추가 (빌드 후 머지 전 테스트 수행)
 - [x] 프로젝트 문서 업데이트
+
+## 94. 프론트엔드 전체 화면 하단 패딩 개선 (UI Layout Enhancement) (New)
+
+- [x] 1. `MyPage.tsx`: 고정 높이(`h-full`) 제거 및 하단 `h-20` 여백 추가
+- [x] 2. `UsageHistory.tsx`: 고정 높이 해제 및 하단 `h-10` 여백 추가
+- [x] 3. `Users.tsx`: 고정 높이 해제 및 하단 여백(`h-10`) 추가
+- [x] 4. `LoginHistViewer.tsx` & `Tester.tsx`: 레이아웃 하단 패딩 보완
+- [x] 5. 주요 관리자 화면 전반의 스크롤 및 하단 여백 일관성 검증

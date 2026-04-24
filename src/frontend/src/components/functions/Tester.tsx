@@ -141,7 +141,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
     };
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 animate-in fade-in duration-500">
+        <div className="flex flex-col space-y-4 font-pretendard pb-10">
             <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="flex items-center space-x-3">
                     <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
