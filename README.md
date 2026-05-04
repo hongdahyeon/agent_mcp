@@ -6,6 +6,26 @@
 
 ---
 
+## ⚙️ 시작하기 (Getting Started)
+
+### 1. 의존성 설치 및 가상환경 활성화
+
+```bash
+# upgrade pip
+{agent_mcp project path}\venv\Scripts\python.exe -m pip install --upgrade pip
+
+# 가상환경 생성 (최초 1회)
+python -m venv venv
+
+# 가상환경 활성화 (권장)
+.\venv\Scripts\activate
+
+# 패키지 설치
+pip install -r requirements.txt
+```
+
+---
+
 ## 🚀 주요 기능 (Key Features)
 
 ### 1. 도구 관리 및 실행
