@@ -1881,3 +1881,25 @@ Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge
 ### Verification Plan
 1. **Scrolling Test**: 컨텐츠가 많을 때 최하단까지 스크롤 시 마지막 요소 아래에 빈 공간이 정상적으로 노출되는지 확인.
 2. **Layout Integrity**: 높이 제한 제거 후에도 다른 UI 요소(헤더, 사이드바)와의 배치가 깨지지 않는지 확인.
+
+---
+
+## Phase 62: README Update and File Organization [Completed]
+
+### Goal
+
+Update the main `README.md` with setup instructions from version 4.0 and organize legacy README files into a dedicated folder for better project structure.
+
+### Proposed Changes
+
+#### 1. Documentation Update
+- **[MODIFY] `README.md`**: Insert "Getting Started" section (Dependency installation and Virtual Environment activation) after the introduction.
+
+#### 2. File Organization
+- **[NEW] `README_old_version/`**: Create directory.
+- **[MOVE] `README_v1_2.md`**, `README_v3.md`, `README_v4.md` into `README_old_version/`.
+
+### Verification Plan
+
+1. **Content Check**: Verify `README.md` has the new setup instructions.
+2. **Path Check**: Verify the legacy files are correctly moved and the directory structure is clean.
