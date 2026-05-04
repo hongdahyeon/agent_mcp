@@ -1168,3 +1168,10 @@
 - [x] 3. `Users.tsx`: 고정 높이 해제 및 하단 여백(`h-10`) 추가
 - [x] 4. `LoginHistViewer.tsx` & `Tester.tsx`: 레이아웃 하단 패딩 보완
 - [x] 5. 주요 관리자 화면 전반의 스크롤 및 하단 여백 일관성 검증
+
+## 95. README Update and File Organization (New)
+
+- [x] 1. README.md 업데이트: `README_v4.md`의 설치 안내 섹션 추가
+- [x] 2. `README_old_version` 폴더 생성
+- [x] 3. 기존 README 파일 이동 (`README_v1_2.md`, `README_v3.md`, `README_v4.md`)
+- [x] 4. 최종 확인 및 문서 업데이트
