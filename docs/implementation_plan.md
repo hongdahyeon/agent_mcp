@@ -1903,3 +1903,23 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 
 1. **Content Check**: Verify `README.md` has the new setup instructions.
 2. **Path Check**: Verify the legacy files are correctly moved and the directory structure is clean.
+
+---
+
+## Phase 63: 사용자 정보 수정 모달 내 '실패 횟수' 영역 제거 [Completed]
+
+### 목표
+
+사용자 관리 섹션의 사용자 정보 수정 모달에서 '실패 횟수(login_fail_count)' 필드를 제거하여 UI를 간소화하고, 핵심 계정 상태 관리에 집중할 수 있도록 개선합니다.
+
+### 주요 변경 사항
+
+#### 1. 프론트엔드 구현
+- **[MODIFY] `src/frontend/src/components/system/Users.tsx`**:
+  - 정보 수정 모달에서 `login_fail_count` 입력 필드 및 레이블 제거.
+  - '계정 잠금 여부(is_locked)' 필드가 단독으로 표시되도록 레이아웃 조정 (기존 2열 -> 1열).
+
+### 검증 계획
+
+1. **UI 확인**: 사용자 정보 수정 모달을 열어 '실패 횟수' 영역이 더 이상 노출되지 않는지 확인합니다.
+2. **기능 확인**: 실패 횟수 필드 없이도 사용자 권한, 승인 상태 등의 정보 수정이 정상적으로 저장되는지 확인합니다.
