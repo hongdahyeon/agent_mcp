@@ -736,34 +736,19 @@ export function Users() {
                                 </div>
 
                                 {modalMode === 'update' && (
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
-                                                <Lock className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                                계정 잠금 여부
-                                            </label>
-                                            <select
-                                                value={formData.is_locked}
-                                                onChange={(e) => setFormData({ ...formData, is_locked: e.target.value })}
-                                                className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                                            >
-                                                <option value="N">계정 풀림 (N)</option>
-                                                <option value="Y">계정 잠금 (Y)</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
-                                                <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                                실패 횟수
-                                            </label>
-                                            <input
-                                                type="number"
-                                                value={formData.login_fail_count}
-                                                onChange={(e) => setFormData({ ...formData, login_fail_count: parseInt(e.target.value) || 0 })}
-                                                className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                                                min="0"
-                                            />
-                                        </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
+                                            <Lock className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
+                                            계정 잠금 여부
+                                        </label>
+                                        <select
+                                            value={formData.is_locked}
+                                            onChange={(e) => setFormData({ ...formData, is_locked: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+                                        >
+                                            <option value="N">계정 풀림 (N)</option>
+                                            <option value="Y">계정 잠금 (Y)</option>
+                                        </select>
                                     </div>
                                 )}
                             </div>
