@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { FileText, RefreshCw, Archive, CheckSquare, Square, FileArchive, ArrowUpCircle, Download } from 'lucide-react';
+import { FileText, RefreshCw, Archive, CheckSquare, Square, FileArchive, ArrowUpCircle, Download, Copy } from 'lucide-react';
 import type { LogFileResponse, LogContentResponse, LogFileInfo } from '../../types';
 import clsx from 'clsx';
 import { getAuthHeaders } from '../../utils/auth';
@@ -156,6 +156,16 @@ export function LogViewer() {
         document.body.removeChild(link);
     };
 
+    const handleCopy = () => {
+        if (!content) return;
+        navigator.clipboard.writeText(content).then(() => {
+            alert('로그 내용이 클립보드에 복사되었습니다.');
+        }).catch(err => {
+            console.error('복사 실패:', err);
+            alert('복사에 실패했습니다.');
+        });
+    };
+
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 animate-in fade-in duration-500">
             <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
@@ -282,7 +292,17 @@ export function LogViewer() {
                                 </>
                             )}
                             {currentFile && (
-                                <span className="text-xs text-gray-500 dark:text-slate-500">{currentFile.size.toLocaleString()} bytes</span>
+                                <div className="flex items-center space-x-2">
+                                    {currentFile.type === 'text' && content && (
+                                        <button
+                                            onClick={handleCopy}
+                                            className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors shadow-sm"
+                                        >
+                                            <Copy className="w-3 h-3 mr-1" /> 복사
+                                        </button>
+                                    )}
+                                    <span className="text-xs text-gray-500 dark:text-slate-500">{currentFile.size.toLocaleString()} bytes</span>
+                                </div>
                             )}
                         </div>
                     </div>
