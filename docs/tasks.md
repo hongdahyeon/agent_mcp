@@ -1176,8 +1176,16 @@
 - [x] 3. 기존 README 파일 이동 (`README_v1_2.md`, `README_v3.md`, `README_v4.md`)
 - [x] 4. 최종 확인 및 문서 업데이트
 
-## 96. Remove Login Failure Count from User Edit Modal (New)
+## 96. Remove Login Failure Count from User Edit Modal
 
 - [x] 1. `Users.tsx`에서 '실패 횟수' 입력 영역 제거
 - [x] 2. 모달 레이아웃 조정 (잠금 여부 필드 정렬)
 - [x] 3. 최종 확인 및 완료 처리
+
+## 97. 서버 로그 보관소 복사 기능 추가
+
+- [x] 1. Frontend: `LogViewer.tsx` 내 로그 내용 복사 버튼 추가
+- [x] 2. UI: 복사 성공 시 토스트 알림 또는 피드백 제공
+- [x] 3. 최종 검증 및 완료 처리
+
+# 98. todo.md 파일 삭제 (New)
