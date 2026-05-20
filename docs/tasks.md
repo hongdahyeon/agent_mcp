@@ -1,4 +1,5 @@
 ㅇt`: 제한 규칙 삭제
+
 - [x] 2. API Endpoint 구현 (sse_server.py)
   - [x] `GET /api/mcp/limits`
   - [x] `POST /api/mcp/limits`
@@ -536,13 +537,13 @@
 - [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
 - [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
 - [x] 기능 검증 (tests/test_telegram_notify.py) 완료
- 
+
 ## 84. 관리자 수동 알림 Telegram 연동 (New)
 
 - [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
 - [x] `src/routers/notification.py` 내 관리자 발송 API 연동
 - [x] 기능 검증 및 테스트
-우[x] 18. 최종 마무리 및 검토 완료
+      우[x] 18. 최종 마무리 및 검토 완료
 - [x] 19. Backend: `GET /api/openapi` 목록 조회 권한을 모든 유저로 확대 (일반 유저도 목록 조회 및 사용 가능)
 - [x] 20. Frontend: `OpenApiManager.tsx`에서 유저 권한에 따른 버튼 숨김 처리
 - [x] 21. Frontend: `App.tsx`에서 OpenAPI 메뉴를 유저도 볼 수 있도록 수정 (라벨 변경 포함)
@@ -1075,7 +1076,7 @@
 - [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
 - [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
 - [x] 기능 검증 (tests/test_telegram_notify.py) 완료
- 
+
 ## 84. 관리자 수동 알림 Telegram 연동 (New)
 
 - [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
@@ -1084,7 +1085,7 @@
 - [x] DB 초기화/시딩 시 `.env` 설정값 자동 반영 로직 추가 (`db_reset.py`)
 - [x] 기존 DB 대상 자동 컬럼 추가 및 데이터 마이그레이션 스크립트 작성 (`db_telegram_db.py`)
 - [x] 기능 검증 (tests/test_telegram_notify.py) 완료
- 
+
 ## 84. 관리자 수동 알림 Telegram 연동 (New)
 
 - [x] `src/utils/notification_helper.py` 내 알림 발송 로직 공통화 (`send_dual_notification`)
@@ -1188,4 +1189,4 @@
 - [x] 2. UI: 복사 성공 시 토스트 알림 또는 피드백 제공
 - [x] 3. 최종 검증 및 완료 처리
 
-# 98. todo.md 파일 삭제 (New)
+# 98. todo.md 파일 삭제
