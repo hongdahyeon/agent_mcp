@@ -1945,3 +1945,23 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 1. **UI 확인**: 로그 뷰어 우측 상단 헤더에 '복사' 버튼이 정상적으로 표시되는지 확인합니다.
 2. **기능 확인**: 버튼 클릭 시 현재 표시된 로그 내용이 클립보드에 복사되는지 테스트합니다.
 3. **예외 처리**: 로그가 선택되지 않았거나 내용이 없는 경우 버튼 동작을 확인합니다.
+
+---
+
+## Phase 65: 헤더 connected 텍스트 제거 (UI 개선) [Completed]
+
+### 목표
+
+화면 상단 헤더 우측에 노출되던 `Connected` / `Disconnected` 상태 텍스트를 제거하여 UI를 간결하게 유지합니다. 
+(해당 상태는 이미 사이드바 하단에 아이콘과 함께 표시되므로 중복 노출을 피합니다.)
+
+### 주요 변경 사항
+
+#### 1. 프론트엔드 구현
+- **[MODIFY] `src/frontend/src/App.tsx`**:
+  - `header` 태그 내부 우측 영역에 있던 `<div className="text-xs text-gray-400 font-mono hidden md:block">{statusText}</div>` 코드를 삭제.
+
+### 검증 계획
+
+1. **UI 확인**: 화면 상단 헤더 우측에 상태 텍스트가 더 이상 표시되지 않는지 확인합니다.
+2. **기능 유지**: 사이드바 하단의 연결 상태 표시는 정상적으로 동작하는지 확인합니다.
