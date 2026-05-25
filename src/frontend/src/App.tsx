@@ -431,9 +431,6 @@ function App() {
             <div className="hidden sm:block">
               <UsageBadge usageData={usageData} />
             </div>
-            <div className="text-xs text-gray-400 font-mono hidden md:block">
-              {statusText}
-            </div>
           </div>
         </header>
 
