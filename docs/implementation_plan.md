@@ -1965,3 +1965,12 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 
 1. **UI 확인**: 화면 상단 헤더 우측에 상태 텍스트가 더 이상 표시되지 않는지 확인합니다.
 2. **기능 유지**: 사이드바 하단의 연결 상태 표시는 정상적으로 동작하는지 확인합니다.
+
+## Phase 25: 대시보드 헬스체크 툴팁 추가
+
+### Goal
+대시보드 상단 헬스체크(DB, SMTP, SCHEDULER) 실패 시 실패 사유를 툴팁으로 표시합니다.
+
+### Changes
+- 백엔드: /api/system/health 응답에 db_reason, smtp_reason, scheduler_reason 추가
+- 프론트엔드: HealthItem 컴포넌트에 Info 아이콘과 hover 툴팁 추가
