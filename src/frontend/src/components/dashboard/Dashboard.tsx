@@ -1,7 +1,7 @@
 import ReactECharts from 'echarts-for-react';
 import type { UsageStats } from '../../types';
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Activity, RotateCw, User, BarChart } from 'lucide-react';
+import { Activity, RotateCw, User, BarChart, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 import { getAuthHeaders } from '../../utils/auth';
 
@@ -241,12 +241,12 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
     }
   };
 
-  const HealthItem = ({ label, status }: { label: string, status: 'OK' | 'ERROR' | 'ON' | 'OFF' }) => {
+  const HealthItem = ({ label, status, reason }: { label: string, status: 'OK' | 'ERROR' | 'ON' | 'OFF', reason?: string | null }) => {
     const isGood = status === 'OK' || status === 'ON';
     const isBad = status === 'ERROR';
 
     return (
-      <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-800">
+      <div className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-100 dark:border-slate-800 relative group">
         <div className={clsx(
           "w-2 h-2 rounded-full",
           isGood ? "bg-green-500" : isBad ? "bg-red-500" : "bg-gray-400"
@@ -258,6 +258,15 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
         )}>
           {status}
         </span>
+        {isBad && reason && (
+          <>
+            <Info className="w-3.5 h-3.5 text-red-400 ml-1 cursor-help" />
+            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-xs z-50 hidden group-hover:block bg-gray-800 text-white text-xs rounded shadow-lg p-2 break-words">
+              {reason}
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800" />
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -278,9 +287,9 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
         <div className="flex items-center space-x-4">
           {health && (
             <div className="hidden lg:flex items-center space-x-2 mr-4 border-r border-gray-100 dark:border-slate-800 pr-4">
-              <HealthItem label="DB" status={health.db} />
-              <HealthItem label="SMTP" status={health.smtp} />
-              <HealthItem label="SCHEDULER" status={health.scheduler} />
+              <HealthItem label="DB" status={health.db} reason={health.db_reason} />
+              <HealthItem label="SMTP" status={health.smtp} reason={health.smtp_reason} />
+              <HealthItem label="SCHEDULER" status={health.scheduler} reason={health.scheduler_reason} />
             </div>
           )}
           <button

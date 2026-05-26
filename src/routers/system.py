@@ -254,26 +254,38 @@ async def api_get_health(
     current_user: dict = Depends(get_current_user_jwt)
 ):
     if current_user['role'] != 'ROLE_ADMIN': raise HTTPException(status_code=403, detail="Admin access required")
-    health = {"db": "OK", "smtp": "OK", "scheduler": "OFF"}
+    health = {
+        "db": "OK", "db_reason": None,
+        "smtp": "OK", "smtp_reason": None,
+        "scheduler": "OFF", "scheduler_reason": None
+    }
     # 1. DB Check
     try:
         from src.db.connection import get_db_connection
         conn = get_db_connection()
         conn.execute("SELECT 1")
         conn.close()
-    except Exception: health["db"] = "ERROR"
+    except Exception as e:
+        health["db"] = "ERROR"
+        health["db_reason"] = str(e)
     # 2. SMTP Check
     try:
         from src.utils.mailer import EmailSender
         sender = EmailSender()
-        success, _ = sender.check_smtp_connection()
-        if not success: health["smtp"] = "ERROR"
-    except Exception: health["smtp"] = "ERROR"
+        success, msg = sender.check_smtp_connection()
+        if not success:
+            health["smtp"] = "ERROR"
+            health["smtp_reason"] = msg
+    except Exception as e:
+        health["smtp"] = "ERROR"
+        health["smtp_reason"] = str(e)
     # 3. Scheduler Check
     try:
         from src.scheduler import scheduler
         if scheduler.running: health["scheduler"] = "ON"
-    except Exception: health["scheduler"] = "ERROR"
+    except Exception as e:
+        health["scheduler"] = "ERROR"
+        health["scheduler_reason"] = str(e)
     return health
 
 # 스케줄러에 등록된 작업 목록 조회
