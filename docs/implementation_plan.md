@@ -1556,6 +1556,7 @@ SSE 연결 없이 일반적인 HTTP POST 요청만으로 MCP 도구(정적/동�
 1. **Archive & Delete Test**: 로그 압축 후 원본 `.txt` 파일이 삭제되고 `.zip` 파일이 생성되는지 확인.
 2. **Zip Content Test**: 생성된 `.zip` 파일을 클릭했을 때 내부 파일 목록이 정상적으로 표시되는지 확인.
 3. **Unzip Test**
+
 ---
 
 ## Phase 51: API Documentation Automation [Completed]
@@ -1567,24 +1568,28 @@ FastAPI의 내장 기능을 활용하여 MCP REST API Proxy 엔드포인트에 �
 ### Implemented Changes
 
 #### 1. Core Metadata & Visibility
+
 - **`src/sse_server.py`**:
   - `FastAPI` 인스턴스 초기화 시 `title`, `description`, `version` 메타데이터 추가.
   - 서버 시작 시 Swagger UI(`/docs`) 및 ReDoc(`/redoc`) 접속 주소를 로그로 출력하여 접근성 향상.
 
 #### 2. MCP Execution Router Enhancement
+
 - **`src/routers/mcp_execution.py`**:
   - `ProxyRequest`, `ProxyResponse` Pydantic 모델을 도입하여 요청/응답 스키마 자동 생성 및 유효성 검증 적용.
   - **`GET /api/mcp/proxy/tools`**: 현재 서버에서 실행 가능한 모든 MCP 도구(정적/동적) 목록을 반환하는 신규 엔드포인트 구현.
   - 프록시 실행 엔드포인트에 상세한 설명(Summary, Description) 및 Response Model 연동.
 
 #### 3. Security & Validation
+
 - **`src/dependencies.py`**: `get_current_active_user` 의존성이 Swagger UI에서 보안 요구사항으로 올바르게 인식되도록 유지(인증 버튼 활성화).
 
 ### Verification Results
+
 1. **Schema Check**: `GET /openapi.json`을 통해 Title, Version, 신규 엔드포인트 및 Pydantic 모델 스키마가 정상적으로 포함된 것을 확인.
 2. **Tool Listing**: `/api/mcp/proxy/tools` 엔드포인트가 현재 서버의 도구 목록을 JSON으로 정상 반환하는 것을 확인.
 3. **Swagger UI**: `/docs` 접속 시 "MCP Execution Management" 태그 하위에 개선된 문서가 표시되는 것을 확인.
-: `.zip` 파일을 해제했을 때 원본 `.txt` 파일들이 다시 나타나는지 확인.
+   : `.zip` 파일을 해제했을 때 원본 `.txt` 파일들이 다시 나타나는지 확인.
 
 ---
 
@@ -1628,27 +1633,28 @@ Jenkins CI/CD 파이프라인의 빌드 및 배포 결과를 텔레그램으로 
 - **Schema Expansion (`src/db/init_manager.py`)**: `h_user` 테이블에 `telegram_chat_id (TEXT)` 컬럼을 추가했습니다.
 - **Auto Seeding (`src/db/check/db_reset.py`)**: DB 초기화 시 `.env`에 설정된 관리자의 Chat ID가 기본 계정(admin/user)에 자동으로 세팅되도록 보완했습니다.
 - **Migration Tool (`src/db/check/db_telegram_db.py`)**: 기존 DB 사용자를 위해 컬럼 생성 및 데이터 업데이트를 자동으로 수행하는 마이그레이션 스크립트를 작성하여 배포했습니다.
+
 ---
- 
- ## Phase 28: Admin Manual Notification Telegram Integration (New)
- 
- ### Goal
- 
- 관리자가 직접 발송하는 알림(Notification Center)도 시스템 알림과 마찬가지로 SSE와 Telegram에 동시에 발송되도록 통합합니다.
- 
- ### Proposed Changes
- 
- #### 1. Backend: Notification Helper Refactoring
- 
- - **[MODIFY] `src/utils/notification_helper.py`**
-   - `send_system_notification`을 좀 더 일반화된 `send_dual_notification`으로 리팩토링.
-   - `send_user_uid` 매개변수를 추가하여 시스템(None) 뿐만 아니라 특정 관리자가 보낸 경우도 기록 가능하게 함.
- 
- #### 2. Backend: API Endpoint Update
- 
- - **[MODIFY] `src/routers/notification.py`**
-   - `send_notification` 함수에서 직접 DB와 SSE를 호출하던 로직을 공통 헬퍼(`send_dual_notification`)를 사용하도록 변경.
- 
+
+## Phase 28: Admin Manual Notification Telegram Integration (New)
+
+### Goal
+
+관리자가 직접 발송하는 알림(Notification Center)도 시스템 알림과 마찬가지로 SSE와 Telegram에 동시에 발송되도록 통합합니다.
+
+### Proposed Changes
+
+#### 1. Backend: Notification Helper Refactoring
+
+- **[MODIFY] `src/utils/notification_helper.py`**
+  - `send_system_notification`을 좀 더 일반화된 `send_dual_notification`으로 리팩토링.
+  - `send_user_uid` 매개변수를 추가하여 시스템(None) 뿐만 아니라 특정 관리자가 보낸 경우도 기록 가능하게 함.
+
+#### 2. Backend: API Endpoint Update
+
+- **[MODIFY] `src/routers/notification.py`**
+  - `send_notification` 함수에서 직접 DB와 SSE를 호출하던 로직을 공통 헬퍼(`send_dual_notification`)를 사용하도록 변경.
+
 ---
 
 ## Phase 29: My Page Profile Update (Completed)
@@ -1676,16 +1682,16 @@ Jenkins CI/CD 파이프라인의 빌드 및 배포 결과를 텔레그램으로 
 2. 이메일 수정 시 중복 시 차단 및 OTP 인증 필수 여부 확인.
 3. 수정 실패/성공 시 사용자 피드백(알림) 확인.
 
- ---
- 
+---
+
 ## Phase 30: Configurable Jenkins Branch Merge [Completed]
- 
+
 ### Goal
- 
+
 Jenkins의 브랜치 병합 로직을 파라미터화하여 다양한 브랜치 간 병합(예: note -> work)을 지원하도록 개선했습니다.
- 
+
 ### Implemented Changes
- 
+
 - **[MODIFY] [Jenkinsfile](file:///d:/hong/9.%20project/agent_mcp/Jenkinsfile)**: `SOURCE_BRANCH`, `TARGET_BRANCH` 파라미터 추가 및 로직 연동.
 - Telegram Notification: 알림 메시지에 브랜치 정보 동적 반영.
 
@@ -1750,6 +1756,7 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 ### Proposed Changes
 
 #### 1. Unified Dynamic Loading (server.py & mcp_server_impl.py)
+
 - **[MODIFY] `server.py`**:
   - `FastMCP` 라이브러리를 사용하던 방식에서 `mcp.server.Server`를 사용하는 방식으로 전환하여 `list_tools`와 `call_tool` 핸들러를 수동 제어합니다.
   - 이를 통해 Stdio 모드(Claude Desktop 등)에서도 에이전트가 도구 목록을 요청할 때마다 DB의 최신 상태를 반영할 수 있습니다.
@@ -1757,11 +1764,13 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
   - `list_tools` 함수에 `h_openapi` 테이블 조회 로직을 추가하여 등록된 모든 OpenAPI 명세를 MCP 도구 형식으로 반환합니다.
 
 #### 2. OpenAPI Execution via MCP
+
 - **[MODIFY] `mcp_server_impl.py` (call_tool)**:
   - 호출된 도구 이름이 `h_openapi`에 등록된 `tool_id`인 경우, `execution.py`의 프록시 실행 로직을 호출하여 실제 API 요청을 수행하도록 통합합니다.
   - 외부 토큰 권한(`check_access_token_permission`) 및 사용량 제한(`get_openapi_limit`) 로직을 그대로 적용합니다.
 
 ### Verification Plan
+
 - **Custom Tool Hot-reload**: 신규 동적 도구 생성 후 `list_tools` 응답에 즉시 포함되는지 확인.
 - **OpenAPI Tool Integration**: `h_openapi`에 등록한 API가 MCP 도구 목록에 나타나고, AI Agent가 이를 통해 실제 데이터를 가져오는지 확인.
 - **Security**: MCP를 통해 실행되는 OpenAPI 도구 역시 기존의 토큰 권한 및 사용량 제한이 정상 작동하는지 검증.
@@ -1777,6 +1786,7 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 ### Proposed Changes
 
 #### 1. Directory Restructuring
+
 - `src/frontend/src/components/` 하위에 다음 카테고리별 디렉토리 생성 및 파일 이동:
   - `dashboard/`: `Dashboard.tsx`
   - `functions/`: `Tester.tsx`, `LogViewer.tsx`, `EmailSender.tsx`, `FileManager.tsx`
@@ -1788,6 +1798,7 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
   - `layout/`: `NotificationBell.tsx`
 
 #### 2. Import Updates
+
 - **`App.tsx`**: 모든 컴포넌트 임포트 경로를 신규 디렉토리 구조에 맞게 수정.
 - **Components**: 서로를 참조하거나 `common/` 디렉토리를 참조하는 상대 경로(`./...`)를 수정 (예: `../common/...` 또는 `../mcp/...`).
 
@@ -1808,12 +1819,14 @@ OpenAPI 등록 및 수정 시 파라미터(JSON 스키마)를 텍스트박스에
 ### Implemented Changes
 
 #### 1. Backend Implementation
+
 - **[MODIFY] `src/routers/mcp.py`**:
   - `GET /api/mcp/custom-tools/export/json` 엔드포인트를 추가했습니다.
   - `get_all_tools`와 `get_tool_params`를 사용하여 모든 커스텀 도구의 메타데이터와 파라미터 정의를 하나의 JSON 구조로 통합합니다.
   - `JSONResponse`와 `Content-Disposition` 헤더를 사용하여 브라우저에서 파일 다운로드가 즉시 시작되도록 처리했습니다.
 
 #### 2. Frontend Implementation
+
 - **[MODIFY] `src/frontend/src/components/mcp/CustomTools.tsx`**:
   - 헤더 영역에 **'Export (JSON)'** 버튼을 추가했습니다.
   - `handleExport` 함수를 구현하여 백엔드 API로부터 Blob 데이터를 받아 브라우저의 다운로드 기능을 트리거합니다.
@@ -1836,15 +1849,18 @@ Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge
 ### Implemented Changes
 
 #### 1. Backend Testing Framework (`pytest`)
+
 - **[MODIFY] `requirements.txt`**: `pytest` 및 `pytest-asyncio` 의존성을 추가했습니다.
 - **[REFACTOR] `tests/`**: 기존의 비정규 테스트 스크립트들을 `pytest` 규격에 맞게 리팩토링했습니다.
   - `test_db_tool.py`, `test_dynamic_tool_loading.py`, `test_telegram_notify.py` 연동 완료.
 
 #### 2. Frontend Testing Framework (`vitest`)
+
 - **[MODIFY] `src/frontend/package.json`**: `vitest` 및 `jsdom` 의존성을 추가하고 `test` 스크립트를 정의했습니다.
 - **[NEW] `src/frontend/src/tests/sanity.test.ts`**: 프론트엔드 환경의 기본적인 작동을 보장하는 Sanity Test를 추가했습니다.
 
 #### 3. CI/CD Orchestration (`Jenkinsfile`)
+
 - **[MODIFY] `Jenkinsfile`**: `Frontend Build` 단계 이후에 `Testing` 단계를 신설했습니다.
   - **[Fix]**: 테스트 실행 시 필수인 `SECRET_KEY` 환경 변수를 `Testing` 스테이지에 추가하여 인증 모듈 로드 에러를 방지했습니다.
   - **[Fix]**: `test_db_tool.py`가 기존 데이터("admin")에 의존하지 않도록, 테스트 중 임시 유저를 생성하고 검증 후 삭제하는 **Self-contained** 방식으로 개선했습니다.
@@ -1868,10 +1884,12 @@ Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge
 ### Implemented Changes
 
 #### 1. Core Layout Strategy
+
 - **고정 높이 해제**: `h-[calc(100vh-8rem)]` 및 `h-full` 등 화면 높이를 강제하던 클래스를 제거하여 컨텐츠가 자연스럽게 확장되도록 했습니다.
 - **명시적 하단 공간 확보**: 컴포넌트 최하단에 `h-10` 또는 `h-20` 스페이서를 추가하여 마지막 요소와 하단 경계 사이에 충분한 여백을 마련했습니다.
 
 #### 2. Applied Components
+
 - **`MyPage.tsx`**: 하단 `h-20` 스페이서 추가 및 상단 레이아웃 보완.
 - **`UsageHistory.tsx`**: 고정 높이 해제 및 하단 `h-10` 스페이서 추가.
 - **`Users.tsx`**: 고정 높이 해제 및 리스트 하단 여백 확보.
@@ -1879,6 +1897,7 @@ Jenkins 파이프라인에 테스트 단계를 추가하여, 코드 병합(Merge
 - **`Tester.tsx`**: 테스터 입력/결과 영역 하단 여백 보완.
 
 ### Verification Plan
+
 1. **Scrolling Test**: 컨텐츠가 많을 때 최하단까지 스크롤 시 마지막 요소 아래에 빈 공간이 정상적으로 노출되는지 확인.
 2. **Layout Integrity**: 높이 제한 제거 후에도 다른 UI 요소(헤더, 사이드바)와의 배치가 깨지지 않는지 확인.
 
@@ -1893,9 +1912,11 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 ### Proposed Changes
 
 #### 1. Documentation Update
+
 - **[MODIFY] `README.md`**: Insert "Getting Started" section (Dependency installation and Virtual Environment activation) after the introduction.
 
 #### 2. File Organization
+
 - **[NEW] `README_old_version/`**: Create directory.
 - **[MOVE] `README_v1_2.md`**, `README_v3.md`, `README_v4.md` into `README_old_version/`.
 
@@ -1915,6 +1936,7 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 ### 주요 변경 사항
 
 #### 1. 프론트엔드 구현
+
 - **[MODIFY] `src/frontend/src/components/system/Users.tsx`**:
   - 정보 수정 모달에서 `login_fail_count` 입력 필드 및 레이블 제거.
   - '계정 잠금 여부(is_locked)' 필드가 단독으로 표시되도록 레이아웃 조정 (기존 2열 -> 1열).
@@ -1935,6 +1957,7 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 ### 주요 변경 사항
 
 #### 1. 프론트엔드 구현
+
 - **[MODIFY] `src/frontend/src/components/functions/LogViewer.tsx`**:
   - 로그 내용 표시 영역 상단 헤더에 '복사(Copy)' 버튼 추가.
   - `navigator.clipboard.writeText`를 사용하여 로그 내용을 클립보드에 복사하는 기능 구현.
@@ -1952,12 +1975,13 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 
 ### 목표
 
-화면 상단 헤더 우측에 노출되던 `Connected` / `Disconnected` 상태 텍스트를 제거하여 UI를 간결하게 유지합니다. 
+화면 상단 헤더 우측에 노출되던 `Connected` / `Disconnected` 상태 텍스트를 제거하여 UI를 간결하게 유지합니다.
 (해당 상태는 이미 사이드바 하단에 아이콘과 함께 표시되므로 중복 노출을 피합니다.)
 
 ### 주요 변경 사항
 
 #### 1. 프론트엔드 구현
+
 - **[MODIFY] `src/frontend/src/App.tsx`**:
   - `header` 태그 내부 우측 영역에 있던 `<div className="text-xs text-gray-400 font-mono hidden md:block">{statusText}</div>` 코드를 삭제.
 
@@ -1967,12 +1991,14 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 2. **기능 유지**: 사이드바 하단의 연결 상태 표시는 정상적으로 동작하는지 확인합니다.
 
 --
-  
+
 ## Phase 66 : 대시보드 헬스체크 툴팁 추가
 
 ### Goal
+
 대시보드 상단 헬스체크(DB, SMTP, SCHEDULER) 실패 시 실패 사유를 툴팁으로 표시합니다.
 
 ### Changes
+
 - 백엔드: /api/system/health 응답에 db_reason, smtp_reason, scheduler_reason 추가
 - 프론트엔드: HealthItem 컴포넌트에 Info 아이콘과 hover 툴팁 추가
