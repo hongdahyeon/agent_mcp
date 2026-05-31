@@ -92,3 +92,5 @@ AI 에이전트가 OpenAPI 규격을 자동으로 파악하고 효율적으로 �
 ### 참고 자료 (Reference)
 
 - [OpenAPI 에이전트 연동 분석 가이드 (Claude Share)](https://claude.ai/share/d0c16023-18ca-4939-a973-6ca795a800d4)
+
+-- last updated date: 2026-06-01
