@@ -1,5 +1,7 @@
 # MCP Agent Tool Manager (v5.0)
 
+### Last updated: 2026-06-07
+
 이 프로젝트는 **MCP (Model Context Protocol) Agent**가 사용할 도구(Tools)를 관리하고, 이를 웹 인터페이스에서 테스트, 모니터링 및 제어할 수 있는 관리형 서버 애플리케이션입니다.
 
 > **v5.0 업데이트**: **Jenkins 기반 CI/CD 파이프라인**이 구축되어 코드 품질 검증 및 브랜치 머지가 자동화되었습니다. 또한 **Telegram 봇 연동**을 통해 빌드 및 머지 결과를 실시간으로 통보받을 수 있습니다. MCP REST API Proxy, 세밀한 토큰별 권한 관리, 감사 로그 Excel 내보내기 및 Swagger UI 통합 문서화 기능이 추가되었습니다.
