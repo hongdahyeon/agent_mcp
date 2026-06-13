@@ -34,7 +34,6 @@ export function SystemConfig() {
     }, [searchTerm]);
 
     const fetchConfigs = useCallback(async (pageNum = page, size = pageSize) => {
-        // if (!token) return; // token prop is not actually used in this component based on the code viewed
         setLoading(true);
         try {
             const res = await fetch(`/api/system/config?page=${pageNum}&size=${size}`, {
@@ -64,7 +63,6 @@ export function SystemConfig() {
     const handleOpenEdit = (config: SystemConfig) => {
         let prettyConfig = config.configuration;
         try {
-            // Try to format JSON for better readability
             const jsonObj = JSON.parse(config.configuration);
             prettyConfig = JSON.stringify(jsonObj, null, 4);
         } catch {
@@ -110,7 +108,7 @@ export function SystemConfig() {
         try {
             JSON.parse(formData.configuration);
         } catch {
-            alert("Configuration must be a valid JSON string.");
+            alert("Configuration은 유효한 JSON 형식이어야 합니다.");
             return;
         }
 
