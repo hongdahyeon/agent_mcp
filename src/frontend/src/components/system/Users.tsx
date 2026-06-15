@@ -78,6 +78,7 @@ export function Users() {
             console.error("Error in fetchUsers:", err);
             const message = err instanceof Error ? err.message : 'Unknown error';
             setError(`사용자 목록을 불러오는데 실패했습니다: ${message} `);
+            console.error(`사용자 목록 조회 실패: ${message}`)
         } finally {
             setLoading(false);
         }
