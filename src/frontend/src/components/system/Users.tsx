@@ -135,7 +135,8 @@ export function Users() {
 
     // 사용자 삭제 (Soft Delete)
     const handleDeleteUser = async (user: UserType) => {
-        if (!window.confirm(`${user.user_nm} (${user.user_id}) 사용자를 삭제하시겠습니까? \n삭제된 사용자는 더 이상 로그인이 불가능합니다.`)) {
+        const message = `${user.user_nm} (${user.user_id}) 사용자를 삭제하시겠습니까? \n삭제된 사용자는 더 이상 로그인이 불가능합니다.`
+        if (!window.confirm(message)) {
             return;
         }
 
