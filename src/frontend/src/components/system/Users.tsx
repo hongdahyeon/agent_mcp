@@ -160,7 +160,8 @@ export function Users() {
         } catch (err: unknown) {
             console.error("Error in handleDeleteUser:", err);
             const message = err instanceof Error ? err.message : 'Unknown error';
-            alert(`사용자 삭제 실패: ${message}`);
+            const alertMessage = `사용자 삭제 실패: ${message}`
+            alert(alertMessage);
         }
     };
 
