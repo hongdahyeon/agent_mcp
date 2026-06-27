@@ -198,7 +198,7 @@ export function Users() {
     // OTP 발송
     const sendOtp = async () => {
         if (!formData.user_email || emailCheckStatus !== 'available') {
-            const message = ''이메일 중복 확인을 먼저 완료해주세요.''
+            const message = '이메일 중복 확인을 먼저 완료해주세요.'
             alert(message);
             return;
         }
@@ -211,7 +211,8 @@ export function Users() {
             });
             if (res.ok) {
                 setIsOtpSent(true);
-                alert('인증 코드가 이메일로 발송되었습니다.');
+                const message = '인증 코드가 이메일로 발송되었습니다.'
+                alert(message);
             } else {
                 const data = await res.json();
                 alert(data.detail || 'OTP 발송 실패');
