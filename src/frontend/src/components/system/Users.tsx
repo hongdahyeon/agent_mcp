@@ -246,7 +246,8 @@ export function Users() {
                 alert(data.detail?.message || '인증 코드 확인 실패');
             }
         } catch {
-            alert('인증 코드 확인 중 오류가 발생했습니다.');
+            const message = '인증 코드 확인 중 오류가 발생했습니다.'
+            alert(message);
         } finally {
             setIsVerifyingOtp(false);
         }
