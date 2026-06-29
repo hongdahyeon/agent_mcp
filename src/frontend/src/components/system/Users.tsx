@@ -259,19 +259,23 @@ export function Users() {
 
         if (modalMode === 'create') {
             if (idCheckStatus !== 'available') {
-                alert('아이디 중복 확인이 필요합니다.');
+                const message = '아이디 중복 확인이 필요합니다.'
+                alert(message);
                 return;
             }
             if (!formData.user_email || emailCheckStatus !== 'available') {
-                alert('이메일 중복 확인이 필요합니다.');
+                const message = '이메일 중복 확인이 필요합니다.'
+                alert(message);
                 return;
             }
             if (!isOtpVerified) {
-                alert('이메일 인증이 필요합니다.');
+                const message = '이메일 인증이 필요합니다.'
+                alert(message);
                 return;
             }
             if (!formData.password) {
-                alert('비밀번호를 입력해주세요.');
+                const message = '비밀번호를 입력해주세요.'
+                alert(message);
                 return;
             }
         } else {
@@ -279,11 +283,13 @@ export function Users() {
             const currentUser = users.find(u => u.user_id === formData.user_id);
             if (currentUser && currentUser.user_email !== formData.user_email) {
                 if (emailCheckStatus !== 'available') {
-                    alert('변경된 이메일 중복 확인이 필요합니다.');
+                    const message1 = '변경된 이메일 중복 확인이 필요합니다.'
+                    alert(message1);
                     return;
                 }
                 if (!isOtpVerified) {
-                    alert('변경된 이메일에 대한 인증이 필요합니다.');
+                    const message2 = '변경된 이메일에 대한 인증이 필요합니다.'
+                    alert(message2);
                     return;
                 }
             }
@@ -333,7 +339,8 @@ export function Users() {
 
             fetchUsers(page); // 현재 페이지 유지
         } catch {
-            alert('상태 변경 중 오류가 발생했습니다.');
+            const message = '상태 변경 중 오류가 발생했습니다.'
+            alert(message);
         }
     };
 
@@ -359,7 +366,8 @@ export function Users() {
 
             fetchUsers(page);
         } catch {
-            alert(`${actionText} 중 오류가 발생했습니다.`);
+            const message = `${actionText} 중 오류가 발생했습니다.`
+            alert(message);
         }
     };
 
