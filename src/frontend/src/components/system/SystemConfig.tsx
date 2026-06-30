@@ -91,7 +91,8 @@ export function SystemConfig() {
 
             setConfigs(prev => prev.filter(c => c.name !== name));
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Delete failed');
+            const message = err instanceof Error ? err.message : 'Delete failed';
+            alert(message);
         }
     };
 
@@ -100,7 +101,8 @@ export function SystemConfig() {
 
         // Simple Validation
         if (!formData.name.trim() || !formData.configuration.trim() || !formData.description.trim()) {
-            alert("입력값을 확인해주세요.");
+            const message = "입력값을 확인해주세요.";
+            alert(message);
             return;
         }
 
@@ -108,7 +110,8 @@ export function SystemConfig() {
         try {
             JSON.parse(formData.configuration);
         } catch {
-            alert("Configuration은 유효한 JSON 형식이어야 합니다.");
+            const message = "Configuration은 유효한 JSON 형식이어야 합니다.";
+            alert(message);
             return;
         }
 
@@ -130,7 +133,8 @@ export function SystemConfig() {
             await fetchConfigs();
             setIsModalOpen(false);
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Save failed');
+            const message = err instanceof Error ? err.message : 'Save failed';
+            alert(message);
         }
     };
 
