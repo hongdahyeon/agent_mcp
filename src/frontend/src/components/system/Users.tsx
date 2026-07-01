@@ -155,7 +155,8 @@ export function Users() {
                 throw new Error(errorData.detail || 'Failed to delete user');
             }
 
-            alert('사용자가 삭제되었습니다.');
+            const message = '사용자가 삭제되었습니다.';
+            alert(message);
             fetchUsers(page);
         } catch (err: unknown) {
             console.error("Error in handleDeleteUser:", err);
@@ -215,10 +216,12 @@ export function Users() {
                 alert(message);
             } else {
                 const data = await res.json();
-                alert(data.detail || 'OTP 발송 실패');
+                const message = data.detail || 'OTP 발송 실패';
+                alert(message);
             }
         } catch {
-            alert('OTP 발송 중 오류가 발생했습니다.');
+            const message = 'OTP 발송 중 오류가 발생했습니다.';
+            alert(message);
         } finally {
             setIsSendingOtp(false);
         }
@@ -240,10 +243,12 @@ export function Users() {
             });
             if (res.ok) {
                 setIsOtpVerified(true);
-                alert('이메일 인증이 완료되었습니다.');
+                const message = '이메일 인증이 완료되었습니다.';
+                alert(message);
             } else {
                 const data = await res.json();
-                alert(data.detail?.message || '인증 코드 확인 실패');
+                const message = data.detail?.message || '인증 코드 확인 실패';
+                alert(message);
             }
         } catch {
             const message = '인증 코드 확인 중 오류가 발생했습니다.'
@@ -315,9 +320,13 @@ export function Users() {
 
             setIsModalOpen(false);
             fetchUsers(modalMode === 'create' ? 1 : page);
-            alert('저장되었습니다.');
+            const message = '저장되었습니다.';
+            alert(message);
         } catch (err) {
-            if (err instanceof Error) alert(err.message);
+            if (err instanceof Error) {
+                const message = err.message;
+                alert(message);
+            }
         }
     };
 

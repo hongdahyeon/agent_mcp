@@ -95,7 +95,8 @@ export function AccessTokenManager() {
             await fetchTokens();
         } catch (err: unknown) {
             if (err instanceof Error) {
-                alert(err.message);
+                const message = err.message;
+                alert(message);
             }
         } finally {
             setIsCreating(false);
@@ -116,7 +117,8 @@ export function AccessTokenManager() {
             await fetchTokens();
         } catch (err: unknown) {
             if (err instanceof Error) {
-                alert(err.message);
+                const message = err.message;
+                alert(message);
             }
         }
     };
@@ -147,7 +149,8 @@ export function AccessTokenManager() {
             setAllowedOpenApiIds(permsData.allowed_openapi_ids || []);
         } catch (err: any) {
             console.error("Failed to load permissions:", err);
-            alert(err.message || "권한 정보를 불러오는데 실패했습니다.");
+            const message = err.message || "권한 정보를 불러오는데 실패했습니다.";
+            alert(message);
         }
     };
 
@@ -168,10 +171,12 @@ export function AccessTokenManager() {
             });
 
             if (!res.ok) throw new Error('Failed to save permissions');
-            alert('권한이 성공적으로 저장되었습니다.');
+            const message = '권한이 성공적으로 저장되었습니다.';
+            alert(message);
             setIsModalOpen(false);
         } catch (err: any) {
-            alert(err.message);
+            const message = err.message;
+            alert(message);
         } finally {
             setIsSaving(false);
         }
