@@ -112,7 +112,8 @@ export function CustomTools() {
             }
         } catch (e) {
             console.error(e);
-            alert("상세 정보를 불러오는데 실패했습니다.");
+            const message = "상세 정보를 불러오는데 실패했습니다.";
+            alert(message);
         }
     };
 
@@ -264,7 +265,8 @@ export function CustomTools() {
             if (!res.ok) throw new Error('Failed to delete tool');
             fetchTools();
         } catch (e) {
-            alert("삭제 실패: " + e);
+            const message = "삭제 실패: " + e;
+            alert(message);
         }
     };
 
@@ -325,7 +327,8 @@ export function CustomTools() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } catch (e) {
-            alert("내보내기 실패: " + e);
+            const message = "내보내기 실패: " + e;
+            alert(message);
         }
     };
 
