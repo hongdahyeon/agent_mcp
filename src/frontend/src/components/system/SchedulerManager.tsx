@@ -58,7 +58,8 @@ export default function SchedulerManager() {
       if (!res.ok) throw new Error(`Failed to ${action} scheduler`);
       await fetchData();
     } catch (err) {
-      alert((err as Error).message);
+      const message = (err as Error).message;
+      alert(message);
     } finally {
       setActionLoading(false);
     }
@@ -74,7 +75,8 @@ export default function SchedulerManager() {
       if (!res.ok) throw new Error('Failed to delete job');
       await fetchData();
     } catch (err) {
-      alert((err as Error).message);
+      const message = (err as Error).message;
+      alert(message);
     }
   };
 
