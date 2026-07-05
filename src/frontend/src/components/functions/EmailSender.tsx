@@ -57,12 +57,14 @@ export const EmailSender: React.FC = () => {
         e.preventDefault();
 
         if (!recipient || !subject || !content) {
-            alert('수신자, 제목, 내용을 모두 입력해주세요.');
+            const message = '수신자, 제목, 내용을 모두 입력해주세요.';
+            alert(message);
             return;
         }
 
         if (isScheduled && !scheduledDt) {
-            alert('예약 시간을 설정해주세요.');
+            const message = '예약 시간을 설정해주세요.';
+            alert(message);
             return;
         }
 
@@ -88,7 +90,8 @@ export const EmailSender: React.FC = () => {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                alert(isScheduled ? '메일 발송이 예약되었습니다.' : '메일이 발송되었습니다.');
+                const message = isScheduled ? '메일 발송이 예약되었습니다.' : '메일이 발송되었습니다.';
+                alert(message);
                 // 폼 초기화
                 setRecipient('');
                 setSubject('');
@@ -98,12 +101,14 @@ export const EmailSender: React.FC = () => {
                 // 로그 갱신
                 fetchLogs();
             } else {
-                alert(`발송 실패: ${data.error || '알 수 없는 오류'}`);
+                const message = `발송 실패: ${data.error || '알 수 없는 오류'}`;
+                alert(message);
                 fetchLogs();
             }
         } catch (err) {
             const error = err as Error;
-            alert(`오류 발생: ${error.message}`);
+            const message = `오류 발생: ${error.message}`;
+            alert(message);
         } finally {
             setApiLoading(false);
         }
@@ -120,14 +125,17 @@ export const EmailSender: React.FC = () => {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                alert('발송이 취소되었습니다.');
+                const message = '발송이 취소되었습니다.';
+                alert(message);
                 fetchLogs();
             } else {
-                alert(`취소 실패: ${data.detail || data.message || '알 수 없는 오류'}`);
+                const message = `취소 실패: ${data.detail || data.message || '알 수 없는 오류'}`;
+                alert(message);
             }
         } catch (e) {
             const error = e as Error;
-            alert(`오류 발생: ${error.message}`);
+            const message = `오류 발생: ${error.message}`;
+            alert(message);
         }
     };
 
