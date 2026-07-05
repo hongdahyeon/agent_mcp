@@ -69,7 +69,8 @@ const DbBackupManager: React.FC = () => {
 
     // 복구 진행하기
     const handleRestore = async (filename: string) => {
-        if (!confirm(`${filename} 파일로 DB를 복구하시겠습니까?\n현재 데이터가 선택한 시점의 데이터로 완전히 교체되며, 작업 전 현재 상태가 자동 백업됩니다.`)) return;
+        const message = `${filename} 파일로 DB를 복구하시겠습니까?\n현재 데이터가 선택한 시점의 데이터로 완전히 교체되며, 작업 전 현재 상태가 자동 백업됩니다.`;
+        if (!confirm(message)) return;
 
         setActionLoading(filename);
         setError(null);
@@ -96,7 +97,8 @@ const DbBackupManager: React.FC = () => {
 
     // 백업 파일 삭제
     const handleDelete = async (filename: string) => {
-        if (!confirm('정말 삭제하시겠습니까?')) return;
+        const message = '정말 삭제하시겠습니까?';
+        if (!confirm(message)) return;
 
         setActionLoading(`delete-${filename}`);
         setError(null);
