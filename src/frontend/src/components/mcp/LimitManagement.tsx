@@ -166,7 +166,8 @@ export function LimitManagement() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('정말 이 정책을 삭제하시겠습니까?')) return;
+        const message = '정말 이 정책을 삭제하시겠습니까?';
+        if (!confirm(message)) return;
 
         try {
             const res = await fetch(`/api/mcp/limits/${id}`, {
