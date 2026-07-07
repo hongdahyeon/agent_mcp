@@ -31,11 +31,13 @@ const handleDownload = async (fileId: string, fileName: string) => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } else {
-            alert('다운로드 실패');
+            const message = '다운로드 실패';
+            alert(message);
         }
     } catch (e) {
         console.error(e);
-        alert('다운로드 중 오류 발생');
+        const message = '다운로드 중 오류 발생';
+        alert(message);
     }
 };
 
@@ -144,7 +146,8 @@ export function OpenApiManager() {
     // OpenAPI 저장
     const handleSave = async () => {
         if (!currentApi.tool_id || !currentApi.name_ko || !currentApi.api_url) {
-            alert('필수 정보를 입력해주세요 (도구 ID, 한글명, URL)');
+            const message = '필수 정보를 입력해주세요 (도구 ID, 한글명, URL)';
+            alert(message);
             return;
         }
 
@@ -182,7 +185,10 @@ export function OpenApiManager() {
                 const uploadData = await uploadRes.json();
                 batchId = uploadData.batch_id;
             } catch (err: unknown) {
-                if (err instanceof Error) alert(err.message);
+                if (err instanceof Error) {
+                    const message = err.message;
+                    alert(message);
+                }
                 setIsUploading(false);
                 return;
             } finally {
@@ -219,7 +225,10 @@ export function OpenApiManager() {
             setAttachedFiles([]);
             setRemovedFileIds([]);
         } catch (err: unknown) {
-            if (err instanceof Error) alert(err.message);
+            if (err instanceof Error) {
+                const message = err.message;
+                alert(message);
+            }
         }
     };
 
@@ -235,7 +244,8 @@ export function OpenApiManager() {
             fetchApis();
         } catch (err: unknown) {
             const error = err as Error;
-            alert(error.message || '삭제에 실패했습니다.');
+            const message = error.message || '삭제에 실패했습니다.';
+            alert(message);
         }
     };
 
@@ -361,11 +371,13 @@ export function OpenApiManager() {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                alert('PDF 생성 실패');
+                const message = 'PDF 생성 실패';
+                alert(message);
             }
         } catch (e) {
             console.error(e);
-            alert('PDF 다운로드 중 오류 발생');
+            const message = 'PDF 다운로드 중 오류 발생';
+            alert(message);
         }
     };
 
