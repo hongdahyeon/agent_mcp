@@ -61,7 +61,8 @@ export const OpenApiMetaManager = () => {
                 fetchStats();
             } else {
                 const err = await res.json();
-                alert(err.detail || '수정 중 오류가 발생했습니다.');
+                const message = err.detail || '수정 중 오류가 발생했습니다.';
+                alert(message);
             }
         } catch (err) {
             console.error(err);
@@ -70,10 +71,12 @@ export const OpenApiMetaManager = () => {
 
     const handleDelete = async (id: number | string, type: 'category' | 'tag', count: number) => {
         if (count > 0) {
-            alert('연관된 OpenAPI가 있는 항목은 삭제할 수 없습니다.');
+            const message = '연관된 OpenAPI가 있는 항목은 삭제할 수 없습니다.';
+            alert(message);
             return;
         }
-        if (!confirm('정말 삭제하시겠습니까?')) return;
+        const message = '정말 삭제하시겠습니까?';
+        if (!confirm(message)) return;
 
         try {
             const endpoint = type === 'category' ? `/api/openapi/categories/${id}` : `/api/openapi/tags/${id}`;
@@ -88,7 +91,8 @@ export const OpenApiMetaManager = () => {
                 }
             } else {
                 const err = await res.json();
-                alert(err.detail || '삭제 중 오류가 발생했습니다.');
+                const message = err.detail || '삭제 중 오류가 발생했습니다.';
+                alert(message);
             }
         } catch (err) {
             console.error(err);
