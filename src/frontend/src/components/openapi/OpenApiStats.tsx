@@ -120,7 +120,8 @@ export default function OpenApiStatsView({ theme }: Props) {
             window.URL.revokeObjectURL(downloadUrl);
         } catch (err) {
             console.error("Export error:", err);
-            alert("내보내기 중 오류가 발생했습니다.");
+            const message = "내보내기 중 오류가 발생했습니다.";
+            alert(message);
         }
     };
 
