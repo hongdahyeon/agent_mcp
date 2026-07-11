@@ -98,7 +98,8 @@ export const NotificationManagement: React.FC = () => {
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser || !title || !message) {
-            alert('모든 필드를 입력해주세요.');
+            const alertMessage = '모든 필드를 입력해주세요.';
+            alert(alertMessage);
             return;
         }
 
@@ -118,7 +119,8 @@ export const NotificationManagement: React.FC = () => {
             });
 
             if (res.ok) {
-                alert('알림이 발송되었습니다.');
+                const alertMessage = '알림이 발송되었습니다.';
+                alert(alertMessage);
                 setIsModalOpen(false);
                 setSelectedUser(null);
                 setTitle('');
@@ -130,14 +132,16 @@ export const NotificationManagement: React.FC = () => {
             }
         } catch (e: unknown) {
             const errorMsg = e instanceof Error ? e.message : '알 수 없는 오류';
-            alert(`발송 오류: ${errorMsg}`);
+            const alertMessage = `발송 오류: ${errorMsg}`;
+            alert(alertMessage);
         } finally {
             setIsSending(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('해당 알림을 삭제하시겠습니까? (소프트 삭제)')) return;
+        const confirmMessage = '해당 알림을 삭제하시겠습니까? (소프트 삭제)';
+        if (!confirm(confirmMessage)) return;
         try {
             const res = await fetch(`/api/notifications/${id}`, {
                 method: 'DELETE',
