@@ -66,7 +66,8 @@ export default function SchedulerManager() {
   };
 
   const deleteJob = async (id: string) => {
-    if (!confirm('정말 이 작업을 삭제하시겠습니까?')) return;
+    const message = '정말 이 작업을 삭제하시겠습니까?';
+    if (!confirm(message)) return;
     try {
       const res = await fetch(`/api/system/scheduler/jobs/${id}`, {
         method: 'DELETE',
