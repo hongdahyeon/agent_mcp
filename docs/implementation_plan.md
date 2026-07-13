@@ -2001,4 +2001,35 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 ### Changes
 
 - 백엔드: /api/system/health 응답에 db_reason, smtp_reason, scheduler_reason 추가
-- 프론트엔드: HealthItem 컴포넌트에 Info 아이콘과 hover 툴팁 추가
+- 프론트엔드: HealthItem 컴포넌트에 Info 아이콘 and hover 툴팁 추가
+
+---
+
+## Phase 67: 다국어 (KR/EN) 치환 기능 및 헤더 토글 버튼 추가
+
+### Goal
+
+애플리케이션 전역에서 한국어(KR)와 영어(EN) 다국어 번역을 지원하고, 헤더 영역에 다국어 치환 버튼을 추가하여 실시간으로 언어를 변경할 수 있도록 합니다.
+
+### 주요 변경 사항
+
+#### 1. 프론트엔드 다국어 컨텍스트 (LanguageContext) 구현
+- **[NEW] `src/frontend/src/contexts/LanguageContext.tsx`**:
+  - `LanguageProvider`를 생성하고, 전역 상태 `language` (`'ko' | 'en'`) 및 번역용 헬퍼 함수 `t(key)`를 Context API로 제공.
+  - 선택한 언어를 `localStorage`에 유지하여 새로고침 시에도 유지되도록 설정.
+
+#### 2. 번역 사전 데이터 구축
+- **[NEW] `src/frontend/src/constants/translations.ts`**:
+  - 사이드바 메뉴, 헤더, 대시보드 등 UI에 노출되는 주요 텍스트의 한국어/영어 매핑 딕셔너리 정의.
+
+#### 3. 헤더 영역에 다국어 치환 버튼 추가
+- **[MODIFY] `src/frontend/src/App.tsx`**:
+  - 전역 최상위 영역을 `<LanguageProvider>`로 래핑.
+  - 헤더 영역 우측(테마 토글 버튼 옆)에 현재 선택된 언어('KO' / 'EN')를 표시하고 토글할 수 있는 글로벌 다국어 치환 버튼 추가.
+  - 헤더 타이틀 및 사이드바 메뉴 등 주요 텍스트를 다국어 `t(key)` 함수 기반으로 노출되도록 점진적 전환 적용.
+
+### 검증 계획
+
+1. **UI 확인**: 헤더 우측 테마 토글 버튼 왼쪽에 다국어 치환 버튼('KO' / 'EN')이 정상 노출되는지 확인.
+2. **토글 기능**: 다국어 버튼 클릭 시 언어 텍스트 및 전반적인 UI 텍스트(예: 사이드바 메뉴, 헤더 타이틀 등)가 실시간으로 한국어/영어 전환되는지 테스트.
+3. **상태 지속성**: 언어를 영어로 전환한 뒤 새로고침을 수행해도 영어 상태가 유지되는지 확인.
