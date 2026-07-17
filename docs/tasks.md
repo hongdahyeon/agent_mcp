@@ -1202,9 +1202,9 @@
 - [x] 프론트엔드 HealthItem 컴포넌트에 Info 아이콘과 hover 툴팁 추가
 
 ## 101. 다국어(KR/EN) 치환 기능 및 헤더 토글 버튼 추가
-- [ ] 1. 다국어 번역 사전 정의 (`translations.ts` 파일 생성)
-- [ ] 2. Language Context 및 Provider 구현 (`LanguageContext.tsx` 파일 생성)
-- [ ] 3. `App.tsx`에 `LanguageProvider` 적용
-- [ ] 4. 헤더 우측 영역에 'KO / EN' 언어 토글 버튼 추가 및 연동
-- [ ] 5. 사이드바 및 주요 UI 텍스트 다국어 치환 적용
-- [ ] 6. 언어 설정 유지(localStorage) 및 빌드 검증 수행
+- [x] 1. 다국어 번역 사전 정의 (`translations.ts` 파일 생성)
+- [x] 2. Language Context 및 Provider 구현 (`LanguageContext.tsx` 파일 생성)
+- [x] 3. `App.tsx`에 `LanguageProvider` 적용
+- [x] 4. 헤더 우측 영역에 'KO / EN' 언어 토글 버튼 추가 및 연동
+- [x] 5. 사이드바 및 주요 UI 텍스트 다국어 치환 적용
+- [x] 6. 언어 설정 유지(localStorage) 및 빌드 검증 수행

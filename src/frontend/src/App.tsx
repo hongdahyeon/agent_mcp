@@ -36,6 +36,7 @@ import type { UsageData } from './types/UserUsage';
 import { getAuthHeaders } from './utils/auth';
 import { menuStructure } from './constants/menu';
 import type { ActiveView } from './constants/menu';
+import { useLanguage } from './contexts/LanguageContext';
 
 // 세션은 최대 3시간까지 유지할 수 있다.
 const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
@@ -71,6 +72,7 @@ function UsageBadge({ usageData }: { usageData: UsageData | null }) {
 
 function App() {
   const { theme, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   // 인증 상태 (Auth State): 세션 저장
   const [user, setUser] = useState<User | null>(() => {
     const stored = localStorage.getItem('user_session');
@@ -185,7 +187,7 @@ function App() {
 
         // 이미 만료되었는지 확인
         if (Date.now() - lastTs > SESSION_TIMEOUT) {
-          alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+          alert(t('sessionExpired'));
           handleLogout();
           return;
         }
@@ -261,7 +263,7 @@ function App() {
               "flex items-center hover:bg-gray-200/50 dark:hover:bg-slate-800 rounded-lg transition-colors text-left group cursor-pointer overflow-hidden",
               isSidebarCollapsed ? "p-1" : "flex-1 p-1.5 -ml-1.5"
             )}
-            title="내 정보 관리"
+            title={t('myInfoManage')}
           >
             <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
               <UserIcon className="w-4 h-4" />
@@ -274,7 +276,7 @@ function App() {
             )}
           </button>
           {!isSidebarCollapsed && (
-            <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-1" title="로그아웃">
+            <button onClick={handleLogout} className="ml-2 text-gray-400 hover:text-red-500 transition-colors p-1" title={t('logout')}>
               <LogOut className="w-4 h-4" />
             </button>
           )}
@@ -289,7 +291,7 @@ function App() {
               <div key={gIdx} className="space-y-2">
                 {!isSidebarCollapsed && group.label && (
                   <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    {group.label}
+                    {t(group.label)}
                   </h3>
                 )}
                 <div className="space-y-1">
@@ -304,10 +306,10 @@ function App() {
                           ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-semibold shadow-sm" + (isSidebarCollapsed ? "" : " translate-x-1")
                           : "text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100"
                       )}
-                      title={isSidebarCollapsed ? item.label : undefined}
+                      title={isSidebarCollapsed ? t(item.label) : undefined}
                     >
                       <item.icon className={clsx("w-4 h-4 flex-shrink-0", isSidebarCollapsed ? "" : "mr-3", activeView === item.id ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-slate-500")} />
-                      {!isSidebarCollapsed && <span className="truncate">{item.label}</span>}
+                      {!isSidebarCollapsed && <span className="truncate">{t(item.label)}</span>}
                     </button>
                   ))}
                 </div>
@@ -335,23 +337,32 @@ function App() {
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               className="p-2 mr-4 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
-              title={isSidebarCollapsed ? "사이드바 확장" : "사이드바 접기"}
+              title={isSidebarCollapsed ? t('toggleSidebarExpand') : t('toggleSidebarCollapse')}
             >
               <Menu className="w-5 h-5" />
             </button>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-slate-100 truncate">
-              {allMenuItems.find(i => i.id === activeView)?.label || (activeView === 'mypage' ? '내 정보' : '')}
+              {allMenuItems.find(i => i.id === activeView) ? t(allMenuItems.find(i => i.id === activeView)!.label) : (activeView === 'mypage' ? t('myInfo') : '')}
             </h2>
           </div>
           <div className="flex items-center space-x-4 flex-shrink-0">
             {/* Notification Bell */}
             <NotificationBell />
 
+            {/* Language Toggle Button */}
+            <button
+              onClick={() => setLanguage(language === 'ko' ? 'en' : 'ko')}
+              className="p-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-300 w-10 flex items-center justify-center"
+              title={language === 'ko' ? t('langEn') : t('langKo')}
+            >
+              {language === 'ko' ? 'EN' : 'KO'}
+            </button>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
               className="p-2 text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-300"
-              title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
+              title={theme === 'light' ? t('themeDark') : t('themeLight')}
             >
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
