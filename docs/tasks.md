@@ -1195,16 +1195,25 @@
 - [x] 2. 기능 검증 및 문서 업데이트
 
 # 99. todo.md 파일 삭제
+
 - [x] todo.md 파일 삭제 및 정리
 
 ## 100. 대시보드 상단 헬스체크 툴팁 추가
+
 - [x] 백엔드 /api/system/health 응답에 실패 사유 추가
 - [x] 프론트엔드 HealthItem 컴포넌트에 Info 아이콘과 hover 툴팁 추가
 
 ## 101. 다국어(KR/EN) 치환 기능 및 헤더 토글 버튼 추가
+
 - [x] 1. 다국어 번역 사전 정의 (`translations.ts` 파일 생성)
 - [x] 2. Language Context 및 Provider 구현 (`LanguageContext.tsx` 파일 생성)
 - [x] 3. `App.tsx`에 `LanguageProvider` 적용
 - [x] 4. 헤더 우측 영역에 'KO / EN' 언어 토글 버튼 추가 및 연동
 - [x] 5. 사이드바 및 주요 UI 텍스트 다국어 치환 적용
 - [x] 6. 언어 설정 유지(localStorage) 및 빌드 검증 수행
+
+## 102. 다국어(i18n) JSON 파일 분리 및 구조화
+- [x] 1. `src/frontend/i18n` 디렉토리 생성
+- [x] 2. 기존 다국어 데이터를 분리하여 `ko.json` 및 `en.json` 작성
+- [x] 3. `translations.ts`에서 JSON 파일을 임포트하여 적용되도록 코드 수정
+- [x] 4. 화면 정상 작동 확인
