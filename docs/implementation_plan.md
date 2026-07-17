@@ -2033,3 +2033,27 @@ Update the main `README.md` with setup instructions from version 4.0 and organiz
 1. **UI 확인**: 헤더 우측 테마 토글 버튼 왼쪽에 다국어 치환 버튼('KO' / 'EN')이 정상 노출되는지 확인.
 2. **토글 기능**: 다국어 버튼 클릭 시 언어 텍스트 및 전반적인 UI 텍스트(예: 사이드바 메뉴, 헤더 타이틀 등)가 실시간으로 한국어/영어 전환되는지 테스트.
 3. **상태 지속성**: 언어를 영어로 전환한 뒤 새로고침을 수행해도 영어 상태가 유지되는지 확인.
+
+---
+
+## Phase 68: 다국어(i18n) JSON 파일 분리 및 구조화
+
+### Goal
+
+모든 텍스트에 다국어 처리를 원활히 적용하기 위해 하드코딩된 사전 파일(`translations.ts`)의 데이터를 언어별 JSON 파일(`ko.json`, `en.json`)로 분리합니다.
+
+### 주요 변경 사항
+
+#### 1. 다국어 파일 분리
+- **[NEW] `src/frontend/i18n/ko.json` & `en.json`**:
+  - 기존 `translations.ts` 내부에 존재하던 `ko`, `en` 객체를 각각의 전용 JSON 파일로 분리하여 관리.
+
+#### 2. 다국어 사전 설정 변경
+- **[MODIFY] `src/frontend/src/constants/translations.ts`**:
+  - 기존 인라인 객체 정의를 삭제하고, `../i18n/ko.json` 및 `../i18n/en.json` 파일을 `import`하여 `translations` 객체를 구성하도록 수정.
+  - 타입 정의(`Language`)는 유지.
+
+### 검증 계획
+
+1. **정상 임포트**: Vite 빌드 환경에서 외부 폴더(`i18n`)의 JSON 파일이 정상적으로 모듈로 해석되는지 확인.
+2. **동작 유지**: 기존에 적용된 메뉴 및 헤더 다국어 치환이 변경 없이 정상 작동하는지 확인.
