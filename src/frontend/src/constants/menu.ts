@@ -58,54 +58,56 @@ export interface MenuGroup {
 
 export const menuStructure: MenuGroup[] = [
   {
+    label: 'groupDashboard',
     items: [
-      { id: 'dashboard', label: '대시보드', icon: Activity }
+      { id: 'dashboard', label: 'dashboard', icon: Activity }
     ]
   },
   {
-    label: '기능',
+    label: 'groupFunctions',
     items: [
-      { id: 'tester', label: '도구 테스터', icon: Terminal },
-      { id: 'logs', label: '로그 뷰어', icon: FileText, adminOnly: true },
-      { id: 'email', label: '메일 발송', icon: Send },
-      { id: 'file-manager', label: '파일 관리', icon: File }
+      { id: 'tester', label: 'tester', icon: Terminal },
+      { id: 'logs', label: 'logs', icon: FileText, adminOnly: true },
+      { id: 'email', label: 'email', icon: Send },
+      { id: 'file-manager', label: 'fileManager', icon: File }
     ]
   },
   {
-    label: '이력 조회',
+    label: 'groupHistory',
     items: [
-      { id: 'history', label: '접속 이력', icon: History },
-      { id: 'email-history', label: '메일 발송 이력', icon: FileText, adminOnly: true },
-      { id: 'otp-history', label: 'OTP 인증 이력', icon: ShieldCheck, adminOnly: true },
-      { id: 'notifications', label: '알림 관리', icon: Bell, adminOnly: true }
+      { id: 'history', label: 'loginHistory', icon: History },
+      { id: 'email-history', label: 'emailHistory', icon: FileText, adminOnly: true },
+      { id: 'otp-history', label: 'otpHistory', icon: ShieldCheck, adminOnly: true },
+      { id: 'notifications', label: 'notifications', icon: Bell, adminOnly: true }
     ]
   },
   {
-    label: 'OpenAPI 관리',
+    label: 'groupOpenApi',
     items: [
-      { id: 'openapi', label: 'OpenAPI 목록/테스트', icon: Globe },
-      { id: 'openapi-meta', label: 'OpenAPI 메타 관리', icon: Tag, adminOnly: true },
-      { id: 'openapi-stats', label: 'OpenAPI 사용 통계', icon: BarChart4, adminOnly: true },
-      { id: 'openapi-limits', label: 'OpenAPI 사용 제한', icon: Shield, adminOnly: true }
+      { id: 'openapi', label: 'openapi', icon: Globe },
+      { id: 'openapi-meta', label: 'openapiMeta', icon: Tag, adminOnly: true },
+      { id: 'openapi-stats', label: 'openapiStats', icon: BarChart4, adminOnly: true },
+      { id: 'openapi-limits', label: 'openapiLimits', icon: Shield, adminOnly: true }
     ]
   },
   {
-    label: 'MCP 도구 관리',
+    label: 'groupMcp',
     items: [
-      { id: 'custom-tools', label: '도구 생성/관리', icon: Wrench, adminOnly: true },
-      { id: 'usage-history', label: '도구사용 이력', icon: BarChart4, adminOnly: true },
-      { id: 'limits', label: '도구사용 제한 관리', icon: Shield, adminOnly: true },
-      { id: 'access-tokens', label: '보안 토큰 관리', icon: Wrench, adminOnly: true }
+      { id: 'custom-tools', label: 'customTools', icon: Wrench, adminOnly: true },
+      { id: 'usage-history', label: 'usageHistory', icon: BarChart4, adminOnly: true },
+      { id: 'limits', label: 'limits', icon: Shield, adminOnly: true },
+      { id: 'access-tokens', label: 'accessTokens', icon: Wrench, adminOnly: true }
     ]
   },
   {
-    label: 'DB 및 시스템 관리',
+    label: 'groupSystem',
     items: [
-      { id: 'schema', label: 'DB 테이블 관리', icon: Database, adminOnly: true },
-      { id: 'db-backup', label: 'DB 백업/복구', icon: Database, adminOnly: true },
-      { id: 'scheduler', label: '스케줄러 관리', icon: Clock, adminOnly: true },
-      { id: 'config', label: '시스템 설정', icon: Settings, adminOnly: true },
-      { id: 'users', label: '사용자 관리', icon: UsersIcon, adminOnly: true }
+      { id: 'schema', label: 'schema', icon: Database, adminOnly: true },
+      { id: 'db-backup', label: 'dbBackup', icon: Database, adminOnly: true },
+      { id: 'scheduler', label: 'scheduler', icon: Clock, adminOnly: true },
+      { id: 'config', label: 'config', icon: Settings, adminOnly: true },
+      { id: 'users', label: 'users', icon: UsersIcon, adminOnly: true }
     ]
   }
 ];
+
