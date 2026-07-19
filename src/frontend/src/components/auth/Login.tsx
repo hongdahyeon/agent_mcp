@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '../../types/auth';
 import { Lock, User as UserIcon, LogIn, AlertCircle, UserPlus } from 'lucide-react';
 import { SignupModal } from './SignupModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /* 
 * 로그인 화면에 대한 컴포넌트
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function Login({ onLogin }: Props) {
+    const { t } = useLanguage();
     const [userId, setUserId] = useState('');               // 아이디
     const [password, setPassword] = useState('');           // 비밀번호
     const [rememberMe, setRememberMe] = useState(false);    // 아이디 기억하기
@@ -34,7 +36,7 @@ export function Login({ onLogin }: Props) {
         setError('');
 
         if (password.length < 4) {
-            setError('비밀번호는 4자리 이상이어야 합니다.');
+            setError(t('loginErrPasswordLength'));
             return;
         }
 
@@ -53,25 +55,25 @@ export function Login({ onLogin }: Props) {
             if (!res.ok) {
                 const data = await res.json();
                 if (res.status === 401) {
-                    throw new Error(data.detail || '아이디 또는 비밀번호가 잘못되었습니다.');
+                    throw new Error(data.detail || t('loginErrInvalidCredentials'));
                 }
                 if (res.status === 403) {
                     // detail 내용에 deleted가 포함되어 있으면 계정 삭제
                     if (data.detail && data.detail.includes('deleted')) {
-                        throw new Error('삭제되었거나 사용이 불가능한 계정입니다. 관리자에게 문의하세요.');
+                        throw new Error(t('loginErrDeletedAccount'));
                     }
                     // detail 내용에 unapproved가 포함되어 있으면 승인 대기
                     if (data.detail && data.detail.includes('unapproved')) {
-                        throw new Error('아직 승인되지 않은 계정입니다. 관리자 승인을 기다려주세요.');
+                        throw new Error(t('loginErrUnapprovedAccount'));
                     }
                     // detail 내용에 locked나 잠금이 포함되어 있으면 계정 잠김
                     if (data.detail && (data.detail.includes('locked') || data.detail.includes('잠금'))) {
-                        throw new Error('계정이 잠겼습니다. 관리자에게 문의하세요.');
+                        throw new Error(t('loginErrLockedAccount'));
                     }
                     // 그 외에는 계정 비활성화
-                    throw new Error('계정이 비활성화되었습니다.');
+                    throw new Error(t('loginErrDisabledAccount'));
                 }
-                throw new Error('로그인 중 오류가 발생했습니다.');
+                throw new Error(t('loginErrGeneral'));
             }
 
             const data = await res.json();
@@ -93,7 +95,7 @@ export function Login({ onLogin }: Props) {
             if (err instanceof Error) {
                 setError(err.message);
             } else {
-                setError('로그인 중 알 수 없는 오류가 발생했습니다.');
+                setError(t('loginErrUnknown'));
             }
         } finally {
             setLoading(false);
@@ -107,8 +109,8 @@ export function Login({ onLogin }: Props) {
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                         <Lock className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">Agent MCP Login</h1>
-                    <p className="text-blue-100 mt-2">시스템에 접속하려면 로그인하세요</p>
+                    <h1 className="text-2xl font-bold text-white">Agent MCP {t('loginTitle')}</h1>
+                    <p className="text-blue-100 mt-2">{t('loginSubtitle')}</p>
                 </div>
 
                 <div className="p-8">
@@ -121,7 +123,7 @@ export function Login({ onLogin }: Props) {
                         )}
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">아이디</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('loginId')}</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <UserIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
@@ -138,7 +140,7 @@ export function Login({ onLogin }: Props) {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">비밀번호</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">{t('loginPassword')}</label>
                             <div className="relative">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <Lock className="h-5 w-5 text-gray-400 dark:text-slate-500" />
@@ -163,7 +165,7 @@ export function Login({ onLogin }: Props) {
                                 onChange={(e) => setRememberMe(e.target.checked)}
                             />
                             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900 dark:text-slate-300">
-                                아이디 기억하기
+                                {t('loginRememberMe')}
                             </label>
                         </div>
 
@@ -172,19 +174,19 @@ export function Login({ onLogin }: Props) {
                             disabled={loading}
                             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
-                            {loading ? '로그인 중...' : '로그인'}
+                            {loading ? t('loginLoading') : t('loginSubmit')}
                             {!loading && <LogIn className="ml-2 w-4 h-4" />}
                         </button>
                     </form>
 
                     <div className="mt-4 flex items-center justify-between">
-                        <span className="text-xs text-gray-400 dark:text-slate-500">초기 계정: admin / 1234</span>
+                        <span className="text-xs text-gray-400 dark:text-slate-500">{t('loginDefaultHint')}</span>
                         <button
                             onClick={() => setIsSignupOpen(true)}
                             className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
                         >
                             <UserPlus className="w-4 h-4" />
-                            회원가입
+                            {t('loginSignup')}
                         </button>
                     </div>
                 </div>
