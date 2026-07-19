@@ -349,14 +349,33 @@ function App() {
             {/* Notification Bell */}
             <NotificationBell />
 
-            {/* Language Toggle Button */}
-            <button
-              onClick={() => setLanguage(language === 'ko' ? 'en' : 'ko')}
-              className="p-2 text-sm font-bold text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-300 w-10 flex items-center justify-center"
-              title={language === 'ko' ? t('langEn') : t('langKo')}
-            >
-              {language === 'ko' ? 'EN' : 'KO'}
-            </button>
+            {/* Language Toggle Group */}
+            <div className="flex items-center bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+              <button
+                onClick={() => setLanguage('ko')}
+                className={clsx(
+                  "px-2.5 py-1 text-xs font-bold rounded-md transition-all duration-200",
+                  language === 'ko'
+                    ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                    : "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
+                )}
+                title={t('langKo')}
+              >
+                KO
+              </button>
+              <button
+                onClick={() => setLanguage('en')}
+                className={clsx(
+                  "px-2.5 py-1 text-xs font-bold rounded-md transition-all duration-200",
+                  language === 'en'
+                    ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                    : "text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300"
+                )}
+                title={t('langEn')}
+              >
+                EN
+              </button>
+            </div>
 
             {/* Theme Toggle Button */}
             <button
