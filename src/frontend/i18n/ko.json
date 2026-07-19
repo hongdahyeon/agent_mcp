@@ -35,5 +35,23 @@
   "toggleSidebarExpand": "사이드바 확장",
   "sessionExpired": "세션이 만료되었습니다. 다시 로그인해주세요.",
   "langKo": "한국어",
-  "langEn": "영어"
+  "langEn": "영어",
+
+  "loginTitle": "로그인",
+  "loginSubtitle": "시스템에 접속하려면 로그인하세요",
+  "loginId": "아이디",
+  "loginPassword": "비밀번호",
+  "loginRememberMe": "아이디 기억하기",
+  "loginSubmit": "로그인",
+  "loginLoading": "로그인 중...",
+  "loginSignup": "회원가입",
+  "loginDefaultHint": "초기 계정: admin / 1234",
+  "loginErrPasswordLength": "비밀번호는 4자리 이상이어야 합니다.",
+  "loginErrInvalidCredentials": "아이디 또는 비밀번호가 잘못되었습니다.",
+  "loginErrDeletedAccount": "삭제되었거나 사용이 불가능한 계정입니다. 관리자에게 문의하세요.",
+  "loginErrUnapprovedAccount": "아직 승인되지 않은 계정입니다. 관리자 승인을 기다려주세요.",
+  "loginErrLockedAccount": "계정이 잠겼습니다. 관리자에게 문의하세요.",
+  "loginErrDisabledAccount": "계정이 비활성화되었습니다.",
+  "loginErrGeneral": "로그인 중 오류가 발생했습니다.",
+  "loginErrUnknown": "로그인 중 알 수 없는 오류가 발생했습니다."
 }

@@ -35,5 +35,23 @@
   "toggleSidebarExpand": "Expand Sidebar",
   "sessionExpired": "Session expired. Please log in again.",
   "langKo": "Korean",
-  "langEn": "English"
+  "langEn": "English",
+
+  "loginTitle": "Login",
+  "loginSubtitle": "Please log in to access the system",
+  "loginId": "User ID",
+  "loginPassword": "Password",
+  "loginRememberMe": "Remember me",
+  "loginSubmit": "Login",
+  "loginLoading": "Logging in...",
+  "loginSignup": "Sign Up",
+  "loginDefaultHint": "Default account: admin / 1234",
+  "loginErrPasswordLength": "Password must be at least 4 characters.",
+  "loginErrInvalidCredentials": "Invalid user ID or password.",
+  "loginErrDeletedAccount": "This account has been deleted or is unavailable. Please contact the administrator.",
+  "loginErrUnapprovedAccount": "This account has not been approved yet. Please wait for administrator approval.",
+  "loginErrLockedAccount": "This account is locked. Please contact the administrator.",
+  "loginErrDisabledAccount": "This account has been disabled.",
+  "loginErrGeneral": "An error occurred during login.",
+  "loginErrUnknown": "An unknown error occurred during login."
 }
