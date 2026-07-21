@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Lock, UserPlus, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface Props {
     isOpen: boolean;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
+    const { t } = useLanguage();
     const [userId, setUserId] = useState('');
     const [userNm, setUserNm] = useState('');
     const [userEmail, setUserEmail] = useState(''); // 이메일 상태 추가
@@ -43,12 +45,12 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
             const res = await fetch(`/auth/check-id?user_id=${userId}`);
             const data = await res.json();
             if (data.exists) {
-                setIdError('이미 사용 중인 아이디입니다.');
+                setIdError(t('signupIdExists'));
             } else {
                 setIdChecked(true);
             }
         } catch {
-            setIdError('아이디 확인 중 오류가 발생했습니다.');
+            setIdError(t('signupIdCheckErr'));
         } finally {
             setIsCheckingId(false);
         }
@@ -64,12 +66,12 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
             const res = await fetch(`/auth/check-email?user_email=${userEmail}`);
             const data = await res.json();
             if (data.exists) {
-                setEmailError('이미 사용 중인 이메일입니다.');
+                setEmailError(t('signupEmailExists'));
             } else {
                 setEmailChecked(true);
             }
         } catch {
-            setEmailError('이메일 확인 중 오류가 발생했습니다.');
+            setEmailError(t('signupEmailCheckErr'));
         } finally {
             setIsCheckingEmail(false);
         }
@@ -78,7 +80,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
     // 이메일 otp 번호 발송
     const handleSendOtp = async () => {
         if (!userEmail || !emailChecked) {
-            setError('이메일 중복 확인을 먼저 완료해주세요.');
+            setError(t('signupEmailNeedCheckFirst'));
             return;
         }
         setIsSendingOtp(true);
@@ -94,10 +96,10 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 setOtpCode('');
             } else {
                 const data = await res.json();
-                setError(data.detail || 'OTP 발송 실패');
+                setError(data.detail || t('signupOtpSendFail'));
             }
         } catch {
-            setError('OTP 발송 중 오류가 발생했습니다.');
+            setError(t('signupOtpSendErr'));
         } finally {
             setIsSendingOtp(false);
         }
@@ -122,10 +124,10 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 setIsOtpVerified(true);
             } else {
                 const data = await res.json();
-                setError(data.detail?.message || '인증 코드 확인 실패');
+                setError(data.detail?.message || t('signupOtpVerifyFail'));
             }
         } catch {
-            setError('인증 코드 확인 중 오류가 발생했습니다.');
+            setError(t('signupOtpVerifyErr'));
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -138,27 +140,27 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
         setSuccess('');
 
         if (!userNm.trim()) {
-            setError('이름을 입력해주세요.');
+            setError(t('signupNameErr'));
             return;
         }
         if (!idChecked) {
-            setError('아이디 중복 확인이 필요합니다.');
+            setError(t('signupIdNeedCheck'));
             return;
         }
         if (!emailChecked) {
-            setError('이메일 중복 확인이 필요합니다.');
+            setError(t('signupEmailNeedCheck'));
             return;
         }
         if (!isOtpVerified) {
-            setError('이메일 인증이 필요합니다.');
+            setError(t('signupOtpNeedVerify'));
             return;
         }
         if (password.length < 4) {
-            setError('비밀번호는 4자리 이상이어야 합니다.');
+            setError(t('signupPasswordLenErr'));
             return;
         }
         if (password !== confirmPassword) {
-            setError('비밀번호가 일치하지 않습니다.');
+            setError(t('signupPasswordMismatch'));
             return;
         }
 
@@ -191,10 +193,10 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     setSuccess('');
                 }, 3000);
             } else {
-                setError(data.detail || '회원가입에 실패했습니다.');
+                setError(data.detail || t('signupFail'));
             }
         } catch {
-            setError('오류가 발생했습니다. 다시 시도해주세요.');
+            setError(t('signupErr'));
         } finally {
             setLoading(false);
         }
@@ -209,7 +211,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">회원가입</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('signupTitle')}</h3>
                     </div>
                     <button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors">
                         <X className="w-6 h-6" />
@@ -223,7 +225,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                 <CheckCircle2 className="w-10 h-10 text-green-500 dark:text-green-400" />
                             </div>
                             <div className="space-y-2">
-                                <p className="text-xl font-bold text-gray-900 dark:text-white">가입 신청 완료!</p>
+                                <p className="text-xl font-bold text-gray-900 dark:text-white">{t('signupSuccess')}</p>
                                 <p className="text-gray-500 dark:text-slate-400 text-sm whitespace-pre-line">{success}</p>
                             </div>
                         </div>
@@ -239,7 +241,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                             {/* ID */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1 flex items-center gap-1">
-                                    <User className="w-3.5 h-3.5" /> 아이디
+                                    <User className="w-3.5 h-3.5" /> {t('signupId')}
                                 </label>
                                 <div className="flex gap-2">
                                     <div className="relative flex-1">
@@ -254,7 +256,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                             className={`block w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-all ${idChecked ? 'border-green-500 ring-green-500/10 dark:bg-slate-700 dark:text-white' :
                                                 idError ? 'border-red-500 ring-red-500/10 dark:bg-slate-700 dark:text-white' : 'border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500/20 focus:border-blue-500'
                                                 }`}
-                                            placeholder="아이디"
+                                            placeholder={t('signupIdPlaceholder')}
                                             required
                                         />
                                     </div>
@@ -264,17 +266,17 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         disabled={!userId || isCheckingId || idChecked}
                                         className="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors whitespace-nowrap"
                                     >
-                                        {isCheckingId ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                        {isCheckingId ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('signupDupCheck')}
                                     </button>
                                 </div>
                                 {idError && <p className="text-[11px] text-red-500 mt-1 ml-1">{idError}</p>}
-                                {idChecked && <p className="text-[11px] text-green-600 mt-1 ml-1">사용 가능한 아이디입니다.</p>}
+                                {idChecked && <p className="text-[11px] text-green-600 mt-1 ml-1">{t('signupIdAvailable')}</p>}
                             </div>
 
                             {/* Email / OTP */}
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1 flex items-center gap-1">
-                                    <AlertCircle className="w-3.5 h-3.5" /> 이메일
+                                    <AlertCircle className="w-3.5 h-3.5" /> {t('signupEmail')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -290,7 +292,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-all ${emailChecked ? 'border-green-500 ring-green-500/10 dark:bg-slate-700 dark:text-white' :
                                             emailError ? 'border-red-500 ring-red-500/10 dark:bg-slate-700 dark:text-white' : 'border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500/20 focus:border-blue-500'
                                             }`}
-                                        placeholder="example@email.com"
+                                        placeholder={t('signupEmailPlaceholder')}
                                         required
                                     />
                                     <button
@@ -299,7 +301,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         disabled={!userEmail || isCheckingEmail || emailChecked}
                                         className="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors whitespace-nowrap"
                                     >
-                                        {isCheckingEmail ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                        {isCheckingEmail ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('signupDupCheck')}
                                     </button>
                                 </div>
                                 {emailError && <p className="text-[11px] text-red-500 mt-1 ml-1">{emailError}</p>}
@@ -311,7 +313,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                                 value={otpCode}
                                                 onChange={(e) => setOtpCode(e.target.value)}
                                                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-700 dark:text-white outline-none transition-all"
-                                                placeholder="인증코드"
+                                                placeholder={t('signupOtpCodePlaceholder')}
                                             />
                                             {!isOtpSent ? (
                                                 <button
@@ -320,7 +322,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                                     disabled={isSendingOtp}
                                                     className="px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 whitespace-nowrap"
                                                 >
-                                                    {isSendingOtp ? '발송중...' : '인증코드 발송'}
+                                                    {isSendingOtp ? t('signupOtpSending') : t('signupOtpSend')}
                                                 </button>
                                             ) : (
                                                 <button
@@ -329,19 +331,19 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                                     disabled={isVerifyingOtp || !otpCode}
                                                     className="px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 whitespace-nowrap"
                                                 >
-                                                    {isVerifyingOtp ? '확인중...' : '인증코드 확인'}
+                                                    {isVerifyingOtp ? t('signupOtpVerifying') : t('signupOtpVerify')}
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                 )}
-                                {isOtpVerified && <p className="text-[11px] text-green-600 mt-1 ml-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 이메일 인증이 완료되었습니다.</p>}
+                                {isOtpVerified && <p className="text-[11px] text-green-600 mt-1 ml-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> {t('signupOtpVerified')}</p>}
                             </div>
 
                             {/* Name */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1 flex items-center gap-1">
-                                    <User className="w-3.5 h-3.5" /> 이름
+                                    <User className="w-3.5 h-3.5" /> {t('signupName')}
                                 </label>
                                 <div className="relative">
                                     <input
@@ -349,7 +351,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         value={userNm}
                                         onChange={(e) => setUserNm(e.target.value)}
                                         className="block w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-700 dark:text-white outline-none transition-all"
-                                        placeholder="이름"
+                                        placeholder={t('signupNamePlaceholder')}
                                         required
                                     />
                                 </div>
@@ -357,7 +359,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
                             {/* Password */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1">비밀번호</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1">{t('signupPassword')}</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Lock className="h-4 w-4 text-gray-400" />
@@ -367,7 +369,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:bg-slate-700 dark:text-white outline-none transition-all"
-                                        placeholder="4자리 이상 입력"
+                                        placeholder={t('signupPasswordHint')}
                                         required
                                     />
                                 </div>
@@ -375,7 +377,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
                             {/* Confirm Password */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1">비밀번호 확인</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5 ml-1">{t('signupConfirmPassword')}</label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Lock className="h-4 w-4 text-gray-400" />
@@ -387,7 +389,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                         className={`block w-full pl-10 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:outline-none transition-all ${confirmPassword && password === confirmPassword ? 'border-green-500 ring-green-500/10 dark:bg-slate-700 dark:text-white' :
                                                 confirmPassword && password !== confirmPassword ? 'border-red-500 ring-red-500/10 dark:bg-slate-700 dark:text-white' : 'border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500/20 focus:border-blue-500'
                                             }`}
-                                        placeholder="다시 한번 입력하세요"
+                                        placeholder={t('signupConfirmPasswordHint')}
                                         required
                                     />
                                 </div>
@@ -399,7 +401,7 @@ export const SignupModal: React.FC<Props> = ({ isOpen, onClose }) => {
                                 className="w-full flex justify-center items-center gap-2 py-3 px-4 mt-6 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-500/20 disabled:opacity-50 transition-all active:scale-[0.98]"
                             >
                                 {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <UserPlus className="w-5 h-5" />}
-                                가입하기
+                                {t('signupSubmit')}
                             </button>
                         </form>
                     )}
