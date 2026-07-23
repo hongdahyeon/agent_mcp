@@ -3,9 +3,11 @@ import React, { useEffect, useState } from 'react';
 import type { EmailLog } from '../../types/emailSend';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 export const EmailSender: React.FC = () => {
+    const { t } = useLanguage();
     // API State
     const [apiLoading, setApiLoading] = useState(false);
 
@@ -57,13 +59,13 @@ export const EmailSender: React.FC = () => {
         e.preventDefault();
 
         if (!recipient || !subject || !content) {
-            const message = '수신자, 제목, 내용을 모두 입력해주세요.';
+            const message = t('emailErrFillAll');
             alert(message);
             return;
         }
 
         if (isScheduled && !scheduledDt) {
-            const message = '예약 시간을 설정해주세요.';
+            const message = t('emailErrScheduledDt');
             alert(message);
             return;
         }
@@ -90,7 +92,7 @@ export const EmailSender: React.FC = () => {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                const message = isScheduled ? '메일 발송이 예약되었습니다.' : '메일이 발송되었습니다.';
+                const message = isScheduled ? t('emailAlertScheduled') : t('emailAlertSent');
                 alert(message);
                 // 폼 초기화
                 setRecipient('');
@@ -101,13 +103,13 @@ export const EmailSender: React.FC = () => {
                 // 로그 갱신
                 fetchLogs();
             } else {
-                const message = `발송 실패: ${data.error || '알 수 없는 오류'}`;
+                const message = t('emailAlertSendFail').replace('{error}', data.error || t('emailErrUnknown'));
                 alert(message);
                 fetchLogs();
             }
         } catch (err) {
             const error = err as Error;
-            const message = `오류 발생: ${error.message}`;
+            const message = t('emailErrGeneral').replace('{error}', error.message);
             alert(message);
         } finally {
             setApiLoading(false);
@@ -115,7 +117,7 @@ export const EmailSender: React.FC = () => {
     };
 
     const handleCancel = async (logId: number) => {
-        if (!confirm('정말 이 메일 발송을 취소하시겠습니까?')) return;
+        if (!confirm(t('emailConfirmCancel'))) return;
 
         try {
             const res = await fetch(`/api/email/cancel/${logId}`, {
@@ -125,16 +127,16 @@ export const EmailSender: React.FC = () => {
             const data = await res.json();
 
             if (res.ok && data.success) {
-                const message = '발송이 취소되었습니다.';
+                const message = t('emailAlertCancelled');
                 alert(message);
                 fetchLogs();
             } else {
-                const message = `취소 실패: ${data.detail || data.message || '알 수 없는 오류'}`;
+                const message = t('emailAlertCancelFail').replace('{error}', data.detail || data.message || t('emailErrUnknown'));
                 alert(message);
             }
         } catch (e) {
             const error = e as Error;
-            const message = `오류 발생: ${error.message}`;
+            const message = t('emailErrGeneral').replace('{error}', error.message);
             alert(message);
         }
     };
@@ -148,7 +150,7 @@ export const EmailSender: React.FC = () => {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            메일 발송
+                            {t('email')}
                         </h2>
                     </div>
                 </div>
@@ -159,12 +161,12 @@ export const EmailSender: React.FC = () => {
                     {/* Left: Email Form */}
                     <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 h-fit transition-colors duration-300">
                         <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-slate-200 flex items-center gap-2">
-                            <Send className="w-5 h-5" /> 메일 작성
+                            <Send className="w-5 h-5" /> {t('emailWrite')}
                         </h2>
 
                         <form onSubmit={handleSend} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">수신자 이메일</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">{t('emailRecipient')}</label>
                                 <input
                                     type="email"
                                     value={recipient}
@@ -176,24 +178,24 @@ export const EmailSender: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">제목</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">{t('emailSubject')}</label>
                                 <input
                                     type="text"
                                     value={subject}
                                     onChange={(e) => setSubject(e.target.value)}
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="메일 제목"
+                                    placeholder={t('emailSubjectPlaceholder')}
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">내용</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-slate-400 mb-1">{t('emailContent')}</label>
                                 <textarea
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
                                     className="w-full h-40 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                                    placeholder="메일 내용을 입력하세요..."
+                                    placeholder={t('emailContentPlaceholder')}
                                     required
                                 />
                             </div>
@@ -216,7 +218,7 @@ export const EmailSender: React.FC = () => {
                                             }}
                                             className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-slate-800 border-gray-300 dark:border-slate-700"
                                         />
-                                        예약 발송
+                                        {t('emailScheduledSend')}
                                     </label>
                                     {isScheduled && <Calendar className="w-4 h-4 text-gray-500 dark:text-slate-500" />}
                                 </div>
@@ -241,7 +243,7 @@ export const EmailSender: React.FC = () => {
                                     }`}
                             >
                                 {apiLoading ? <RotateCw className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                                {isScheduled ? '예약 발송' : '즉시 발송'}
+                                {isScheduled ? t('emailScheduledSend') : t('emailInstantSend')}
                             </button>
                         </form>
                     </div>
@@ -250,12 +252,12 @@ export const EmailSender: React.FC = () => {
                     <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full transition-colors duration-300">
                         <div className="flex items-center justify-between mb-4 shrink-0">
                             <h2 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center gap-2">
-                                <Clock className="w-5 h-5" /> 내 발송 이력
+                                <Clock className="w-5 h-5" /> {t('emailMySendHistory')}
                             </h2>
                             <button
                                 onClick={() => fetchLogs(page, pageSize)}
                                 className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-colors"
-                                title="새로고침"
+                                title={t('emailRefresh')}
                             >
                                 <RefreshCw className={`w-5 h-5 ${loadingLogs ? 'animate-spin' : ''}`} />
                             </button>
@@ -265,18 +267,18 @@ export const EmailSender: React.FC = () => {
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 font-medium border-b border-gray-200 dark:border-slate-800 sticky top-0 z-10 transition-colors">
                                     <tr>
-                                        <th className="px-4 py-3">상태</th>
-                                        <th className="px-4 py-3">수신자</th>
-                                        <th className="px-4 py-3">제목</th>
-                                        <th className="px-4 py-3">등록/예약 시각</th>
-                                        <th className="px-4 py-3 text-center">상세</th>
+                                        <th className="px-4 py-3">{t('emailThStatus')}</th>
+                                        <th className="px-4 py-3">{t('emailThRecipient')}</th>
+                                        <th className="px-4 py-3">{t('emailThSubject')}</th>
+                                        <th className="px-4 py-3">{t('emailThTime')}</th>
+                                        <th className="px-4 py-3 text-center">{t('emailThDetail')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
                                     {logs.length === 0 ? (
                                         <tr>
                                             <td colSpan={5} className="px-4 py-8 text-center text-gray-400 dark:text-slate-500">
-                                                발송 이력이 없습니다.
+                                                {t('emailNoHistory')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -295,7 +297,7 @@ export const EmailSender: React.FC = () => {
                                                                     log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
                                                                         'text-amber-600 dark:text-amber-400'
                                                                 }`}>
-                                                                {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
+                                                                {log.status === 'PENDING' && log.is_scheduled ? t('emailStatusScheduled') : log.status}
                                                             </span>
                                                         </div>
 
@@ -304,9 +306,9 @@ export const EmailSender: React.FC = () => {
                                                             <button
                                                                 onClick={() => handleCancel(log.id)}
                                                                 className="text-xs px-2 py-1 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                                title="발송 취소"
+                                                                title={t('emailCancel')}
                                                             >
-                                                                취소
+                                                                {t('emailCancel')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -322,16 +324,16 @@ export const EmailSender: React.FC = () => {
                                                     {log.subject}
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-500 dark:text-slate-500 text-xs">
-                                                    <div>등록: {log.reg_dt}</div>
+                                                    <div>{t('emailTimeReg').replace('{time}', log.reg_dt)}</div>
                                                     {log.is_scheduled === 1 && (
-                                                        <div className="text-blue-600 dark:text-blue-400 font-medium">예약: {log.scheduled_dt}</div>
+                                                        <div className="text-blue-600 dark:text-blue-400 font-medium">{t('emailTimeScheduled').replace('{time}', log.scheduled_dt || '')}</div>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <button
                                                         onClick={() => setDetailLog(log)}
                                                         className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                                        title="내용 보기"
+                                                        title={t('emailViewContent')}
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
@@ -366,20 +368,20 @@ export const EmailSender: React.FC = () => {
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 transition-all" onClick={() => setDetailLog(null)}>
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in transition-colors duration-300" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">메일 상세 내용</h3>
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('emailDetailTitle')}</h3>
                             <button onClick={() => setDetailLog(null)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
                                 <XCircle className="w-6 h-6" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto font-pretendard">
                             <div className="grid grid-cols-4 gap-2 text-sm">
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">수신자:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('emailDetailRecipient')}</span>
                                 <span className="col-span-3 text-gray-900 dark:text-slate-200">{detailLog.recipient}</span>
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">제목:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('emailDetailSubject')}</span>
                                 <span className="col-span-3 text-gray-900 dark:text-slate-100 font-bold">{detailLog.subject}</span>
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">발신자:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('emailDetailSender')}</span>
                                 <span className="col-span-3 text-gray-600 dark:text-slate-300">
-                                    {detailLog.user_uid === null ? 'AI 에이전트' : `${detailLog.user_nm} (${detailLog.user_id})`}
+                                    {detailLog.user_uid === null ? t('emailDetailSenderAgent') : `${detailLog.user_nm} (${detailLog.user_id})`}
                                 </span>
                             </div>
                             <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700 min-h-[200px] whitespace-pre-wrap text-gray-800 dark:text-slate-200 text-sm leading-relaxed transition-colors">
@@ -397,7 +399,7 @@ export const EmailSender: React.FC = () => {
                                 onClick={() => setDetailLog(null)}
                                 className="px-6 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                             >
-                                닫기
+                                {t('emailDetailClose')}
                             </button>
                         </div>
                     </div>
