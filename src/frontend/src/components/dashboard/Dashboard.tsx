@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Activity, RotateCw, User, BarChart, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 import { getAuthHeaders } from '../../utils/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /*
 * 메인 대시보드에 대한 컴포넌트
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function Dashboard({ stats, theme, role, onRefresh }: Props) {
+  const { t } = useLanguage();
   const isDark = theme === 'dark';
   const [mounted, setMounted] = useState(false);
 
@@ -27,8 +29,8 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
   }, []);
 
   // 1. Heatmap Data Processing
-  const days = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'], []);
-  const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => `${i}시`), []);
+  const days = useMemo(() => [t('dashDay0'), t('dashDay1'), t('dashDay2'), t('dashDay3'), t('dashDay4'), t('dashDay5'), t('dashDay6')], [t]);
+  const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => `${i}${t('dashHour')}`), [t]);
 
   // heatmapStats: { dow: string, hour: string, cnt: number }[]
   const heatmapData = useMemo(() => (stats.heatmapStats || []).map(item => [
@@ -66,7 +68,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
       }
     },
     series: [{
-      name: '사용 횟수',
+      name: t('dashUsageCount'),
       type: 'heatmap',
       data: heatmapData,
       label: { show: false },
@@ -87,7 +89,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
     tooltip: { trigger: 'item' },
     legend: { bottom: '0%', textStyle: { color: isDark ? '#94a3b8' : '#64748b' } },
     series: [{
-      name: '도구 사용', type: 'pie', radius: ['40%', '70%'],
+      name: t('dashToolUsage'), type: 'pie', radius: ['40%', '70%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 10,
@@ -96,15 +98,15 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
       },
       label: { show: false, position: 'center' },
       emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
-      data: pieData.length ? pieData : [{ value: 0, name: 'No Data' }]
+      data: pieData.length ? pieData : [{ value: 0, name: t('dashNoData') }]
     }]
-  }), [pieData, isDark]);
+  }), [pieData, isDark, t]);
 
   const barOption = useMemo(() => ({
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: {
-      data: ['성공', '실패'],
+      data: [t('dashSuccess'), t('dashFailure')],
       bottom: '0%',
       textStyle: { color: isDark ? '#94a3b8' : '#64748b' }
     },
@@ -120,10 +122,10 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
       axisLabel: { color: isDark ? '#94a3b8' : '#64748b' }
     },
     series: [
-      { name: '성공', type: 'bar', stack: 'total', itemStyle: { color: '#10b981' }, data: successData },
-      { name: '실패', type: 'bar', stack: 'total', itemStyle: { color: '#ef4444' }, data: failureData }
+      { name: t('dashSuccess'), type: 'bar', stack: 'total', itemStyle: { color: '#10b981' }, data: successData },
+      { name: t('dashFailure'), type: 'bar', stack: 'total', itemStyle: { color: '#ef4444' }, data: failureData }
     ]
-  }), [tools, successData, failureData, isDark]);
+  }), [tools, successData, failureData, isDark, t]);
 
 
   // 3. User Usage Chart Data & Interaction
@@ -163,7 +165,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
     legend: { bottom: '0%', textStyle: { color: isDark ? '#94a3b8' : '#64748b' } },
     series: [
       {
-        name: '사용자별 요청',
+        name: t('dashUserRequest'),
         type: 'pie',
         radius: ['40%', '70%'],
         avoidLabelOverlap: false,
@@ -176,10 +178,10 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
         emphasis: {
           label: { show: true, fontSize: 16, fontWeight: 'bold' }
         },
-        data: userData.length > 0 ? userData : [{ value: 0, name: 'No Data' }]
+        data: userData.length > 0 ? userData : [{ value: 0, name: t('dashNoData') }]
       }
     ]
-  }), [userData, isDark]);
+  }), [userData, isDark, t]);
 
   const userToolOption = useMemo(() => ({
     backgroundColor: 'transparent',
@@ -196,12 +198,12 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
       axisLabel: { color: isDark ? '#94a3b8' : '#64748b' }
     },
     series: [{
-      name: '사용 횟수',
+      name: t('dashUsageCount'),
       type: 'bar',
       data: userToolStats.map(s => s.cnt).reverse(),
       itemStyle: { color: '#3b82f6', borderRadius: [0, 5, 5, 0] }
     }]
-  }), [userToolStats, isDark]);
+  }), [userToolStats, isDark, t]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [health, setHealth] = useState<any>(null);
@@ -280,8 +282,8 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
             <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">대시보드</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 uppercase tracking-tight">실시간 성능 및 사용량 모니터링</p>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('dashboard')}</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 uppercase tracking-tight">{t('dashSubtitle')}</p>
           </div>
         </div>
         <div className="flex items-center space-x-4">
@@ -298,7 +300,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
             className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-lg transition-all duration-200 disabled:opacity-50"
           >
             <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="font-medium text-sm">{isRefreshing ? '새로고침 중...' : '새로고침'}</span>
+            <span className="font-medium text-sm">{isRefreshing ? t('dashRefreshing') : t('dashRefresh')}</span>
           </button>
         </div>
       </header>
@@ -307,9 +309,9 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
       <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center">
-            <BarChart className="w-5 h-5 mr-2 text-blue-500" /> 시간대별/요일별 사용 패턴
+            <BarChart className="w-5 h-5 mr-2 text-blue-500" /> {t('dashHeatmapTitle')}
           </h3>
-          <span className="text-xs text-gray-400 uppercase tracking-widest font-mono">사용량 히트맵 (7x24)</span>
+          <span className="text-xs text-gray-400 uppercase tracking-widest font-mono">{t('dashHeatmapSubtitle')}</span>
         </div>
         <div className="h-[300px]">
           {mounted && <ReactECharts key={`heatmap-${theme}`} theme={isDark ? 'dark' : undefined} option={heatmapOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
@@ -320,11 +322,11 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
         {/* Left Row: Tools and General Results */}
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4 font-pretendard">도구별 사용 횟수</h3>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4 font-pretendard">{t('dashToolUsageTitle')}</h3>
             {mounted && <ReactECharts key={`pie-${theme}`} theme={isDark ? 'dark' : undefined} option={pieOption} style={{ height: '350px' }} notMerge={true} lazyUpdate={true} />}
           </div>
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4 font-pretendard">요청 처리 결과</h3>
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 mb-4 font-pretendard">{t('dashRequestResultTitle')}</h3>
             {mounted && <ReactECharts key={`bar-${theme}`} theme={isDark ? 'dark' : undefined} option={barOption} style={{ height: '300px' }} notMerge={true} lazyUpdate={true} />}
           </div>
         </div>
@@ -333,8 +335,8 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
         <div className="space-y-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 hover:shadow-md transition-all duration-300">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 font-pretendard">사용자별 요청 횟수</h3>
-              {role === 'ROLE_ADMIN' && <span className="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">분석하려면 클릭</span>}
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 font-pretendard">{t('dashUserRequestTitle')}</h3>
+              {role === 'ROLE_ADMIN' && <span className="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">{t('dashClickToAnalyze')}</span>}
             </div>
             {userList.length > 0 ? (
               mounted && (
@@ -349,7 +351,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
                 />
               )
             ) : (
-              <div className="h-[350px] flex items-center justify-center text-gray-400 dark:text-slate-500 font-pretendard">데이터 없음</div>
+              <div className="h-[350px] flex items-center justify-center text-gray-400 dark:text-slate-500 font-pretendard">{t('dashNoDataKo')}</div>
             )}
           </div>
 
@@ -361,14 +363,14 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center">
                   <User className="w-5 h-5 mr-2 text-indigo-500" />
-                  {selectedUser ? <span className="text-blue-600 dark:text-blue-400 font-bold">[{selectedUser}]</span> : "사용자"} 상세 분석
+                  {selectedUser ? <span className="text-blue-600 dark:text-blue-400 font-bold">[{selectedUser}]</span> : t('dashUser')} {t('dashDetailAnalysis')}
                 </h3>
                 {selectedUser && (
                   <button
                     onClick={() => setSelectedUser(null)}
                     className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 underline decoration-dotted underline-offset-4"
                   >
-                    선택 초기화
+                    {t('dashClearSelection')}
                   </button>
                 )}
               </div>
@@ -378,7 +380,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
                   <div className="p-4 rounded-full bg-gray-50 dark:bg-slate-800/50">
                     <User className="w-10 h-10 opacity-20" />
                   </div>
-                  <p className="text-sm font-medium">사용자 차트의 항목을 클릭하여 상세 정보를 조회하세요.</p>
+                  <p className="text-sm font-medium">{t('dashClickUserChartToView')}</p>
                 </div>
               ) : loadingUserStats ? (
                 <div className="h-[300px] flex items-center justify-center">
@@ -386,7 +388,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
                 </div>
               ) : userToolStats.length > 0 ? (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">주 사용 도구 TOP 5 (전체 기간)</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mb-2">{t('dashTop5Tools')}</p>
                   <div className="h-[250px]">
                     {mounted && <ReactECharts key={`user-tool-${selectedUser}-${theme}`} theme={isDark ? 'dark' : undefined} option={userToolOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
                   </div>
@@ -394,7 +396,7 @@ export function Dashboard({ stats, theme, role, onRefresh }: Props) {
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 space-y-2">
                   <BarChart className="w-10 h-10 opacity-20" />
-                  <p className="text-sm font-bold">사용한 도구가 없습니다</p>
+                  <p className="text-sm font-bold">{t('dashNoToolUsed')}</p>
                 </div>
               )}
             </div>
