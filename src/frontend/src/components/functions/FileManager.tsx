@@ -1,6 +1,7 @@
 import { Download, File as FileIcon, FolderOpen, History, Upload, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { getAuthHeaders } from '../../utils/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface UploadedFile {
     file_uid: number;
@@ -27,6 +28,7 @@ interface FileBatch {
 }
 
 export const FileManager: React.FC = () => {
+    const { t } = useLanguage();
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [groupedFiles, setGroupedFiles] = useState<FileBatch[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -120,13 +122,13 @@ export const FileManager: React.FC = () => {
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
-                alert('파일 업로드 완료!');
+                alert(t('fmAlertUploadSuccess'));
             } else {
-                alert('파일 업로드 실패');
+                alert(t('fmAlertUploadFail'));
             }
         } catch (e) {
             console.error(e);
-            alert('업로드 중 오류 발생');
+            alert(t('fmAlertUploadErr'));
         } finally {
             setIsUploading(false);
         }
@@ -149,11 +151,11 @@ export const FileManager: React.FC = () => {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                alert('다운로드 실패');
+                alert(t('fmAlertDownloadFail'));
             }
         } catch (e) {
             console.error(e);
-            alert('다운로드 중 오류 발생');
+            alert(t('fmAlertDownloadErr'));
         }
     };
 
@@ -168,11 +170,11 @@ export const FileManager: React.FC = () => {
                 setCurrentFileLogs(data.logs);
                 setShowLogModal(true);
             } else {
-                alert('로그 조회 실패');
+                alert(t('fmAlertLogFail'));
             }
         } catch (e) {
             console.error(e);
-            alert('로그 조회 중 오류 발생');
+            alert(t('fmAlertLogErr'));
         }
     };
 
@@ -184,8 +186,8 @@ export const FileManager: React.FC = () => {
                         <Upload className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">파일 관리 (테스트)</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">파일 업로드 및 다운로드 기능을 테스트합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('fmTitle')}</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('fmSubtitle')}</p>
                     </div>
                 </div>
             </header>
@@ -194,7 +196,7 @@ export const FileManager: React.FC = () => {
                 {/* Upload Section */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col transition-colors duration-300">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                        <Upload className="w-5 h-5 text-gray-600 dark:text-slate-400" /> 파일 업로드
+                        <Upload className="w-5 h-5 text-gray-600 dark:text-slate-400" /> {t('fmUploadSectionTitle')}
                     </h3>
 
                     <div
@@ -202,7 +204,7 @@ export const FileManager: React.FC = () => {
                         onClick={() => fileInputRef.current?.click()}
                     >
                         <Upload className="w-12 h-12 mb-3 text-gray-400 dark:text-slate-500" />
-                        <p className="font-medium">클릭하여 파일 선택 (다중 선택 가능)</p>
+                        <p className="font-medium">{t('fmSelectFilesHint')}</p>
                         <input
                             type="file"
                             multiple
@@ -233,20 +235,20 @@ export const FileManager: React.FC = () => {
                                 : 'bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 shadow-lg'
                             }`}
                     >
-                        {isUploading ? '업로드 중...' : `${selectedFiles.length}개 파일 업로드`}
+                        {isUploading ? t('fmUploading') : t('fmUploadBtnText').replace('{count}', String(selectedFiles.length))}
                     </button>
                 </div>
 
                 {/* File List Section */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col transition-colors duration-300">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                        <FileIcon className="w-5 h-5 text-gray-600 dark:text-slate-400" /> 업로드 된 파일 목록
+                        <FileIcon className="w-5 h-5 text-gray-600 dark:text-slate-400" /> {t('fmUploadedListTitle')}
                     </h3>
 
                     <div className="flex-1 overflow-y-auto space-y-4 px-1 font-pretendard">
                         {groupedFiles.length === 0 ? (
                             <div className="h-full flex items-center justify-center text-gray-400 dark:text-slate-500">
-                                업로드 된 파일이 없습니다.
+                                {t('fmNoFiles')}
                             </div>
                         ) : (
                             groupedFiles.map((batch) => (
@@ -255,11 +257,11 @@ export const FileManager: React.FC = () => {
                                         <div className="flex items-center gap-2 text-gray-600 dark:text-slate-400">
                                             <FolderOpen className="w-4 h-4" />
                                             <span className="text-xs font-medium">
-                                                업로드 일시: {new Date(batch.uploadDate).toLocaleString()}
+                                                {t('fmUploadDate').replace('{time}', new Date(batch.uploadDate).toLocaleString())}
                                             </span>
                                         </div>
                                         <span className="text-xs text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-full border border-gray-200 dark:border-slate-700 transition-colors">
-                                            {batch.files.length}개 파일
+                                            {t('fmFileCount').replace('{count}', String(batch.files.length))}
                                         </span>
                                     </div>
                                     <div className="divide-y divide-gray-100 dark:divide-slate-800">
@@ -278,14 +280,14 @@ export const FileManager: React.FC = () => {
                                                     <button
                                                         onClick={() => handleShowLogs(file.file_uid, file.org_file_nm)}
                                                         className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                                                        title="로그 보기"
+                                                        title={t('fmTooltipViewLogs')}
                                                     >
                                                         <History className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDownload(file.file_id, file.org_file_nm)}
                                                         className="p-1.5 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                                                        title="다운로드"
+                                                        title={t('fmTooltipDownload')}
                                                     >
                                                         <Download className="w-4 h-4" />
                                                     </button>
@@ -307,7 +309,7 @@ export const FileManager: React.FC = () => {
                         <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
                             <h3 className="font-bold text-lg text-gray-800 dark:text-slate-100 flex items-center gap-2">
                                 <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                파일 이력: {currentFileName}
+                                {t('fmHistoryTitle').replace('{name}', currentFileName)}
                             </h3>
                             <button onClick={() => setShowLogModal(false)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300">
                                 <X className="w-5 h-5" />
@@ -315,7 +317,7 @@ export const FileManager: React.FC = () => {
                         </div>
                         <div className="p-4 overflow-y-auto flex-1 font-pretendard">
                             {currentFileLogs.length === 0 ? (
-                                <p className="text-center text-gray-500 dark:text-slate-500 py-8">이력이 없습니다.</p>
+                                <p className="text-center text-gray-500 dark:text-slate-500 py-8">{t('fmNoHistory')}</p>
                             ) : (
                                 <div className="space-y-3">
                                     {currentFileLogs.map((log) => (
@@ -337,7 +339,7 @@ export const FileManager: React.FC = () => {
                                 onClick={() => setShowLogModal(false)}
                                 className="px-4 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 font-medium text-sm transition-colors"
                             >
-                                닫기
+                                {t('fmBtnClose')}
                             </button>
                         </div>
                     </div>
