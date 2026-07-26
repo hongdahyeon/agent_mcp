@@ -4,6 +4,7 @@ import { FileText, RefreshCw, Archive, CheckSquare, Square, FileArchive, ArrowUp
 import type { LogFileResponse, LogContentResponse, LogFileInfo } from '../../types';
 import clsx from 'clsx';
 import { getAuthHeaders } from '../../utils/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /* 
 * 로그 이력 보기 화면에 대한 컴포넌트
@@ -11,6 +12,7 @@ import { getAuthHeaders } from '../../utils/auth';
 */
 
 export function LogViewer() {
+    const { t } = useLanguage();
     const [files, setFiles] = useState<LogFileInfo[]>([]);
     const [currentFile, setCurrentFile] = useState<LogFileInfo | null>(null);
     const [content, setContent] = useState<string>('');
@@ -43,7 +45,7 @@ export function LogViewer() {
 
     const fetchContent = async (file: LogFileInfo) => {
         setCurrentFile(file);
-        setContent('Loading...');
+        setContent(t('logLoading'));
         setZipFiles([]);
 
         if (file.type === 'zip') {
@@ -51,9 +53,9 @@ export function LogViewer() {
                 const res = await fetch(`/api/system/logs/zip-content/${file.name}`, { headers: getAuthHeaders() });
                 const data = await res.json();
                 setZipFiles(data.files || []);
-                setContent(`[Zip Archive Contents]\n\n${(data.files || []).join('\n')}`);
+                setContent(`${t('logZipContentsHeader')}${(data.files || []).join('\n')}`);
             } catch {
-                setContent('Error loading zip content.');
+                setContent(t('logZipLoadErr'));
             }
         } else {
             try {
@@ -61,7 +63,7 @@ export function LogViewer() {
                 const data: LogContentResponse = await res.json();
                 setContent(data.content || '');
             } catch {
-                setContent('Error loading file.');
+                setContent(t('logFileLoadErr'));
             }
         }
     };
@@ -80,7 +82,7 @@ export function LogViewer() {
     const handleArchive = async () => {
         if (selectedFiles.length === 0) return;
         if (!archiveName.trim()) {
-            alert('압축 파일명을 입력해주세요.');
+            alert(t('logAlertInputName'));
             return;
         }
 
@@ -99,23 +101,23 @@ export function LogViewer() {
             });
             const data = await res.json();
             if (data.success) {
-                alert(`압축 및 원본 삭제 완료: ${data.archive_name}`);
+                alert(t('logAlertArchiveOk').replace('{name}', data.archive_name));
                 setArchiveName('');
                 setSelectedFiles([]);
                 fetchFiles();
             } else {
-                alert(`압축 실패: ${data.error || '알 수 없는 오류'}`);
+                alert(t('logAlertArchiveFail').replace('{error}', data.error || t('emailErrUnknown')));
             }
         } catch (e) {
             console.error(e);
-            alert('압축 요청 중 오류가 발생했습니다.');
+            alert(t('logAlertArchiveErr'));
         } finally {
             setArchiving(false);
         }
     };
 
     const handleUnzip = async (filename: string) => {
-        if (!confirm(`${filename} 파일의 압축을 해제하시겠습니까?`)) return;
+        if (!confirm(t('logConfirmUnzip').replace('{filename}', filename))) return;
 
         setUnzipping(true);
         try {
@@ -129,18 +131,18 @@ export function LogViewer() {
             });
             const data = await res.json();
             if (data.success) {
-                alert('압축 해제 완료');
+                alert(t('logAlertUnzipOk'));
                 if (currentFile?.name === filename) {
                     setCurrentFile(null);
                     setContent('');
                 }
                 fetchFiles();
             } else {
-                alert(`해제 실패: ${data.error || '알 수 없는 오류'}`);
+                alert(t('logAlertUnzipFail').replace('{error}', data.error || t('emailErrUnknown')));
             }
         } catch (e) {
             console.error(e);
-            alert('압축 해제 중 오류가 발생했습니다.');
+            alert(t('logAlertUnzipErr'));
         } finally {
             setUnzipping(false);
         }
@@ -159,10 +161,10 @@ export function LogViewer() {
     const handleCopy = () => {
         if (!content) return;
         navigator.clipboard.writeText(content).then(() => {
-            alert('로그 내용이 클립보드에 복사되었습니다.');
+            alert(t('logAlertCopyOk'));
         }).catch(err => {
             console.error('복사 실패:', err);
-            alert('복사에 실패했습니다.');
+            alert(t('logAlertCopyFail'));
         });
     };
 
@@ -175,7 +177,7 @@ export function LogViewer() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">
-                            서버 로그 보관소
+                            {t('logs')}
                         </h2>
                     </div>
                 </div>
@@ -183,7 +185,7 @@ export function LogViewer() {
                     onClick={fetchFiles}
                     className="flex items-center text-sm bg-gray-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-700 dark:text-slate-300 border border-gray-200 dark:border-slate-700 font-pretendard">
                     <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-                    목록 새로고침
+                    {t('logRefreshList')}
                 </button>
             </header>
 
@@ -192,7 +194,7 @@ export function LogViewer() {
                 <div className="col-span-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col overflow-hidden transition-colors duration-300">
                     <div className="p-3 bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center">
                         <span className="font-semibold text-sm text-gray-600 dark:text-slate-300 font-pretendard">
-                            로그 파일 목록 ({files.length})
+                            {t('logFileListTitle').replace('{count}', String(files.length))}
                         </span>
                     </div>
 
@@ -201,7 +203,7 @@ export function LogViewer() {
                         <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-900/30 space-y-2 animate-in slide-in-from-top-2">
                             <input
                                 type="text"
-                                placeholder="압축 파일명"
+                                placeholder={t('logArchivePlaceholder')}
                                 value={archiveName}
                                 onChange={(e) => setArchiveName(e.target.value)}
                                 className="w-full text-xs p-2 rounded border border-blue-200 dark:border-blue-900/50 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -212,7 +214,7 @@ export function LogViewer() {
                                 className="w-full flex items-center justify-center text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded transition-colors disabled:opacity-50"
                             >
                                 <Archive className={clsx("w-3.5 h-3.5 mr-1.5", archiving && "animate-pulse")} />
-                                {selectedFiles.length}개 파일 압축 및 삭제
+                                {t('logArchiveBtnText').replace('{count}', String(selectedFiles.length))}
                             </button>
                         </div>
                     )}
@@ -260,7 +262,7 @@ export function LogViewer() {
                                 )}
                             </li>
                         ))}
-                        {files.length === 0 && <li className="text-gray-400 dark:text-slate-500 text-center py-6 text-sm font-pretendard">파일이 없습니다.</li>}
+                        {files.length === 0 && <li className="text-gray-400 dark:text-slate-500 text-center py-6 text-sm font-pretendard">{t('logNoFiles')}</li>}
                     </ul>
                 </div>
 
@@ -269,7 +271,7 @@ export function LogViewer() {
                     <div className="p-3 bg-[#2D2D2D] dark:bg-[#0f172a] border-b border-gray-700 dark:border-slate-800 text-gray-300 dark:text-slate-400 text-sm font-mono flex justify-between items-center">
                         <span className="flex items-center">
                             {currentFile?.type === 'zip' ? <FileArchive className="w-4 h-4 mr-2 opacity-50" /> : <FileText className="w-4 h-4 mr-2 opacity-50" />}
-                            {currentFile?.name || '파일을 선택하세요'}
+                            {currentFile?.name || t('logSelectFilePrompt')}
                         </span>
 
                         <div className="flex items-center space-x-3">
@@ -279,7 +281,7 @@ export function LogViewer() {
                                         onClick={() => handleDownload(currentFile.name)}
                                         className="flex items-center px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
                                     >
-                                        <Download className="w-3 h-3 mr-1" /> 받기
+                                        <Download className="w-3 h-3 mr-1" /> {t('logDownloadBtn')}
                                     </button>
                                     <button
                                         onClick={() => handleUnzip(currentFile.name)}
@@ -287,7 +289,7 @@ export function LogViewer() {
                                         className="flex items-center px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-xs transition-colors disabled:opacity-50"
                                     >
                                         <ArrowUpCircle className={clsx("w-3 h-3 mr-1", unzipping && "animate-spin")} />
-                                        압축 해제
+                                        {t('logUnzipBtn')}
                                     </button>
                                 </>
                             )}
@@ -298,7 +300,7 @@ export function LogViewer() {
                                             onClick={handleCopy}
                                             className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors shadow-sm"
                                         >
-                                            <Copy className="w-3 h-3 mr-1" /> 복사
+                                            <Copy className="w-3 h-3 mr-1" /> {t('logCopyBtn')}
                                         </button>
                                     )}
                                     <span className="text-xs text-gray-500 dark:text-slate-500">{currentFile.size.toLocaleString()} bytes</span>
@@ -311,7 +313,7 @@ export function LogViewer() {
                             <div className="max-w-xl mx-auto space-y-4">
                                 <h3 className="text-blue-400 font-pretendard font-bold flex items-center">
                                     <FileArchive className="w-5 h-5 mr-2" />
-                                    압축 해제 시 복구될 파일 목록:
+                                    {t('logUnzipFileListTitle')}
                                 </h3>
                                 <div className="grid grid-cols-1 gap-2">
                                     {zipFiles.map(zf => (
