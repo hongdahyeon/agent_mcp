@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { Tool } from '../../types';
 import { Play, RotateCcw, RefreshCw, Copy, Check } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /* 
 * 도구 사용하기 화면에 대한 컴포넌트
@@ -24,6 +25,7 @@ interface OpenApiTool {
 }
 
 export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
+    const { t } = useLanguage();
     const [selectedTool, setSelectedTool] = useState<string>('');
     const [openapiToolId, setOpenapiToolId] = useState<string>('');
     const [openapiTools, setOpenapiTools] = useState<OpenApiTool[]>([]);
@@ -102,7 +104,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
         const requiredFields = currentTool.inputSchema.required || [];
         const missingFields = requiredFields.filter(f => args[f] === undefined);
         if (missingFields.length > 0) {
-            alert(`필수 파라미터가 누락되었습니다: ${missingFields.join(', ')}`);
+            alert(t('testerMissingRequired').replace('{fields}', missingFields.join(', ')));
             return;
         }
 
@@ -149,7 +151,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">
-                            도구 테스터
+                            {t('testerTitle')}
                         </h2>
                     </div>
                 </div>
@@ -160,15 +162,15 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                     {/* Input Area */}
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden transition-colors duration-300">
                         <div className="mb-6 flex-shrink-0">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 font-pretendard">테스트할 도구 선택</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 font-pretendard">{t('testerSelectLabel')}</label>
                             <div className="flex items-center space-x-2">
                                 <select
                                     value={selectedTool}
                                     onChange={handleToolChange}
                                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 hover:border-blue-400"
                                 >
-                                    <option value="">선택하세요 (Select Tool)</option>
-                                    {tools.length === 0 && <option disabled>도구 목록 로딩 중...</option>}
+                                    <option value="">{t('testerSelectPlaceholder')}</option>
+                                    {tools.length === 0 && <option disabled>{t('testerLoadingTools')}</option>}
                                     {tools.map(t => {
                                         const isDynamic = t.description?.startsWith('[Dynamic]');
                                         const isSystem = t.description?.startsWith('[System]');
@@ -180,7 +182,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                     <button
                                         onClick={refreshTools}
                                         className="p-2 text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
-                                        title="도구 목록 새로고침"
+                                        title={t('testerRefreshTitle')}
                                     >
                                         <RefreshCw className="w-5 h-5" />
                                     </button>
@@ -207,7 +209,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                             }) : (
                                 <div className="flex flex-col items-center justify-center h-64 text-gray-400 dark:text-slate-500 font-pretendard">
                                     <RotateCcw className="w-8 h-8 mb-2 opacity-50" />
-                                    <p>도구를 선택하면 입력 필드가 표시됩니다.</p>
+                                    <p>{t('testerSelectPrompt')}</p>
                                 </div>
                             )}
                         </div>
@@ -219,7 +221,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                 className="flex-1 bg-blue-600 dark:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-500 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center group font-pretendard"
                             >
                                 <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
-                                실행 (Execute)
+                                {t('testerExecuteBtn')}
                             </button>
                         </div>
 
@@ -227,7 +229,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                         <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-800 flex-shrink-0">
                             <h4 className="text-sm font-bold text-indigo-600 dark:text-indigo-400 mb-3 flex items-center font-pretendard">
                                 <span className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full mr-2"></span>
-                                OpenAPI 도구 분석 (Tool Analysis)
+                                {t('testerAnalysisTitle')}
                             </h4>
                             <div className="flex items-center space-x-2">
                                 <select
@@ -235,7 +237,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                     value={openapiToolId}
                                     onChange={(e) => setOpenapiToolId(e.target.value)}
                                 >
-                                    <option value="">분석할 도구 선택 (Select Tool for Analysis)</option>
+                                    <option value="">{t('testerAnalysisSelectPlaceholder')}</option>
                                     {openapiTools.map(item => (
                                         <option key={item.id} value={item.tool_id}>
                                             {item.name_ko} ({item.tool_id})
@@ -251,11 +253,11 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                     disabled={!openapiToolId.trim()}
                                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-pretendard h-[42px] whitespace-nowrap text-sm"
                                 >
-                                    분석 실행
+                                    {t('testerAnalysisBtn')}
                                 </button>
                             </div>
                             <p className="mt-2 text-xs text-gray-400 dark:text-slate-500 font-pretendard">
-                                * OpenAPI 관리 메뉴에 등록된 도구 ID를 입력하여 분석 보고서를 생성합니다.
+                                {t('testerAnalysisHint')}
                             </p>
                         </div>
                     </div>
@@ -264,18 +266,18 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-col h-full overflow-hidden transition-colors duration-300">
                         <div className="flex items-center justify-between mb-4 flex-shrink-0">
                             <h3 className="text-lg font-semibold text-gray-700 dark:text-slate-200 flex items-center font-pretendard">
-                                실행 결과 (JSON)
-                                {!!displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">Updated</span>}
+                                {t('testerResultTitle')}
+                                {!!displayResult && <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">{t('testerResultUpdated')}</span>}
                             </h3>
 
                             {!!displayResult && (
                                 <button
                                     onClick={handleCopy}
                                     className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
-                                    title="결과 복사"
+                                    title={t('testerCopyBtn')}
                                 >
                                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    <span className="font-pretendard">{copied ? 'Copied!' : 'Copy'}</span>
+                                    <span className="font-pretendard">{copied ? t('testerCopied') : t('testerCopy')}</span>
                                 </button>
                             )}
                         </div>
@@ -296,7 +298,7 @@ export function Tester({ tools, sendRpc, lastResult, refreshTools }: Props) {
                                     });
                                 }
                                 return JSON.stringify(renderedResult, null, 2);
-                            })() : <span className="text-gray-600 dark:text-slate-600 font-pretendard"> ... 실행 결과가 여기에 표시됩니다.</span>}
+                            })() : <span className="text-gray-600 dark:text-slate-600 font-pretendard">{t('testerResultPlaceholder')}</span>}
                         </pre>
                     </div>
                 </div>
