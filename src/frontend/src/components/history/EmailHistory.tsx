@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { EmailLog } from '../../types/emailSend';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const EmailHistory: React.FC = () => {
+    const { t } = useLanguage();
     const [logs, setLogs] = useState<EmailLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -45,8 +47,8 @@ export const EmailHistory: React.FC = () => {
                         <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">전체 메일 발송 이력</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">시스템에서 발송된 모든 메일(AI 포함) 이력을 조회합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('ehTitle')}</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('ehSubtitle')}</p>
                     </div>
                 </div>
                 <button
@@ -62,18 +64,18 @@ export const EmailHistory: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 text-sm">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">상태</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">발신자</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">수신자</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">제목</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">등록/예약 시각</th>
-                                <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-slate-400 uppercase">상세</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehStatus')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehSender')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehRecipient')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehSubject')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehRegScheduledTime')}</th>
+                                <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-slate-400 uppercase">{t('ehDetail')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-slate-500">이력이 없습니다.</td>
+                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-slate-500">{t('ehNoHistory')}</td>
                                 </tr>
                             ) : (
                                 logs.map((log) => (
@@ -89,7 +91,7 @@ export const EmailHistory: React.FC = () => {
                                                         log.status === 'CANCELLED' ? 'text-gray-500 dark:text-slate-400' :
                                                             'text-amber-600 dark:text-amber-400'
                                                     }`}>
-                                                    {log.status === 'PENDING' && log.is_scheduled ? '예약됨' : log.status}
+                                                    {log.status === 'PENDING' && log.is_scheduled ? t('ehScheduled') : log.status}
                                                 </span>
                                             </div>
                                         </td>
@@ -105,16 +107,16 @@ export const EmailHistory: React.FC = () => {
                                             {log.subject}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-slate-500 text-xs">
-                                            <div>등록: {log.reg_dt}</div>
+                                            <div>{t('ehCreatedLabel').replace('{time}', log.reg_dt)}</div>
                                             {log.is_scheduled === 1 && (
-                                                <div className="text-blue-600 dark:text-blue-400 font-medium">예약: {log.scheduled_dt}</div>
+                                                <div className="text-blue-600 dark:text-blue-400 font-medium">{t('ehScheduledLabel').replace('{time}', log.scheduled_dt)}</div>
                                             )}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <button
                                                 onClick={() => setDetailLog(log)}
                                                 className="p-1.5 text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors font-pretendard"
-                                                title="내용 보기"
+                                                title={t('ehViewContent')}
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
@@ -145,20 +147,20 @@ export const EmailHistory: React.FC = () => {
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 transition-all" onClick={() => setDetailLog(null)}>
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-fade-in transition-colors duration-300" onClick={e => e.stopPropagation()}>
                         <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
-                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">메일 상세 내용</h3>
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('ehDetailModalTitle')}</h3>
                             <button onClick={() => setDetailLog(null)} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg">
                                 <XCircle className="w-6 h-6" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto font-pretendard">
                             <div className="grid grid-cols-4 gap-2 text-sm">
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">수신자:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('ehLabelRecipient')}</span>
                                 <span className="col-span-3 text-gray-900 dark:text-slate-200">{detailLog.recipient}</span>
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">제목:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('ehLabelSubject')}</span>
                                 <span className="col-span-3 text-gray-900 dark:text-slate-100 font-bold">{detailLog.subject}</span>
-                                <span className="text-gray-500 dark:text-slate-400 font-medium">발신자:</span>
+                                <span className="text-gray-500 dark:text-slate-400 font-medium">{t('ehLabelSender')}</span>
                                 <span className="col-span-3 text-gray-600 dark:text-slate-300">
-                                    {detailLog.user_uid === null ? 'AI 에이전트' : `${detailLog.user_nm} (${detailLog.user_id})`}
+                                    {detailLog.user_uid === null ? t('ehAiAgent') : `${detailLog.user_nm} (${detailLog.user_id})`}
                                 </span>
                             </div>
                             <div className="mt-4 p-4 bg-gray-50 dark:bg-slate-800/50 rounded-lg border border-gray-200 dark:border-slate-700 min-h-[200px] whitespace-pre-wrap text-gray-800 dark:text-slate-200 text-sm leading-relaxed transition-colors">
@@ -176,7 +178,7 @@ export const EmailHistory: React.FC = () => {
                                 onClick={() => setDetailLog(null)}
                                 className="px-6 py-2 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 border border-gray-200 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                             >
-                                닫기
+                                {t('ehBtnClose')}
                             </button>
                         </div>
                     </div>
