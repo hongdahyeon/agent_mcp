@@ -3,6 +3,7 @@ import { CheckCircle, History, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import type { LoginHistory } from '../../types/auth';
 
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Pagination } from '../common/Pagination';
 
 /* 
@@ -10,6 +11,7 @@ import { Pagination } from '../common/Pagination';
 */
 
 export function LoginHistViewer() {
+    const { t } = useLanguage();
     const [history, setHistory] = useState<LoginHistory[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -50,8 +52,8 @@ export function LoginHistViewer() {
                         <History className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-800 dark:text-slate-100">접속 이력 (Login History)</h1>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">최근 로그인 시도 기록을 조회합니다.</p>
+                        <h1 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('lhTitle')}</h1>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">{t('lhSubtitle')}</p>
                     </div>
                 </div>
                 <button
@@ -60,7 +62,7 @@ export function LoginHistViewer() {
                     className="flex items-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-50 dark:bg-slate-800 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors border border-gray-200 dark:border-slate-700"
                 >
                     <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-                    새로고침
+                    {t('lhRefresh')}
                 </button>
             </header>
 
@@ -69,19 +71,19 @@ export function LoginHistViewer() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">시간</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">사용자 ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이름</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">IP 주소</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">메시지</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThTime')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThUserId')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThUserName')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThIpAddress')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThStatus')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('lhThMessage')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {history.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-slate-400">
-                                        기록이 없습니다.
+                                        {t('lhNoHistory')}
                                     </td>
                                 </tr>
                             ) : (
@@ -94,11 +96,11 @@ export function LoginHistViewer() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {item.login_success === 'SUCCESS' ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 transition-colors">
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> 성공
+                                                    <CheckCircle className="w-3 h-3 mr-1" /> {t('lhStatusSuccess')}
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 transition-colors">
-                                                    <XCircle className="w-3 h-3 mr-1" /> 실패
+                                                    <XCircle className="w-3 h-3 mr-1" /> {t('lhStatusFail')}
                                                 </span>
                                             )}
                                         </td>
