@@ -289,5 +289,17 @@
   "ehLabelSubject": "Subject:",
   "ehLabelSender": "Sender:",
   "ehAiAgent": "AI Agent",
-  "ehBtnClose": "Close"
+  "ehBtnClose": "Close",
+  "lhTitle": "Login History",
+  "lhSubtitle": "View recent login attempt records.",
+  "lhRefresh": "Refresh",
+  "lhThTime": "Time",
+  "lhThUserId": "User ID",
+  "lhThUserName": "Name",
+  "lhThIpAddress": "IP Address",
+  "lhThStatus": "Status",
+  "lhThMessage": "Message",
+  "lhNoHistory": "No history found.",
+  "lhStatusSuccess": "Success",
+  "lhStatusFail": "Failure"
 }
