@@ -289,5 +289,17 @@
   "ehLabelSubject": "제목:",
   "ehLabelSender": "발신자:",
   "ehAiAgent": "AI 에이전트",
-  "ehBtnClose": "닫기"
+  "ehBtnClose": "닫기",
+  "lhTitle": "접속 이력 (Login History)",
+  "lhSubtitle": "최근 로그인 시도 기록을 조회합니다.",
+  "lhRefresh": "새로고침",
+  "lhThTime": "시간",
+  "lhThUserId": "사용자 ID",
+  "lhThUserName": "이름",
+  "lhThIpAddress": "IP 주소",
+  "lhThStatus": "상태",
+  "lhThMessage": "메시지",
+  "lhNoHistory": "기록이 없습니다.",
+  "lhStatusSuccess": "성공",
+  "lhStatusFail": "실패"
 }
