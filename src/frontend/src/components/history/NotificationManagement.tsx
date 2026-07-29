@@ -13,6 +13,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface NotificationLog {
     id: number;
@@ -37,6 +38,7 @@ interface MiniUser {
 }
 
 export const NotificationManagement: React.FC = () => {
+    const { t } = useLanguage();
     const [logs, setLogs] = useState<NotificationLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -98,7 +100,7 @@ export const NotificationManagement: React.FC = () => {
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser || !title || !message) {
-            const alertMessage = '모든 필드를 입력해주세요.';
+            const alertMessage = t('nmAlertFillAll');
             alert(alertMessage);
             return;
         }
@@ -119,7 +121,7 @@ export const NotificationManagement: React.FC = () => {
             });
 
             if (res.ok) {
-                const alertMessage = '알림이 발송되었습니다.';
+                const alertMessage = t('nmAlertSent');
                 alert(alertMessage);
                 setIsModalOpen(false);
                 setSelectedUser(null);
@@ -128,11 +130,11 @@ export const NotificationManagement: React.FC = () => {
                 fetchLogs(1);
             } else {
                 const data = await res.json();
-                throw new Error(data.detail || '발송 실패');
+                throw new Error(data.detail || t('nmSendFail'));
             }
         } catch (e: unknown) {
-            const errorMsg = e instanceof Error ? e.message : '알 수 없는 오류';
-            const alertMessage = `발송 오류: ${errorMsg}`;
+            const errorMsg = e instanceof Error ? e.message : t('nmErrUnknown');
+            const alertMessage = t('nmAlertSendErr').replace('{error}', errorMsg);
             alert(alertMessage);
         } finally {
             setIsSending(false);
@@ -140,7 +142,7 @@ export const NotificationManagement: React.FC = () => {
     };
 
     const handleDelete = async (id: number) => {
-        const confirmMessage = '해당 알림을 삭제하시겠습니까? (소프트 삭제)';
+        const confirmMessage = t('nmConfirmDelete');
         if (!confirm(confirmMessage)) return;
         try {
             const res = await fetch(`/api/notifications/${id}`, {
@@ -168,8 +170,8 @@ export const NotificationManagement: React.FC = () => {
                         <BellRing className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">전체 알림 관리</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">시스템에서 발송된 실시간 알림 내역을 조회하고 관리합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('nmTitle')}</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('nmSubtitle')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -183,14 +185,14 @@ export const NotificationManagement: React.FC = () => {
                         )}
                     >
                         <Filter className="w-4 h-4" />
-                        삭제 내역 포함
+                        {t('nmIncludeDeleted')}
                     </button>
                     <button
                         onClick={handleOpenSendModal}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                     >
                         <Send className="w-4 h-4" />
-                        알림 발송
+                        {t('nmSendBtn')}
                     </button>
                     <button
                         onClick={() => fetchLogs()}
@@ -206,25 +208,25 @@ export const NotificationManagement: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 text-sm">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">발신</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">수신 대상</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">제목 / 내용</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">등록일시</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">읽음 상태</th>
-                                <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-slate-400">액션</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">{t('nmThSender')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">{t('nmThRecipient')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">{t('nmThSubjectContent')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">{t('nmThRegTime')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400">{t('nmThReadStatus')}</th>
+                                <th className="px-6 py-3 text-center font-medium text-gray-500 dark:text-slate-400">{t('nmThAction')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400">알림 내역이 없습니다.</td>
+                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400">{t('nmNoHistory')}</td>
                                 </tr>
                             ) : (
                                 logs.map((log) => (
                                     <tr key={log.id} className={clsx("hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors", log.delete_at && "opacity-60 bg-gray-50/30")}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-700 dark:text-slate-200">{log.send_user_nm || '시스템'}</span>
+                                                <span className="font-semibold text-gray-700 dark:text-slate-200">{log.send_user_nm || t('nmSystem')}</span>
                                                 <span className="text-[11px] text-gray-400">{log.send_user_id || 'SYSTEM'}</span>
                                             </div>
                                         </td>
@@ -251,7 +253,7 @@ export const NotificationManagement: React.FC = () => {
                                                         ? "bg-green-50 text-green-700 ring-green-100 dark:bg-green-900/30 dark:text-green-400 dark:ring-green-800"
                                                         : "bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:ring-amber-800"
                                                 )}>
-                                                    {log.is_read === 'Y' ? '읽음' : '미읽음'}
+                                                    {log.is_read === 'Y' ? t('nmRead') : t('nmUnread')}
                                                 </span>
                                                 {log.read_dt && (
                                                     <span className="text-[10px] text-gray-400">{log.read_dt}</span>
@@ -261,12 +263,12 @@ export const NotificationManagement: React.FC = () => {
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-2">
                                                 {log.delete_at ? (
-                                                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">삭제됨: {log.delete_at}</span>
+                                                    <span className="text-[11px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded border border-red-100">{t('nmDeletedAt').replace('{time}', log.delete_at)}</span>
                                                 ) : (
                                                     <button
                                                         onClick={() => handleDelete(log.id)}
                                                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="삭제"
+                                                        title={t('nmDelete')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -301,7 +303,7 @@ export const NotificationManagement: React.FC = () => {
                         <header className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-indigo-50/30 dark:bg-indigo-900/10">
                             <div className="flex items-center gap-2">
                                 <Send className="w-5 h-5 text-indigo-600" />
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">실시간 알림 발송</h3>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('nmModalTitle')}</h3>
                             </div>
                             <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
                                 <X className="w-6 h-6" />
@@ -311,13 +313,13 @@ export const NotificationManagement: React.FC = () => {
                         <form onSubmit={handleSend} className="p-6 space-y-5 flex-1 overflow-y-auto max-h-[70vh]">
                             <div className="space-y-2">
                                 <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 flex items-center gap-2">
-                                    <User className="w-4 h-4 text-indigo-500" /> 수신자 선택
+                                    <User className="w-4 h-4 text-indigo-500" /> {t('nmSelectRecipient')}
                                 </label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="이름 또는 ID로 검색..."
+                                        placeholder={t('nmSearchPlaceholder')}
                                         className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all dark:text-slate-200"
                                         value={searchUser}
                                         onChange={(e) => setSearchUser(e.target.value)}
@@ -326,7 +328,7 @@ export const NotificationManagement: React.FC = () => {
                                 
                                 <div className="max-h-32 overflow-y-auto border border-gray-100 dark:border-slate-800 rounded-xl divide-y divide-gray-50 dark:divide-slate-800 bg-white dark:bg-slate-900 shadow-inner mt-1">
                                     {filteredUsers.length === 0 ? (
-                                        <div className="p-3 text-center text-xs text-gray-400">검색 결과가 없습니다.</div>
+                                        <div className="p-3 text-center text-xs text-gray-400">{t('nmNoSearchResults')}</div>
                                     ) : (
                                         filteredUsers.map(user => (
                                             <div 
@@ -352,11 +354,11 @@ export const NotificationManagement: React.FC = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">알림 제목</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">{t('nmInputTitle')}</label>
                                 <input
                                     type="text"
                                     className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all dark:text-slate-200"
-                                    placeholder="전송할 제목을 입력하세요."
+                                    placeholder={t('nmTitlePlaceholder')}
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     required
@@ -364,10 +366,10 @@ export const NotificationManagement: React.FC = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">알림 상세 내용</label>
+                                <label className="text-sm font-semibold text-gray-700 dark:text-slate-300">{t('nmInputMessage')}</label>
                                 <textarea
                                     className="w-full px-4 py-3 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all dark:text-slate-200 min-h-[120px] resize-none"
-                                    placeholder="상용자에게 실시간으로 전송할 본문 내용을 입력하세요."
+                                    placeholder={t('nmMessagePlaceholder')}
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     required
@@ -380,7 +382,7 @@ export const NotificationManagement: React.FC = () => {
                                 onClick={() => setIsModalOpen(false)}
                                 className="px-5 py-2 text-sm font-semibold text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                             >
-                                취소
+                                {t('nmCancel')}
                             </button>
                             <button
                                 onClick={handleSend}
@@ -388,7 +390,7 @@ export const NotificationManagement: React.FC = () => {
                                 className="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-50"
                             >
                                 {isSending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                즉시 발송하기
+                                {t('nmSendNow')}
                             </button>
                         </footer>
                     </div>
