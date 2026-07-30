@@ -3,8 +3,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { OtpLog, OtpHistoryResponse } from '../../types/otp';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export const OtpHistory: React.FC = () => {
+    const { t } = useLanguage();
     const [logs, setLogs] = useState<OtpLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -47,8 +49,8 @@ export const OtpHistory: React.FC = () => {
                         <ShieldCheck className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">이메일 OTP 인증 이력</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">회원가입 및 각종 인증을 위해 발송된 OTP 내역을 관리합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('otpTitle')}</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('otpSubtitle')}</p>
                     </div>
                 </div>
                 <button
@@ -64,18 +66,18 @@ export const OtpHistory: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800 text-sm">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">
                             <tr>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">상태</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">이메일</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">발송유형</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">인증코드</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">만료시간</th>
-                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">생성시간</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThStatus')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThEmail')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThType')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThCode')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThExpiry')}</th>
+                                <th className="px-6 py-3 text-left font-medium text-gray-500 dark:text-slate-400 uppercase">{t('otpThCreated')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {logs.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-slate-500">이력이 없습니다.</td>
+                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400 dark:text-slate-500">{t('otpNoHistory')}</td>
                                 </tr>
                             ) : (
                                 logs.map((log) => {
@@ -87,17 +89,17 @@ export const OtpHistory: React.FC = () => {
                                                     {log.is_verified === 'Y' ? (
                                                         <>
                                                             <ShieldCheck className="w-4 h-4 text-green-500 shadow-sm" />
-                                                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-bold">인증완료</span>
+                                                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-bold">{t('otpStatusVerified')}</span>
                                                         </>
                                                     ) : expired ? (
                                                         <>
                                                             <XCircle className="w-4 h-4 text-gray-400" />
-                                                            <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-500 rounded text-xs font-bold">만료됨</span>
+                                                            <span className="px-2 py-0.5 bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-500 rounded text-xs font-bold">{t('otpStatusExpired')}</span>
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Clock className="w-4 h-4 text-amber-500 animate-pulse-slow" />
-                                                            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-bold">대기중</span>
+                                                            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-bold">{t('otpStatusPending')}</span>
                                                         </>
                                                     )}
                                                 </div>
@@ -149,14 +151,14 @@ export const OtpHistory: React.FC = () => {
             </div>
             
             {logs.some(l => l.is_verified === 'N' && !isExpired(l.expires_at)) && (
-                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-3 rounded-lg flex items-start space-x-2 transition-colors duration-300">
-                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                        <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300">실시간 인증 대기 알림</h4>
-                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">현재 유효한 인증 번호가 존재합니다. 사용자가 인증을 완료할 때까지 대기 상태가 유지됩니다.</p>
-                    </div>
-                </div>
-            )}
+                                <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-3 rounded-lg flex items-start space-x-2 transition-colors duration-300">
+                                    <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-amber-800 dark:text-amber-300">{t('otpAlertTitle')}</h4>
+                                        <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('otpAlertSubtitle')}</p>
+                                    </div>
+                                </div>
+                            )}
         </div>
     );
 };
