@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Key, Plus, Trash2, Copy, Check, Settings, Shield, Globe, Clock } from 'lucide-react';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AccessToken {
     id: number;
@@ -12,6 +13,7 @@ interface AccessToken {
 }
 
 export function AccessTokenManager() {
+    const { t } = useLanguage();
     const [tokens, setTokens] = useState<AccessToken[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function AccessTokenManager() {
             const res = await fetch(`/api/access-tokens?page=${pageNum}&size=${size}`, {
                 headers: getAuthHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to fetch tokens');
+            if (!res.ok) throw new Error(t('atmErrFetchTokens'));
             const data = await res.json();
             // Handle both legacy ( {tokens: []} ) and new paginated ( {items: [], total: 0} ) formats
             let items = [];
@@ -65,12 +67,12 @@ export function AccessTokenManager() {
             if (err instanceof Error) {
                 setError(err.message);
             } else {
-                setError("An unknown error occurred");
+                setError(t('atmErrUnknown'));
             }
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize]);
+    }, [page, pageSize, t]);
 
     useEffect(() => {
         fetchTokens(page, pageSize);
@@ -89,7 +91,7 @@ export function AccessTokenManager() {
                 body: JSON.stringify({ name: newName }),
             });
 
-            if (!res.ok) throw new Error('Failed to create token');
+            if (!res.ok) throw new Error(t('atmErrCreateToken'));
 
             setNewName('');
             await fetchTokens();
@@ -104,7 +106,7 @@ export function AccessTokenManager() {
     };
 
     const handleDelete = async (id: number) => {
-        if (!confirm('정말 삭제하시겠습니까? 이 토큰을 사용하는 모든 서비스가 차단됩니다.')) return;
+        if (!confirm(t('atmConfirmDelete'))) return;
 
         try {
             const res = await fetch(`/api/access-tokens/${id}`, {
@@ -112,7 +114,7 @@ export function AccessTokenManager() {
                 headers: getAuthHeaders(),
             });
 
-            if (!res.ok) throw new Error('Failed to delete token');
+            if (!res.ok) throw new Error(t('atmErrDeleteToken'));
 
             await fetchTokens();
         } catch (err: unknown) {
@@ -136,7 +138,7 @@ export function AccessTokenManager() {
             ]);
 
             if (!toolsRes.ok || !apisRes.ok || !permsRes.ok) {
-                throw new Error("데이터를 불러오는데 실패했습니다.");
+                throw new Error(t('atmErrLoadData'));
             }
 
             const toolsData = await toolsRes.json();
@@ -149,7 +151,7 @@ export function AccessTokenManager() {
             setAllowedOpenApiIds(permsData.allowed_openapi_ids || []);
         } catch (err: any) {
             console.error("Failed to load permissions:", err);
-            const message = err.message || "권한 정보를 불러오는데 실패했습니다.";
+            const message = err.message || t('atmErrLoadPerms');
             alert(message);
         }
     };
@@ -170,8 +172,8 @@ export function AccessTokenManager() {
                 }),
             });
 
-            if (!res.ok) throw new Error('Failed to save permissions');
-            const message = '권한이 성공적으로 저장되었습니다.';
+            if (!res.ok) throw new Error(t('atmErrSavePerms'));
+            const message = t('atmAlertPermsSaved');
             alert(message);
             setIsModalOpen(false);
         } catch (err: any) {
@@ -188,7 +190,7 @@ export function AccessTokenManager() {
         setTimeout(() => setCopiedToken(null), 2000);
     };
 
-    if (loading) return <div className="p-8 text-center">Loading...</div>;
+    if (loading) return <div className="p-8 text-center">{t('ctLoading')}</div>;
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 font-pretendard">
@@ -199,10 +201,10 @@ export function AccessTokenManager() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            외부 접속 토큰 관리
+                            {t('atmTitle')}
                         </h2>
                         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-                            MCP 서버에 외부에서 접속하기 위한 고정 Access Token을 관리합니다.
+                            {t('atmSubtitle')}
                         </p>
                     </div>
                 </div>
@@ -211,13 +213,13 @@ export function AccessTokenManager() {
             <div className="flex-1 flex flex-col space-y-4 min-h-0">
                 {/* 토큰 생성 폼 */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-                    <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-slate-100">새 토큰 발급</h2>
+                    <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-slate-100">{t('atmNewToken')}</h2>
                     <div className="flex gap-4">
                         <input
                             type="text"
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
-                            placeholder="토큰 용도/이름 (예: CI/CD Pipeline, External App)"
+                            placeholder={t('atmNamePlaceholder')}
                             className="flex-1 px-4 py-2 border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
                         />
                         <button
@@ -225,10 +227,10 @@ export function AccessTokenManager() {
                             disabled={isCreating || !newName.trim()}
                             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            {isCreating ? '생성 중...' : (
+                            {isCreating ? t('atmCreating') : (
                                 <>
                                     <Plus className="w-4 h-4" />
-                                    발급하기
+                                    {t('atmIssue')}
                                 </>
                             )}
                         </button>
@@ -241,12 +243,12 @@ export function AccessTokenManager() {
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                             <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 text-sm sticky top-0 z-10 transition-colors">
                                 <tr>
-                                    <th className="px-6 py-4 text-left font-medium">ID</th>
-                                    <th className="px-6 py-4 text-left font-medium">이름</th>
-                                    <th className="px-6 py-4 text-left font-medium">토큰 값</th>
-                                    <th className="px-6 py-4 text-center font-medium">상태</th>
-                                    <th className="px-6 py-4 text-center font-medium">생성일</th>
-                                    <th className="px-6 py-4 text-center font-medium">작업</th>
+                                    <th className="px-6 py-4 text-left font-medium">{t('atmThId')}</th>
+                                    <th className="px-6 py-4 text-left font-medium">{t('atmThName')}</th>
+                                    <th className="px-6 py-4 text-left font-medium">{t('atmThToken')}</th>
+                                    <th className="px-6 py-4 text-center font-medium">{t('atmThStatus')}</th>
+                                    <th className="px-6 py-4 text-center font-medium">{t('atmThCreated')}</th>
+                                    <th className="px-6 py-4 text-center font-medium">{t('atmThAction')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -262,7 +264,7 @@ export function AccessTokenManager() {
                                                 <button
                                                     onClick={() => copyToClipboard(token.token)}
                                                     className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    title="토큰 복사"
+                                                    title={t('atmCopyToken')}
                                                 >
                                                     <div className="w-4 h-4">
                                                         {copiedToken === token.token ? (
@@ -290,21 +292,21 @@ export function AccessTokenManager() {
                                                 <button
                                                     onClick={() => handleOpenPermissionModal(token)}
                                                     className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                                                    title="권한 설정"
+                                                    title={t('atmPermSettings')}
                                                 >
                                                     <Settings className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => window.location.href = `/mcp-limits?target_type=TOKEN&target_id=${token.id}`}
                                                     className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-400 p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                                                    title="사용 한도 설정"
+                                                    title={t('atmLimitSettings')}
                                                 >
                                                     <Clock className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(token.id)}
                                                     className="text-red-400 hover:text-red-600 dark:hover:text-red-400 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                    title="삭제"
+                                                    title={t('atmDelete')}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -315,7 +317,7 @@ export function AccessTokenManager() {
                                 {displayedTokens.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">
-                                            발급된 토큰이 없습니다.
+                                            {t('atmNoTokens')}
                                         </td>
                                     </tr>
                                 )}
@@ -355,7 +357,7 @@ export function AccessTokenManager() {
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-                                        [{selectedToken?.name}] 권한 설정
+                                        {t('atmModalTitle', { name: selectedToken?.name || '' })}
                                     </h3>
                                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 font-mono">
                                         ID: {selectedToken?.id}
@@ -375,9 +377,9 @@ export function AccessTokenManager() {
                             <section>
                                 <div className="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-slate-800 pb-2">
                                     <Shield className="w-5 h-5 text-indigo-500" />
-                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">Custom Tools</h4>
+                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">{t('atmCustomTools')}</h4>
                                     <span className="text-xs text-gray-400 font-normal ml-auto">
-                                        {allowedToolIds.length} / {allTools.length} selected
+                                        {t('atmSelectedCount', { selected: allowedToolIds.length, total: allTools.length })}
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -404,9 +406,9 @@ export function AccessTokenManager() {
                             <section>
                                 <div className="flex items-center gap-2 mb-4 border-b border-gray-100 dark:border-slate-800 pb-2">
                                     <Globe className="w-5 h-5 text-emerald-500" />
-                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">OpenAPI Tools</h4>
+                                    <h4 className="font-bold text-gray-800 dark:text-slate-200">{t('atmOpenApiTools')}</h4>
                                     <span className="text-xs text-gray-400 font-normal ml-auto">
-                                        {allowedOpenApiIds.length} / {allOpenAPIs.length} selected
+                                        {t('atmSelectedCount', { selected: allowedOpenApiIds.length, total: allOpenAPIs.length })}
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -440,7 +442,7 @@ export function AccessTokenManager() {
                                 onClick={() => setIsModalOpen(false)}
                                 className="px-5 py-2.5 text-sm font-semibold text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"
                             >
-                                취소
+                                {t('atmCancel')}
                             </button>
                             <button
                                 onClick={handleSavePermissions}
@@ -450,9 +452,9 @@ export function AccessTokenManager() {
                                 {isSaving ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        저장 중...
+                                        {t('atmSaving')}
                                     </>
-                                ) : '저장하기'}
+                                ) : t('atmSave')}
                             </button>
                         </div>
                     </div>
@@ -461,3 +463,4 @@ export function AccessTokenManager() {
         </div>
     );
 }
+
