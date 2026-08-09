@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import type { UsageHistoryResponse, UsageLog, UsageStats } from '../../types/UserUsage';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 export function UsageHistory() {
+    const { t } = useLanguage();
     const [logs, setLogs] = useState<UsageLog[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export function UsageHistory() {
             });
 
             if (!res.ok) {
-                if (res.status === 403) throw new Error("권한이 없습니다 (관리자 전용)");
+                if (res.status === 403) throw new Error(t('mcp.usageHistory.permissionDenied'));
                 throw new Error(`Failed to fetch logs: ${res.statusText}`);
             }
 
@@ -151,7 +153,7 @@ export function UsageHistory() {
             window.URL.revokeObjectURL(downloadUrl);
         } catch (err) {
             console.error("Export error:", err);
-            setError("내보내기 중 오류가 발생했습니다.");
+            setError(t('mcp.usageHistory.exportError'));
         }
     };
 
@@ -165,7 +167,7 @@ export function UsageHistory() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            MCP Tool 사용 이력
+                            {t('mcp.usageHistory.title')}
                         </h2>
                     </div>
                 </div>
@@ -174,7 +176,7 @@ export function UsageHistory() {
                     className="flex items-center text-sm bg-gray-100 dark:bg-slate-800 px-3 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-gray-700 dark:text-slate-300"
                 >
                     <RefreshCw className={clsx("w-4 h-4 mr-2", statsLoading && "animate-spin")} />
-                    통계 갱신
+                    {t('mcp.usageHistory.refreshStats')}
                 </button>
             </header>
 
@@ -182,25 +184,25 @@ export function UsageHistory() {
                 {/* 사용 통계 테이블 (Usage Stats Table) */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex-none transition-colors duration-300">
                     <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
-                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">금일 사용자별 사용 통계</h3>
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200">{t('mcp.usageHistory.todayStats')}</h3>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                             <thead className="bg-gray-50 dark:bg-slate-800/50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">사용자</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">권한</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">사용량</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">한도</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">잔여</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">상태</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.user')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.role')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.usage')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.limit')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.remaining')}</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase">{t('mcp.usageHistory.status')}</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                                 {statsLoading && stats.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-500">로딩 중...</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-500">{t('mcp.usageHistory.loading')}</td></tr>
                                 ) : stats.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-500">통계 데이터 없음</td></tr>
+                                    <tr><td colSpan={6} className="px-6 py-4 text-center text-xs text-gray-500 dark:text-slate-500">{t('mcp.usageHistory.noStats')}</td></tr>
                                 ) : (
                                     stats.map(s => {
                                         const isToken = s.user_id.startsWith('token:');
@@ -233,7 +235,7 @@ export function UsageHistory() {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-gray-900 dark:text-slate-100 font-bold">{s.usage}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '무제한' : s.limit}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? t('mcp.usageHistory.unlimited') : s.limit}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '-' : s.remaining}</td>
                                                 <td className="px-6 py-4 text-sm">
                                                     {s.limit !== -1 && s.remaining === 0 ? (
@@ -256,37 +258,37 @@ export function UsageHistory() {
                 {/* 필터 바 (Filter Bar) - flex-none */}
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-wrap gap-4 items-end flex-none transition-colors duration-300">
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">사용자/토큰 검색</label>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">{t('mcp.usageHistory.searchUserToken')}</label>
                         <input
                             type="text"
                             value={searchUserId}
                             onChange={(e) => setSearchUserId(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="ID 또는 토큰명 검색..."
+                            placeholder={t('mcp.usageHistory.searchUserTokenPlaceholder')}
                             className="px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-64 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">도구명</label>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">{t('mcp.usageHistory.toolName')}</label>
                         <input
                             type="text"
                             value={searchToolNm}
                             onChange={(e) => setSearchToolNm(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="도구명 검색..."
+                            placeholder={t('mcp.usageHistory.toolNamePlaceholder')}
                             className="px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-64 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">성공여부</label>
+                        <label className="block text-xs font-medium text-gray-700 dark:text-slate-400 mb-1">{t('mcp.usageHistory.successStatus')}</label>
                         <select
                             value={searchSuccess}
                             onChange={(e) => setSearchSuccess(e.target.value)}
                             className="px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all w-48 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                         >
-                            <option value="ALL">전체</option>
-                            <option value="SUCCESS">In Progress / Success</option>
-                            <option value="FAIL">Error / Fail</option>
+                            <option value="ALL">{t('mcp.usageHistory.all')}</option>
+                            <option value="SUCCESS">{t('mcp.usageHistory.inProgressSuccess')}</option>
+                            <option value="FAIL">{t('mcp.usageHistory.errorFail')}</option>
                         </select>
                     </div>
                     <div className="flex gap-2">
@@ -295,7 +297,7 @@ export function UsageHistory() {
                             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                         >
                             <Search className="w-4 h-4 mr-2" />
-                            검색
+                            {t('mcp.usageHistory.search')}
                         </button>
                         <button
                             onClick={() => {
@@ -305,7 +307,7 @@ export function UsageHistory() {
                             }}
                             className="px-3 py-2 text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 text-sm font-medium transition-colors"
                         >
-                            초기화
+                            {t('mcp.usageHistory.reset')}
                         </button>
                     </div>
 
@@ -320,8 +322,8 @@ export function UsageHistory() {
                         </button> */}
                         <button
                             onClick={() => handleExport('excel')}
-                            className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
-                            title="Excel 내보내기"
+                            className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-green-900/10 transition-colors"
+                            title={t('mcp.usageHistory.exportExcel')}
                         >
                             <Download className="w-4 h-4 mr-2" />
                             Excel
@@ -332,7 +334,7 @@ export function UsageHistory() {
                             className="inline-flex items-center px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-md text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
                         >
                             <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-                            새로고침
+                            {t('mcp.usageHistory.refresh')}
                         </button>
                     </div>
                 </div>
@@ -342,25 +344,25 @@ export function UsageHistory() {
                         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                             <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10">
                                 <tr>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">시간</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">사용자</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">도구명</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">성공여부</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">파라미터</th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">결과</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.time')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.user')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.toolName')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.successStatus')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.parameter')}</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('mcp.usageHistory.result')}</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                                 {loading && logs.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-slate-500">
-                                            로딩 중...
+                                            {t('mcp.usageHistory.loading')}
                                         </td>
                                     </tr>
                                 ) : logs.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-10 text-center text-gray-500 dark:text-slate-500">
-                                            데이터가 없습니다.
+                                            {t('mcp.usageHistory.noLogs')}
                                         </td>
                                     </tr>
                                 ) : (
@@ -483,7 +485,7 @@ export function UsageHistory() {
                                 onClick={() => setSelectedJson(null)}
                                 className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium"
                             >
-                                닫기
+                                {t('mcp.usageHistory.close')}
                             </button>
                         </div>
                     </div>
