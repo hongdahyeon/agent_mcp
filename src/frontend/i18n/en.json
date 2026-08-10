@@ -102,6 +102,7 @@
   "myPageAlertSaveErr": "An error occurred while saving.",
   "myPageEmailDupErr": "This email is already in use.",
   "myPageEmailDupCheckErr": "An error occurred during duplicate check.",
+  
   "signupTitle": "Sign Up",
   "signupSuccess": "Sign up complete!",
   "signupId": "User ID",
@@ -140,6 +141,7 @@
   "signupFail": "Sign up failed.",
   "signupErr": "An error occurred. Please try again.",
   "signupSubmit": "Sign Up",
+  
   "dashDay0": "Sun",
   "dashDay1": "Mon",
   "dashDay2": "Tue",
@@ -170,6 +172,7 @@
   "dashClickUserChartToView": "Click an item on the user chart to view details.",
   "dashTop5Tools": "Top 5 Tools (All Time)",
   "dashNoToolUsed": "No tools used",
+  
   "emailWrite": "Write Email",
   "emailRecipient": "Recipient Email",
   "emailSubject": "Subject",
@@ -207,6 +210,7 @@
   "emailDetailSender": "Sender:",
   "emailDetailSenderAgent": "AI Agent",
   "emailDetailClose": "Close",
+  
   "fmTitle": "File Management (Test)",
   "fmSubtitle": "Test file upload and download functions.",
   "fmUploadSectionTitle": "File Upload",
@@ -229,6 +233,7 @@
   "fmAlertDownloadErr": "Error occurred during download",
   "fmAlertLogFail": "Failed to view logs",
   "fmAlertLogErr": "Error occurred while viewing logs",
+  
   "logRefreshList": "Refresh List",
   "logFileListTitle": "Log File List ({count})",
   "logArchivePlaceholder": "Archive Name",
@@ -253,6 +258,7 @@
   "logAlertUnzipErr": "An error occurred during decompression.",
   "logAlertCopyOk": "Log contents copied to clipboard.",
   "logAlertCopyFail": "Failed to copy.",
+  
   "testerTitle": "Tool Tester",
   "testerSelectLabel": "Select Tool to Test",
   "testerSelectPlaceholder": "Choose a tool (Select Tool)",
@@ -271,6 +277,7 @@
   "testerCopied": "Copied!",
   "testerCopy": "Copy",
   "testerResultPlaceholder": "... Execution results will be displayed here.",
+  
   "ehTitle": "Email Dispatch History",
   "ehSubtitle": "View history of all emails dispatched by the system (including AI).",
   "ehStatus": "Status",
@@ -290,6 +297,7 @@
   "ehLabelSender": "Sender:",
   "ehAiAgent": "AI Agent",
   "ehBtnClose": "Close",
+  
   "lhTitle": "Login History",
   "lhSubtitle": "View recent login attempt records.",
   "lhRefresh": "Refresh",
@@ -443,6 +451,7 @@
   "ctErrDeleteFail": "Delete failed: ",
   "ctErrExport": "Export failed.",
   "ctErrExportFail": "Export failed: ",
+
   "mcp": {
     "usageHistory": {
       "title": "MCP Tool Usage History",
@@ -486,7 +495,8 @@
       "exportError": "An error occurred during export."
     }
   },
-  "openapi": {
+
+  "openapiTab": {
     "limit": {
       "deleteConfirm": "Are you sure you want to delete this?",
       "title": "API Usage Limit Management",
@@ -524,8 +534,11 @@
       "edit": "Edit",
       "delete": "Delete",
       "priorityTitle": "Limit Application Priority",
-      "priorityDesc": "If multiple policies overlap for the same request, the first matching policy is applied in the following order:\n1. Token (TOKEN) > 2. User (USER) > 3. Role (ROLE)\nIf no policy is defined, it defaults to Unlimited (-1)."
+      "priorityDesc": "If multiple policies overlap for the same request, the first matching policy is applied in the following order:\n1. Token (TOKEN) > 2. User (USER) > 3. Role (ROLE)\nIf no policy is defined, it defaults to Unlimited (-1).",
+      "noPolicySummaryPrefix": "If no policy exists, it is treated as ",
+      "noPolicySummaryTail": " by default."
     },
+
     "manager": {
       "downloadFail": "Download failed",
       "downloadError": "Error occurred during download",
@@ -571,6 +584,7 @@
       "modalTitleNew": "Register New API",
       "basicInfoSection": "Basic Info",
       "categoryPlaceholder": "Select category or type to add",
+      "categoryMultiSelect": "Tag (Multiple Select)",
       "tagsPlaceholder": "Type tag and press Enter",
       "toolIdLabel": "Tool ID (English, for URL path) *",
       "toolIdPlaceholder": "ex: get_holiday_info",
@@ -590,12 +604,19 @@
       "authKeyPlaceholder": "Enter actual auth key",
       "detailSection": "Detailed Settings",
       "paramsSchemaLabel": "Parameter JSON Schema",
+      "deleteTitle": "Delete",
+      "addItem": "Add Item",
+
       "syncFilesLabel": "Federated Files (h_file Integration)",
       "filesSelectedCount": "{count} files selected (Click to add more)",
       "clickToUpload": "Click to upload files",
       "filesNewBadge": "New",
       "filesNewWaiting": "Waiting for new files...",
-      "filesListHeader": "📎 Attached Files ({count})",
+      "filesListHeader": "📎 Attached Files ",
+      "cancelBtnText": "Cancel",
+      "downloadBtnText": "Download",
+      "deleteBtnText": "Delete",
+      
       "noFiles": "No attached files.",
       "agentDescLabel": "Additional Description for Agent",
       "agentDescPlaceholder": "Hints to pass to LLM Agent",
@@ -625,9 +646,11 @@
       "testPrompt": "Please run the test.",
       "testRunBtn": "Run Test",
       "guideModalHeader": "User Guide",
-      "guideConfirmBtn": "OK"
+      "guideConfirmBtn": "OK",
+      "noUPloadedFiles": "No Uploaded Files"
     },
-    "meta": {
+
+    "metaTab": {
       "updateError": "An error occurred during update.",
       "deleteHasApis": "Items with associated OpenAPIs cannot be deleted.",
       "deleteConfirm": "Are you sure you want to delete this?",
@@ -643,7 +666,8 @@
       "selectPromptDesc": "Please select a category or tag from the list on the left.",
       "noRelatedApis": "No associated OpenAPIs."
     },
-    "stats": {
+    
+    "statsTab": {
       "exportError": "An error occurred during export.",
       "successLabel": "Success",
       "failLabel": "Failure",
