@@ -102,6 +102,7 @@
   "myPageAlertSaveErr": "수정 중 오류 발생",
   "myPageEmailDupErr": "이미 사용 중인 이메일입니다.",
   "myPageEmailDupCheckErr": "중복 체크 중 오류가 발생했습니다.",
+  
   "signupTitle": "회원가입",
   "signupSuccess": "가입 신청 완료!",
   "signupId": "아이디",
@@ -140,6 +141,7 @@
   "signupFail": "회원가입에 실패했습니다.",
   "signupErr": "오류가 발생했습니다. 다시 시도해주세요.",
   "signupSubmit": "가입하기",
+  
   "dashDay0": "일",
   "dashDay1": "월",
   "dashDay2": "화",
@@ -170,6 +172,7 @@
   "dashClickUserChartToView": "사용자 차트의 항목을 클릭하여 상세 정보를 조회하세요.",
   "dashTop5Tools": "주 사용 도구 TOP 5 (전체 기간)",
   "dashNoToolUsed": "사용한 도구가 없습니다",
+  
   "emailWrite": "메일 작성",
   "emailRecipient": "수신자 이메일",
   "emailSubject": "제목",
@@ -207,6 +210,7 @@
   "emailDetailSender": "발신자:",
   "emailDetailSenderAgent": "AI 에이전트",
   "emailDetailClose": "닫기",
+  
   "fmTitle": "파일 관리 (테스트)",
   "fmSubtitle": "파일 업로드 및 다운로드 기능을 테스트합니다.",
   "fmUploadSectionTitle": "파일 업로드",
@@ -229,6 +233,7 @@
   "fmAlertDownloadErr": "다운로드 중 오류 발생",
   "fmAlertLogFail": "로그 조회 실패",
   "fmAlertLogErr": "로그 조회 중 오류 발생",
+  
   "logRefreshList": "목록 새로고침",
   "logFileListTitle": "로그 파일 목록 ({count})",
   "logArchivePlaceholder": "압축 파일명",
@@ -253,6 +258,7 @@
   "logAlertUnzipErr": "압축 해제 중 오류가 발생했습니다.",
   "logAlertCopyOk": "로그 내용이 클립보드에 복사되었습니다.",
   "logAlertCopyFail": "복사에 실패했습니다.",
+  
   "testerTitle": "도구 테스터",
   "testerSelectLabel": "테스트할 도구 선택",
   "testerSelectPlaceholder": "선택하세요 (Select Tool)",
@@ -271,6 +277,7 @@
   "testerCopied": "복사 완료!",
   "testerCopy": "복사",
   "testerResultPlaceholder": "... 실행 결과가 여기에 표시됩니다.",
+  
   "ehTitle": "전체 메일 발송 이력",
   "ehSubtitle": "시스템에서 발송된 모든 메일(AI 포함) 이력을 조회합니다.",
   "ehStatus": "상태",
@@ -290,6 +297,7 @@
   "ehLabelSender": "발신자:",
   "ehAiAgent": "AI 에이전트",
   "ehBtnClose": "닫기",
+  
   "lhTitle": "접속 이력 (Login History)",
   "lhSubtitle": "최근 로그인 시도 기록을 조회합니다.",
   "lhRefresh": "새로고침",
@@ -443,6 +451,7 @@
   "ctErrDeleteFail": "삭제 실패: ",
   "ctErrExport": "내보내기에 실패했습니다.",
   "ctErrExportFail": "내보내기 실패: ",
+
   "mcp": {
     "usageHistory": {
       "title": "MCP Tool 사용 이력",
@@ -486,7 +495,8 @@
       "exportError": "내보내기 중 오류가 발생했습니다."
     }
   },
-  "openapi": {
+
+  "openapiTab": {
     "limit": {
       "deleteConfirm": "정말 삭제하시겠습니까?",
       "title": "API 사용 제한 관리",
@@ -524,8 +534,11 @@
       "edit": "수정",
       "delete": "삭제",
       "priorityTitle": "제한 적용 우선순위",
-      "priorityDesc": "동일한 요청에 대해 여러 정책이 겹치는 경우, 다음과 같은 순서로 가장 먼저 발견된 정책이 적용됩니다:\n1. 토큰 (TOKEN) > 2. 사용자 (USER) > 3. 권한 (ROLE)\n정책이 전혀 없는 경우 기본적으로 무제한(-1)으로 처리됩니다."
+      "priorityDesc": "동일한 요청에 대해 여러 정책이 겹치는 경우, 다음과 같은 순서로 가장 먼저 발견된 정책이 적용됩니다:\n1. 토큰 (TOKEN) > 2. 사용자 (USER) > 3. 권한 (ROLE)\n정책이 전혀 없는 경우 기본적으로 무제한(-1)으로 처리됩니다.",
+      "noPolicySummaryPrefix": "정책이 전혀 없는 경우 기본적으로 ",
+      "noPolicySummaryTail": " 으로 처리됩니다."
     },
+
     "manager": {
       "downloadFail": "다운로드 실패",
       "downloadError": "다운로드 중 오류 발생",
@@ -571,6 +584,7 @@
       "modalTitleNew": "신규 API 등록",
       "basicInfoSection": "기본 정보",
       "categoryPlaceholder": "카테고리 선택 또는 입력 후 추가",
+      "categoryMultiSelect": "태그 (다중 선택)",
       "tagsPlaceholder": "태그 입력 후 Enter",
       "toolIdLabel": "도구 ID (영문, URL 경로용) *",
       "toolIdPlaceholder": "ex: get_holiday_info",
@@ -590,12 +604,19 @@
       "authKeyPlaceholder": "실제 인증키 입력",
       "detailSection": "상세 설정",
       "paramsSchemaLabel": "파라미터 JSON 스키마",
+      "deleteTitle": "삭제",
+      "addItem": "항목 추가",
       "syncFilesLabel": "연합 파일 (h_file 연동)",
       "filesSelectedCount": "{count}개 파일 선택됨 (클릭하여 추가)",
+
       "clickToUpload": "클릭하여 파일 업로드",
       "filesNewBadge": "신규",
       "filesNewWaiting": "새 파일 대기 중...",
-      "filesListHeader": "📎 첨부 파일 ({count})",
+      "filesListHeader": "📎 첨부 파일 ",
+      "cancelBtnText": "취소",
+      "downloadBtnText": "다운로드",
+      "deleteBtnText": "삭제",
+
       "noFiles": "첨부된 파일이 없습니다.",
       "agentDescLabel": "Agent용 부가 설명",
       "agentDescPlaceholder": "LLM Agent에게 전달할 힌트",
@@ -625,9 +646,11 @@
       "testPrompt": "테스트를 실행해주세요.",
       "testRunBtn": "실행하기",
       "guideModalHeader": "사용자 가이드",
-      "guideConfirmBtn": "확인"
+      "guideConfirmBtn": "확인",
+      "noUPloadedFiles": "첨부된 파일이 없습니다."
     },
-    "meta": {
+
+    "metaTab": {
       "updateError": "수정 중 오류가 발생했습니다.",
       "deleteHasApis": "연관된 OpenAPI가 있는 항목은 삭제할 수 없습니다.",
       "deleteConfirm": "정말 삭제하시겠습니까?",
@@ -643,7 +666,8 @@
       "selectPromptDesc": "왼쪽 목록에서 분류나 태그를 선택해 주세요.",
       "noRelatedApis": "연관된 OpenAPI가 없습니다."
     },
-    "stats": {
+
+    "statsTab": {
       "exportError": "내보내기 중 오류가 발생했습니다.",
       "successLabel": "성공",
       "failLabel": "실패",
