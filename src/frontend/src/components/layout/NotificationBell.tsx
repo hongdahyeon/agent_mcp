@@ -112,7 +112,7 @@ export function NotificationBell() {
           <div className="p-4 border-b border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
             <h4 className="font-bold text-gray-800 dark:text-slate-200">{t('nbTitle')}</h4>
             <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full">
-              {t('nbUnreadCount', { count: unreadCount })}
+              {t('nbUnreadCount').replace('{count}', String(unreadCount))}
             </span>
           </div>
 
