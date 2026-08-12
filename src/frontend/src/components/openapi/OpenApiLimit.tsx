@@ -13,6 +13,7 @@ import { getAuthHeaders } from '../../utils/auth';
 import type { OpenApiLimit } from '../../types/openapi';
 import { Pagination } from '../common/Pagination';
 import clsx from 'clsx';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ExternalToken {
     id: number;
@@ -20,6 +21,7 @@ interface ExternalToken {
 }
 
 export default function OpenApiLimitView() {
+    const { t } = useLanguage();
     const [limits, setLimits] = useState<OpenApiLimit[]>([]);
     const [tokens, setTokens] = useState<ExternalToken[]>([]);
     const [loading, setLoading] = useState(true);
@@ -98,7 +100,7 @@ export default function OpenApiLimitView() {
 
     // 제한 정책 삭제
     const handleDelete = async (id: number) => {
-        if (!confirm('정말 삭제하시겠습니까?')) return;
+        if (!confirm(t('openapiTab.limit.deleteConfirm'))) return;
         try {
             const res = await fetch(`/api/openapi/limits/${id}`, {
                 method: 'DELETE',
@@ -133,8 +135,12 @@ export default function OpenApiLimitView() {
                         <ShieldAlert className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">API 사용 제한 관리</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 font-pretendard">사용자, 권한, 외부 토큰별 일일 호출 한도를 설정합니다.</p>
+                        <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">
+                            {t('openapiTab.limit.title')}
+                        </h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 font-pretendard">
+                            {t('openapiTab.limit.subtitle')}
+                        </p>
                     </div>
                 </div>
                 <button
@@ -142,7 +148,7 @@ export default function OpenApiLimitView() {
                     className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm font-pretendard"
                 >
                     <Plus className="w-4 h-4 mr-2" />
-                    정책 추가
+                    {t('openapiTab.limit.addPolicy')}
                 </button>
             </header>
 
@@ -151,7 +157,10 @@ export default function OpenApiLimitView() {
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 transition-colors duration-300">
                         <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
                             <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 font-pretendard">
-                                {currentLimit.id ? '제한 정책 수정' : '새 제한 정책 추가'}
+                                {currentLimit.id
+                                    ? t('openapiTab.limit.editPolicy')
+                                    : t('openapiTab.limit.addPolicyModal')
+                                }
                             </h3>
                             <button
                                 onClick={() => setIsEditing(false)}
@@ -165,7 +174,9 @@ export default function OpenApiLimitView() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">대상 유형</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {t('openapiTab.limit.targetType')}
+                                        </label>
                                         <div className="flex space-x-2">
                                             {(['ROLE', 'USER', 'TOKEN'] as const).map(type => (
                                                 <button
@@ -178,21 +189,30 @@ export default function OpenApiLimitView() {
                                                             : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
                                                     )}
                                                 >
-                                                    {type === 'ROLE' ? '권한 (Role)' : type === 'USER' ? '사용자 (User)' : '토큰 (Token)'}
+                                                    {type === 'ROLE'
+                                                        ? t('openapiTab.limit.roleUnit')
+                                                        : type === 'USER'
+                                                            ? t('oepnapiTab.limit.userUnit')
+                                                            : t('openapiTab.limit.tokenUnit')
+                                                    }
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">대상 식별자 (Target ID)</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">
+                                            {t('openapiTab.limit.targetId')}
+                                        </label>
                                         {currentLimit.target_type === 'TOKEN' ? (
                                             <select
                                                 value={currentLimit.target_id}
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             >
-                                                <option value="">토큰 선택...</option>
+                                                <option value="">
+                                                    {t('openapiTab.limit.selectToken')}
+                                                </option>
                                                 {tokens.map(t => (
                                                     <option key={t.id} value={t.id}>{t.name} (ID: {t.id})</option>
                                                 ))}
@@ -203,15 +223,15 @@ export default function OpenApiLimitView() {
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
                                                 className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             >
-                                                <option value="ROLE_USER">일반 사용자 (ROLE_USER)</option>
-                                                <option value="ROLE_ADMIN">관리자 (ROLE_ADMIN)</option>
+                                                <option value="ROLE_USER">{t('openapiTab.limit.roleUser')}</option>
+                                                <option value="ROLE_ADMIN">{t('openapiTab.limit.roleAdmin')}</option>
                                             </select>
                                         ) : (
                                             <input
                                                 type="text"
                                                 value={currentLimit.target_id}
                                                 onChange={(e) => setCurrentLimit({ ...currentLimit, target_id: e.target.value })}
-                                                placeholder="사용자 ID (예: admin, user1)"
+                                                placeholder={t('openapiTab.limit.userIdPlaceholder')}
                                                 className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                             />
                                         )}
@@ -220,7 +240,9 @@ export default function OpenApiLimitView() {
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">일일 최대 호출 횟수 (-1: 무제한)</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">
+                                            {t('openapiTab.limit.dailyMaxCalls')}
+                                        </label>
                                         <input
                                             type="number"
                                             value={currentLimit.max_count}
@@ -230,12 +252,14 @@ export default function OpenApiLimitView() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">설명</label>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 font-pretendard">
+                                            {t('openapiTab.limit.description')}
+                                        </label>
                                         <input
                                             type="text"
                                             value={currentLimit.description || ''}
                                             onChange={(e) => setCurrentLimit({ ...currentLimit, description: e.target.value })}
-                                            placeholder="설명을 입력하세요"
+                                            placeholder={t('openapiTab.limit.descPlaceholder')}
                                             className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                         />
                                     </div>
@@ -248,14 +272,14 @@ export default function OpenApiLimitView() {
                                 onClick={() => setIsEditing(false)}
                                 className="px-6 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors bg-white dark:bg-slate-800 font-pretendard"
                             >
-                                취소
+                                {t('openapiTab.limit.cancel')}
                             </button>
                             <button
                                 onClick={handleSave}
                                 className="px-6 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors flex items-center shadow-sm font-pretendard"
                             >
                                 <Save className="w-4 h-4 mr-2" />
-                                저장하기
+                                {t('openapiTab.limit.save')}
                             </button>
                         </div>
                     </div>
@@ -264,40 +288,40 @@ export default function OpenApiLimitView() {
             {/* Limits List Table */}
             <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden transition-colors duration-300">
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
-                    <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 font-pretendard">등록된 정책 목록</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 font-pretendard">{t('openapiTab.limit.policyList')}</h3>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 dark:bg-slate-800/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">유형</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">대상 ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">일일 한도</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">설명</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">작업</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">{t('openapiTab.limit.type')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">{t('openapiTab.limit.targetIdHeader')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">{t('openapiTab.limit.dailyLimitHeader')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">{t('openapiTab.limit.descHeader')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider font-pretendard">{t('openapiTab.limit.actionsHeader')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {loading && limits.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">로딩 중...</td></tr>
+                                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('openapiTab.limit.loading')}</td></tr>
                             ) : limits.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">등록된 정책이 없습니다.</td></tr>
+                                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('openapiTab.limit.noPolicies')}</td></tr>
                             ) : (
                                 limits.map(limit => (
                                     <tr key={limit.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             {limit.target_type === 'USER' ? (
                                                 <span className="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-medium">
-                                                    <User className="w-3 h-3 mr-1" /> 사용자
+                                                    <User className="w-3 h-3 mr-1" /> {t('openapiTab.limit.userTag')}
                                                 </span>
                                             ) : limit.target_type === 'ROLE' ? (
                                                 <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">
-                                                    <Shield className="w-3 h-3 mr-1" /> 권한
+                                                    <Shield className="w-3 h-3 mr-1" /> {t('openapiTab.limit.roleTag')}
                                                 </span>
                                             ) : (
                                                 <span className="inline-flex items-center px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-xs font-medium">
-                                                    <Key className="w-3 h-3 mr-1" /> 토큰
+                                                    <Key className="w-3 h-3 mr-1" /> {t('openapiTab.limit.tokenTag')}
                                                 </span>
                                             )}
                                         </td>
@@ -314,22 +338,24 @@ export default function OpenApiLimitView() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-slate-200 font-pretendard">
-                                            {limit.max_count === -1 ? '무제한' : `${limit.max_count}회`}
+                                            {limit.max_count === -1 ? t('openapiTab.limit.unlimited') : `${limit.max_count}${t('openapiTab.limit.callsUnit')}`}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 font-pretendard">{limit.description}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400 font-pretendard">
+                                            {limit.description}
+                                            </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end space-x-2">
                                                 <button
                                                     onClick={() => openEdit(limit)}
                                                     className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                                                    title="수정"
+                                                    title={t('openapiTab.limit.edit')}
                                                 >
                                                     <Save className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(limit.id)}
                                                     className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                                                    title="삭제"
+                                                    title={t('openapiTab.limit.delete')}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -356,16 +382,19 @@ export default function OpenApiLimitView() {
 
             <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-xl border border-blue-100 dark:border-blue-900/30 transition-colors duration-300">
                 <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-2 flex items-center font-pretendard">
-                    <ShieldAlert className="w-4 h-4 mr-2" /> 제한 적용 우선순위
+                    <ShieldAlert className="w-4 h-4 mr-2" /> {t('openapiTab.limit.priorityTitle')}
                 </h3>
                 <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed font-pretendard">
-                    동일한 요청에 대해 여러 정책이 겹치는 경우, 다음과 같은 순서로 가장 먼저 발견된 정책이 적용됩니다:
+                    {t('openapiTab.limit.priorityDesc')}
                     <br />
-                    <strong className="text-blue-900 dark:text-blue-200">1. 토큰 (TOKEN)</strong> &gt;
-                    <strong className="text-blue-900 dark:text-blue-200">2. 사용자 (USER)</strong> &gt;
-                    <strong className="text-blue-900 dark:text-blue-200">3. 권한 (ROLE)</strong>
+                    <strong className="text-blue-900 dark:text-blue-200">1. {t('openapiTab.limit.tokenUnit')}</strong> &gt;
+                    <strong className="text-blue-900 dark:text-blue-200">2. {t('openapiTab.limit.userUnit')}</strong> &gt;
+                    <strong className="text-blue-900 dark:text-blue-200">3. {t('openapiTab.limit.roleUnit')}</strong>
                     <br />
-                    정책이 전혀 없는 경우 기본적으로 <strong className="text-blue-900 dark:text-blue-200">무제한(-1)</strong>으로 처리됩니다.
+                    {t('openapiTab.limit.noPolicySummaryPrefix')} 
+                        <strong className="text-blue-900 dark:text-blue-200">
+                            {t('openapiTab.limit.unlimited')}(-1)</strong>
+                            {t('openapiTab.limit.noPolicySummaryTail')} 
                 </p>
             </div>
         </div>
