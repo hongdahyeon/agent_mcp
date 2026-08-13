@@ -664,7 +664,8 @@
       "relatedApisHeader": "OpenAPIs associated with \"{name}\"",
       "selectPromptHeader": "Select an item to view associated APIs",
       "selectPromptDesc": "Please select a category or tag from the list on the left.",
-      "noRelatedApis": "No associated OpenAPIs."
+      "noRelatedApis": "No associated OpenAPIs.",
+      "loadingApis": "loading List..."
     },
     
     "statsTab": {
