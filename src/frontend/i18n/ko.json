@@ -664,7 +664,8 @@
       "relatedApisHeader": "\"{name}\" 연관 OpenAPI 목록",
       "selectPromptHeader": "항목을 선택하여 연관 API 확인",
       "selectPromptDesc": "왼쪽 목록에서 분류나 태그를 선택해 주세요.",
-      "noRelatedApis": "연관된 OpenAPI가 없습니다."
+      "noRelatedApis": "연관된 OpenAPI가 없습니다.",
+      "loadingApis": "목록을 불러오는 중..."
     },
 
     "statsTab": {
