@@ -7,6 +7,7 @@ import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
 import Autocomplete from '../common/Autocomplete';
 import type { OpenApiConfig, UploadedFile } from '../../types/openApiConfig';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MetaItem {
     id: number | string;
@@ -15,7 +16,7 @@ interface MetaItem {
 }
 
 // 파일 다운로드
-const handleDownload = async (fileId: string, fileName: string) => {
+const handleDownload = async (fileId: string, fileName: string, t: (key: string) => string) => {
     try {
         const res = await fetch(`/api/files/download/${fileId}`, {
             headers: getAuthHeaders()
@@ -31,17 +32,16 @@ const handleDownload = async (fileId: string, fileName: string) => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } else {
-            const message = '다운로드 실패';
-            alert(message);
+            alert(t('openapiTab.manager.downloadFail'));
         }
     } catch (e) {
         console.error(e);
-        const message = '다운로드 중 오류 발생';
-        alert(message);
+        alert(t('openapiTab.manager.downloadError'));
     }
 };
 
 export function OpenApiManager() {
+    const { t } = useLanguage();
     const [apis, setApis] = useState<OpenApiConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -146,8 +146,7 @@ export function OpenApiManager() {
     // OpenAPI 저장
     const handleSave = async () => {
         if (!currentApi.tool_id || !currentApi.name_ko || !currentApi.api_url) {
-            const message = '필수 정보를 입력해주세요 (도구 ID, 한글명, URL)';
-            alert(message);
+            alert(t('openapiTab.manager.validationError'));
             return;
         }
 
@@ -160,8 +159,7 @@ export function OpenApiManager() {
                     fetch(`/api/files/${fileId}`, { method: 'DELETE', headers: getAuthHeaders() })
                 ));
             } catch (err) {
-                console.error('파일 삭제 중 오류 발생:', err);
-                // 삭제 실패 시에도 진행? 일단 경고
+                console.error(`${t('openapiTab.manager.fileDeleteError')}:`, err);
             }
         }
 
@@ -181,7 +179,7 @@ export function OpenApiManager() {
                     body: formData
                 });
 
-                if (!uploadRes.ok) throw new Error('파일 업로드에 실패했습니다.');
+                if (!uploadRes.ok) throw new Error(t('openapiTab.manager.saveFail'));
                 const uploadData = await uploadRes.json();
                 batchId = uploadData.batch_id;
             } catch (err: unknown) {
@@ -234,17 +232,17 @@ export function OpenApiManager() {
 
     // 등록된 OpenAPI 삭제
     const handleDelete = async (id: number) => {
-        if (!confirm('정말 삭제하시겠습니까?')) return;
+        if (!confirm(t('openapiTab.manager.deleteConfirm'))) return;
         try {
             const res = await fetch(`/api/openapi/${id}`, {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             });
-            if (!res.ok) throw new Error('Failed to delete OpenAPI');
+            if (!res.ok) throw new Error(t('openapiTab.manager.deleteFail'));
             fetchApis();
         } catch (err: unknown) {
             const error = err as Error;
-            const message = error.message || '삭제에 실패했습니다.';
+            const message = error.message || t('openapiTab.manager.deleteError');
             alert(message);
         }
     };
@@ -371,17 +369,15 @@ export function OpenApiManager() {
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                const message = 'PDF 생성 실패';
-                alert(message);
+                alert(t('openapiTab.manager.pdfFail'));
             }
         } catch (e) {
             console.error(e);
-            const message = 'PDF 다운로드 중 오류 발생';
-            alert(message);
+            alert(t('openapiTab.manager.pdfError'));
         }
     };
 
-    if (loading && apis.length === 0) return <div className="p-8 text-center text-gray-500">Loading OpenAPI configurations...</div>;
+    if (loading && apis.length === 0) return <div className="p-8 text-center text-gray-500">{t('openapiTab.manager.loading')}</div>;
 
     return (
         <div className="flex flex-col space-y-4">
@@ -392,12 +388,13 @@ export function OpenApiManager() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard">
-                            {isAdmin ? 'OpenAPI Proxy 관리' : 'OpenAPI 목록 및 테스트'}
+                            {isAdmin ? t('openapiTab.manager.titleAdmin') : t('openapiTab.manager.titleUser')}
                         </h2>
                         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1 font-pretendard">
                             {isAdmin
-                                ? '외부 Public OpenAPI를 등록하고 내부 URL로 실행할 수 있도록 중계(Proxy)합니다.'
-                                : '사용 가능한 OpenAPI 목록을 확인하고 직접 테스트해볼 수 있습니다.'}
+                                ? t('openapiTab.manager.descAdmin')
+                                : t('openapiTab.manager.descUser')
+                            }
                         </p>
                     </div>
                 </div>
@@ -416,7 +413,7 @@ export function OpenApiManager() {
                             className="flex items-center gap-2 bg-indigo-600 dark:bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition-all shadow-sm font-pretendard"
                         >
                             <Plus className="w-4 h-4" />
-                            신규 API 등록
+                            {t('openapiTab.manager.registerBtn')}
                         </button>
                     )}
                 </div>
@@ -426,12 +423,14 @@ export function OpenApiManager() {
             {/* Search Form */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 flex flex-wrap gap-4 items-end flex-none transition-colors duration-300 font-pretendard">
                 <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">이름 / 도구 ID</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                       {t('openapiTab.manager.searchNameToolId')}
+                    </label>
                     <div className="relative">
                         <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                             type="text"
-                            placeholder="검색어 입력..."
+                            placeholder={t('openapiTab.manager.searchPlaceholder')}
                             className="w-full pl-9 pr-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                             value={filterQ}
                             onChange={(e) => setFilterQ(e.target.value)}
@@ -445,7 +444,9 @@ export function OpenApiManager() {
                     </div>
                 </div>
                 <div className="w-48">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">카테고리</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                        {t('openapiTab.manager.category')}
+                    </label>
                     <select
                         className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                         value={filterCategory}
@@ -454,14 +455,18 @@ export function OpenApiManager() {
                             setPage(1);
                         }}
                     >
-                        <option value="">전체 카테고리</option>
+                        <option value="">
+                            {t('openapiTab.manager.allCategories')}
+                        </option>
                         {categories.map(c => (
                             <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                     </select>
                 </div>
                 <div className="w-64">
-                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">태그</label>
+                    <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">
+                        {t('openapiTab.manager.tag')}
+                    </label>
                     <Autocomplete
                         value={selectedFilterTag}
                         onChange={setSelectedFilterTag}
@@ -469,7 +474,7 @@ export function OpenApiManager() {
                             const res = await fetch(`/api/openapi/tags/search?q=${q}`, { headers: getAuthHeaders() });
                             return await res.json();
                         }}
-                        placeholder="태그 선택..."
+                        placeholder={t('openapiTab.manager.tagPlaceholder')}
                     />
                 </div>
                 <div className="flex gap-2">
@@ -483,7 +488,7 @@ export function OpenApiManager() {
                         className="px-4 py-2 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        초기화
+                        {t('openapiTab.manager.resetBtn')}
                     </button>
                 </div>
             </div>
@@ -493,14 +498,14 @@ export function OpenApiManager() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-600 dark:text-slate-400 text-sm sticky top-0 z-10 font-pretendard">
                             <tr>
-                                <th className="px-6 py-4 text-left font-medium">카테고리 / 이름</th>
-                                <th className="px-6 py-4 text-left font-medium">태그</th>
-                                <th className="px-6 py-4 text-left font-medium">메서드 / URL</th>
-                                <th className="px-6 py-4 text-center font-medium">가이드</th>
-                                <th className="px-6 py-4 text-center font-medium">첨부파일</th>
-                                <th className="px-6 py-4 text-center font-medium">인증</th>
-                                {isAdmin && <th className="px-6 py-4 text-center font-medium">등록일</th>}
-                                <th className="px-6 py-4 text-center font-medium">작업</th>
+                                <th className="px-6 py-4 text-left font-medium">{t('openapiTab.manager.tableCategoryName')}</th>
+                                <th className="px-6 py-4 text-left font-medium">{t('openapiTab.manager.tableTags')}</th>
+                                <th className="px-6 py-4 text-left font-medium">{t('openapiTab.manager.tableMethodUrl')}</th>
+                                <th className="px-6 py-4 text-center font-medium">{t('openapiTab.manager.tableGuide')}</th>
+                                <th className="px-6 py-4 text-center font-medium">{t('openapiTab.manager.tableFiles')}</th>
+                                <th className="px-6 py-4 text-center font-medium">{t('openapiTab.manager.tableAuth')}</th>
+                                {isAdmin && <th className="px-6 py-4 text-center font-medium">{t('openapiTab.manager.tableRegDate')}</th>}
+                                <th className="px-6 py-4 text-center font-medium">{t('openapiTab.manager.tableActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-slate-800 font-pretendard">
@@ -508,7 +513,7 @@ export function OpenApiManager() {
                                 <tr key={api.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
                                     <td className="px-6 py-4">
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{api.category_name || '미분류'}</span>
+                                            <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tight">{api.category_name || t('openapiTab.manager.unclassified')}</span>
                                             <div className="font-semibold text-gray-900 dark:text-slate-100 mt-0.5">{api.name_ko}</div>
                                             <div className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">{api.tool_id}</div>
                                         </div>
@@ -537,7 +542,7 @@ export function OpenApiManager() {
                                             <button
                                                 onClick={() => setGuideModal({ open: true, api })}
                                                 className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all"
-                                                title="가이드 보기"
+                                                title={t('openapiTab.manager.viewGuideTooltip')}
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
@@ -552,7 +557,7 @@ export function OpenApiManager() {
                                                 className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-900/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                                             >
                                                 <FileText className="w-3 h-3" />
-                                                파일 존재
+                                                {t('openapiTab.manager.filesExist')}
                                             </button>
                                         ) : (
                                             <span className="text-xs text-gray-300 dark:text-slate-700">-</span>
@@ -580,14 +585,14 @@ export function OpenApiManager() {
                                                     <button
                                                         onClick={() => openEditModal(api)}
                                                         className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                        title="수정"
+                                                        title={t('openapiTab.manager.editTooltip')}
                                                     >
                                                         <Edit2 className="w-4 h-4" />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(api.id!)}
                                                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                        title="삭제"
+                                                        title={t('openapiTab.manager.deleteTooltip')}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -604,14 +609,14 @@ export function OpenApiManager() {
                                                     setTestModal({ open: true, api: api, testParams: params });
                                                 }}
                                                 className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
-                                                title="테스트 실행"
+                                                title={t('openapiTab.manager.testTooltip')}
                                             >
                                                 <Play className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleExportPdf(api.tool_id, api.name_ko)}
                                                 className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                                                title="PDF 다운로드"
+                                                title={t('openapiTab.manager.pdfTooltip')}
                                             >
                                                 <FileDown className="w-4 h-4" />
                                             </button>
@@ -622,7 +627,7 @@ export function OpenApiManager() {
                             {apis.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan={isAdmin ? 7 : 6} className="px-6 py-20 text-center text-gray-500">
-                                        등록된 OpenAPI가 없습니다.
+                                        {t('openapiTab.manager.noApis')}
                                     </td>
                                 </tr>
                             )}
@@ -650,7 +655,7 @@ export function OpenApiManager() {
                             <header className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
                                 <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2 font-pretendard">
                                     <Plus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                                    {currentApi.id ? 'API 정보 수정' : '신규 API 등록'}
+                                    {currentApi.id ? t('openapiTab.manager.modalTitleEdit') : t('openapiTab.manager.modalTitleNew')}
                                 </h3>
                                 <button onClick={() => { setIsModalOpen(false); setSelectedFiles([]); setAttachedFiles([]); }} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors">
                                     <X className="w-6 h-6" />
@@ -661,11 +666,13 @@ export function OpenApiManager() {
                                 {/* 기본 정보 */}
                                 <section className="space-y-4">
                                     <h4 className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-2 font-pretendard">
-                                        <Globe className="w-4 h-4" /> 기본 정보
+                                        <Globe className="w-4 h-4" /> {t('openapiTab.manager.basicInfoSection')}
                                     </h4>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">카테고리</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.category')}
+                                            </label>
                                             <Autocomplete
                                                 value={selectedCategory}
                                                 onChange={setSelectedCategory}
@@ -685,11 +692,13 @@ export function OpenApiManager() {
                                                     setCategories(prev => [...prev, { id: data.id, name }]);
                                                     return { id: data.id, name };
                                                 }}
-                                                placeholder="카테고리 선택 또는 입력 후 추가"
+                                                placeholder={t('openapiTab.manager.categoryPlaceholder')}
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">태그 (다중 선택)</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.categoryMultiSelect')}
+                                            </label>
                                             <Autocomplete
                                                 multiple
                                                 value={selectedTags}
@@ -702,12 +711,13 @@ export function OpenApiManager() {
                                                     // 태그는 DB에는 저장되지만 매핑은 저장 시점에 처리하므로 클라이언트 상태만 반환
                                                     return { id: name, name };
                                                 }}
-                                                placeholder="태그 입력 후 Enter"
+                                                placeholder={t('openapiTab.manager.tagsPlaceholder')}
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">도구 ID (영문, URL 경로용) *</label>
-
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.toolIdLabel')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm font-mono bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
@@ -717,27 +727,33 @@ export function OpenApiManager() {
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">한글명 (표시용) *</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.nameKoLabel')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
-                                                placeholder="ex: 공휴일 정보 조회"
+                                                placeholder={t('openapiTab.manager.nameKoPlaceholder')}
                                                 value={currentApi.name_ko || ''}
                                                 onChange={(e) => setCurrentApi({ ...currentApi, name_ko: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">기관명</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.orgNameLabel')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
-                                                placeholder="ex: 공공데이터포털"
+                                                placeholder={t('openapiTab.manager.orgNamePlaceholder')}
                                                 value={currentApi.org_name || ''}
                                                 onChange={(e) => setCurrentApi({ ...currentApi, org_name: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">메서드</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.orgNameLabel')}
+                                            </label>
                                             <select
                                                 className="w-full px-3 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                                 value={currentApi.method || 'GET'}
@@ -749,7 +765,9 @@ export function OpenApiManager() {
                                             </select>
                                         </div>
                                         <div className="col-span-2 space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">OpenAPI URL *</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.urlLabel')}
+                                            </label>
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
@@ -766,23 +784,27 @@ export function OpenApiManager() {
                                 {/* 인증 설정 */}
                                 <section className="space-y-4">
                                     <h4 className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-2 font-pretendard">
-                                        <LinkIcon className="w-4 h-4" /> 인증 설정
+                                        <LinkIcon className="w-4 h-4" /> {t('openapiTab.manager.authSection')}
                                     </h4>
                                     <div className="grid grid-cols-3 gap-4 bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-xl border border-purple-100 dark:border-purple-900/30">
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">인증 유형</label>
+                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">
+                                                {t('openapiTab.manager.authTypeLabel')}
+                                            </label>
                                             <select
                                                 className="w-full px-3 py-2 border border-purple-200 dark:border-purple-900/50 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
                                                 value={currentApi.auth_type || 'NONE'}
                                                 onChange={(e) => setCurrentApi({ ...currentApi, auth_type: e.target.value })}
                                             >
-                                                <option value="NONE">없음 (None)</option>
-                                                <option value="SERVICE_KEY">서비스 키 (Query Param)</option>
-                                                <option value="BEARER">Bearer Token (Header)</option>
+                                                <option value="NONE">{t('openapiTab.manager.authNone')}</option>
+                                                <option value="SERVICE_KEY">{t('openapiTab.manager.authServiceKey')}</option>
+                                                <option value="BEARER">{t('openapiTab.manager.authBearer')}</option>
                                             </select>
                                         </div>
                                         <div className={`space-y-1 ${currentApi.auth_type === 'NONE' ? 'opacity-30 pointer-events-none' : ''}`}>
-                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">파라미터명 (ex: serviceKey)</label>
+                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">
+                                                {t('openapiTab.manager.authParamNameLabel')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 className="w-full px-3 py-2 border border-purple-200 dark:border-purple-900/50 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-mono"
@@ -792,12 +814,14 @@ export function OpenApiManager() {
                                             />
                                         </div>
                                         <div className={`col-span-1 space-y-1 ${currentApi.auth_type === 'NONE' ? 'opacity-30 pointer-events-none' : ''}`}>
-                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">인증 키값 (Token/Key)</label>
+                                            <label className="text-xs font-medium text-purple-700 dark:text-purple-400 font-pretendard">
+                                                {t('openapiTab.manager.authKeyLabel')}
+                                            </label>
                                             <div className="relative">
                                                 <input
                                                     type={showAuthKey ? "text" : "password"}
                                                     className="w-full px-3 py-2 border border-purple-200 dark:border-purple-900/50 rounded-lg focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition-all text-sm pr-10 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-mono"
-                                                    placeholder="실제 인증키 입력"
+                                                    placeholder={t('openapiTab.manager.authKeyPlaceholder')}
                                                     value={currentApi.auth_key_val || ''}
                                                     onChange={(e) => setCurrentApi({ ...currentApi, auth_key_val: e.target.value })}
                                                 />
@@ -816,13 +840,13 @@ export function OpenApiManager() {
                                 {/* 상세 설정 */}
                                 <section className="space-y-4">
                                     <h4 className="text-sm font-semibold text-gray-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 font-pretendard">
-                                        <FileText className="w-4 h-4" /> 상세 설정
+                                        <FileText className="w-4 h-4" /> {t('openapiTab.manager.detailSection')}
                                     </h4>
                                     <div className="space-y-4">
                                         <div className="space-y-1">
                                             <div className="flex justify-between items-center mb-2">
                                                 <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
-                                                    파라미터 JSON 스키마
+                                                    {t('openapiTab.manager.paramsSchemaLabel')}
                                                 </label>
                                                 <div className="flex bg-gray-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px]">
                                                     <button
@@ -864,7 +888,7 @@ export function OpenApiManager() {
                                                                 type="button"
                                                                 onClick={() => removeParamRow(idx)}
                                                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                                                title="삭제"
+                                                                title={t('openapiTab.manager.paramsSchemaLabel')}
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
@@ -875,7 +899,7 @@ export function OpenApiManager() {
                                                         onClick={addParamRow}
                                                         className="w-full py-1.5 border border-dashed border-gray-300 dark:border-slate-700 rounded-lg text-xs text-gray-500 dark:text-slate-400 hover:border-indigo-500 hover:text-indigo-600 transition-all flex items-center justify-center gap-1 font-pretendard mt-1"
                                                     >
-                                                        <Plus className="w-3 h-3" /> 항목 추가
+                                                        <Plus className="w-3 h-3" /> {t('openapiTab.manager.addItem')}
                                                     </button>
                                                 </div>
                                             ) : (
@@ -888,7 +912,9 @@ export function OpenApiManager() {
                                             )}
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">연합 파일 (h_file 연동)</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.syncFilesLabel')}
+                                            </label>
                                             <div
                                                 className={
                                                     `border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors font-pretendard
@@ -902,7 +928,10 @@ export function OpenApiManager() {
                                             >
                                                 <Upload className={`w-6 h-6 mx-auto mb-1 ${selectedFiles.length > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-600'}`} />
                                                 <p className="text-[10px] text-gray-500 dark:text-slate-500">
-                                                    {selectedFiles.length > 0 ? `${selectedFiles.length}개 파일 선택됨 (클릭하여 추가)` : '클릭하여 파일 업로드'}
+                                                    {selectedFiles.length > 0 ?
+                                                        t('openapiTab.manager.filesSelectedCount').replace('{count}', String(selectedFiles.length))
+                                                        : t('openapiTab.manager.clickToUpload')
+                                                    }
                                                 </p>
                                             </div>
                                             {/* Hidden input moved outside for stability */}
@@ -913,11 +942,10 @@ export function OpenApiManager() {
                                                 ref={fileInputRef}
                                                 onChange={(e) => {
                                                     const files = e.target.files ? Array.from(e.target.files) : [];
-                                                    console.log("Files selected (OnChange):", files);
                                                     if (files.length > 0) {
                                                         setSelectedFiles(prev => {
                                                             const next = [...prev, ...files];
-                                                            console.log("Updating selectedFiles state. Next length:", next.length);
+                                                            //console.log("Updating selectedFiles state. Next length:", next.length);
                                                             return next;
                                                         });
                                                     }
@@ -929,8 +957,14 @@ export function OpenApiManager() {
                                             {/* 통합 파일 목록 (기존 + 신규) */}
                                             <div className="mt-2 space-y-1 border-2 border-indigo-100 dark:border-indigo-900/30 rounded-lg p-2 bg-white dark:bg-slate-800 shadow-inner">
                                                 <p className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 mb-2 px-1 uppercase flex justify-between font-pretendard">
-                                                    <span>📎 첨부 파일 ({selectedFiles.length + attachedFiles.length})</span>
-                                                    {selectedFiles.length > 0 && <span className="text-indigo-600 dark:text-indigo-400 animate-pulse">새 파일 대기 중...</span>}
+                                                    <span> {t('openapiTab.manager.filesListHeader')} 
+                                                        ({selectedFiles.length + attachedFiles.length})
+                                                    </span>
+                                                    {selectedFiles.length > 0 && 
+                                                        <span className="text-indigo-600 dark:text-indigo-400 animate-pulse">
+                                                           {t('openapiTab.manager.filesNewWaiting')}
+                                                        </span>
+                                                    }
                                                 </p>
 
                                                 {/* 신규 파일 목록 - 최상단 고정 */}
@@ -939,12 +973,14 @@ export function OpenApiManager() {
                                                         <div className="flex items-center gap-2 overflow-hidden flex-1">
                                                             <Upload className="w-4 h-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
                                                             <span className="text-sm text-indigo-900 dark:text-indigo-200 truncate font-semibold font-pretendard">{file.name}</span>
-                                                            <span className="text-[10px] bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-900/50 font-bold shrink-0">신규</span>
+                                                            <span className="text-[10px] bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-900/50 font-bold shrink-0">
+                                                                {t('openapiTab.manager.filesNewBadge')}
+                                                            </span>
                                                         </div>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); removeSelectedFile(idx); }}
                                                             className="ml-2 p-1.5 text-indigo-400 dark:text-indigo-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-all"
-                                                            title="취소"
+                                                            title={t('openapiTab.manager.cancelBtnText')}
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </button>
@@ -961,16 +997,19 @@ export function OpenApiManager() {
                                                         </div>
                                                         <div className="flex items-center gap-1">
                                                             <button
-                                                                onClick={(e) => { e.stopPropagation(); handleDownload(file.file_id, file.org_file_nm); }}
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    handleDownload(file.file_id, file.org_file_nm, t); 
+                                                                }}
                                                                 className="p-1.5 text-gray-400 dark:text-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-700 rounded transition-all"
-                                                                title="다운로드"
+                                                                title={t('openapiTab.manager.downloadBtnText')}
                                                             >
                                                                 <Upload className="w-4 h-4 rotate-180" />
                                                             </button>
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); removeAttachedFile(file.file_id); }}
                                                                 className="p-1.5 text-gray-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-700 rounded transition-all"
-                                                                title="삭제"
+                                                                title={t('openapiTab.manager.deleteBtnText')}
                                                             >
                                                                 <X className="w-4 h-4" />
                                                             </button>
@@ -981,35 +1020,39 @@ export function OpenApiManager() {
                                                 {selectedFiles.length === 0 && attachedFiles.length === 0 && (
                                                     <div className="py-6 text-center">
                                                         <FileText className="w-8 h-8 text-gray-200 dark:text-slate-800 mx-auto mb-2" />
-                                                        <p className="text-xs text-gray-400 dark:text-slate-600 italic font-medium text-center font-pretendard">첨부된 파일이 없습니다.</p>
+                                                        <p className="text-xs text-gray-400 dark:text-slate-600 italic font-medium text-center font-pretendard">
+                                                            {t('openapiTab.manager.noFiles')} 
+                                                        </p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="space-y-1">
-                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">Agent용 부가 설명</label>
+                                            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 font-pretendard">
+                                                {t('openapiTab.manager.agentDescLabel')} 
+                                            </label>
                                             <textarea
                                                 className="w-full px-3 py-2 border border-gray-100 dark:border-slate-800 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm h-[68px] resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 font-pretendard"
-                                                placeholder="LLM Agent에게 전달할 힌트"
+                                                placeholder={t('openapiTab.manager.agentDescPlaceholder')} 
                                                 value={currentApi.description_agent || ''}
                                                 onChange={(e) => setCurrentApi({ ...currentApi, description_agent: e.target.value })}
                                             />
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs font-medium text-indigo-600 dark:text-indigo-400 flex justify-between items-center mb-2 font-pretendard">
-                                                <span>사용자 가이드 (Markdown 지원)</span>
+                                                <span>{t('openapiTab.manager.guideLabel')}</span>
                                                 <div className="flex bg-gray-100 dark:bg-slate-800 p-1 rounded-lg text-[10px]">
                                                     <button
                                                         onClick={() => setEditorTab('edit')}
                                                         className={`px-3 py-1 rounded-md transition-all ${editorTab === 'edit' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                                                     >
-                                                        편집
+                                                        {t('openapiTab.manager.guideEditTab')}
                                                     </button>
                                                     <button
                                                         onClick={() => setEditorTab('preview')}
                                                         className={`px-3 py-1 rounded-md transition-all ${editorTab === 'preview' ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm font-bold' : 'text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}
                                                     >
-                                                        미리보기
+                                                        {t('openapiTab.manager.guidePreviewTab')}
                                                     </button>
                                                 </div>
                                             </label>
@@ -1017,18 +1060,23 @@ export function OpenApiManager() {
                                             {editorTab === 'edit' ? (
                                                 <textarea
                                                     className="w-full px-4 py-3 border border-indigo-100 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-sm min-h-[160px] font-mono leading-relaxed bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                                                    placeholder="API 상세 사용 방법 등을 마크다운으로 작성하세요."
+                                                    placeholder={t('openapiTab.manager.guidePlaceholder')}
                                                     value={currentApi.description_info || ''}
                                                     onChange={(e) => setCurrentApi({ ...currentApi, description_info: e.target.value })}
                                                 />
                                             ) : (
                                                 <div className="w-full px-4 py-3 border border-indigo-50 dark:border-slate-800 bg-indigo-50/20 dark:bg-slate-800/50 rounded-xl min-h-[160px] overflow-y-auto prose prose-indigo dark:prose-invert prose-sm max-w-none">
                                                     <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>
-                                                        {currentApi.description_info || '*작성된 가이드가 없습니다.*'}
+                                                        {
+                                                            currentApi.description_info || 
+                                                            t('openapiTab.manager.noGuideWritten')
+                                                        }
                                                     </ReactMarkdown>
                                                 </div>
                                             )}
-                                            <p className="text-[10px] text-gray-400 dark:text-slate-600 mt-1 font-pretendard">마크다운 형식을 사용하여 표, 강조, 링크 등을 예쁘게 표현할 수 있습니다.</p>
+                                            <p className="text-[10px] text-gray-400 dark:text-slate-600 mt-1 font-pretendard">
+                                                {t('openapiTab.manager.guideHint')}
+                                            </p>
                                         </div>
                                     </div>
                                 </section>
@@ -1039,7 +1087,7 @@ export function OpenApiManager() {
                                     onClick={() => { setIsModalOpen(false); setSelectedFiles([]); setAttachedFiles([]); }}
                                     className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200 transition-colors font-pretendard"
                                 >
-                                    취소
+                                    {t('openapiTab.manager.cancelBtn')}
                                 </button>
                                 <button
                                     onClick={handleSave}
@@ -1049,12 +1097,12 @@ export function OpenApiManager() {
                                     {isUploading ? (
                                         <>
                                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            업로드 중...
+                                            {t('openapiTab.manager.uploadingBtn')}
                                         </>
                                     ) : (
                                         <>
                                             <Save className="w-4 h-4" />
-                                            저장하기
+                                            {t('openapiTab.manager.saveBtn')}
                                         </>
                                     )}
                                 </button>
@@ -1073,7 +1121,7 @@ export function OpenApiManager() {
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2 font-pretendard">
                                         <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                                        첨부 파일 목록
+                                        {t('openapiTab.manager.filesModalHeader')}
                                     </h3>
                                     <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5 font-pretendard">{fileListModal.apiName}</p>
                                 </div>
@@ -1085,7 +1133,9 @@ export function OpenApiManager() {
                                 <BatchFileList batchId={fileListModal.batchId!} />
                             </div>
                             <footer className="px-6 py-3 border-t border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 flex justify-end">
-                                <button onClick={() => setFileListModal({ open: false })} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-pretendard">닫기</button>
+                                <button onClick={() => setFileListModal({ open: false })} className="px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-pretendard">
+                                    {t('openapiTab.manager.closeBtn')}
+                                </button>
                             </footer>
                         </div>
                     </div>
@@ -1101,7 +1151,7 @@ export function OpenApiManager() {
                                 <div>
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100 flex items-center gap-2 font-pretendard">
                                         <Play className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                        OpenAPI 테스트 실행
+                                        {t('openapiTab.manager.testModalHeader')}
                                     </h3>
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-0.5 font-pretendard">{testModal.api?.name_ko} ({testModal.api?.tool_id})</p>
                                 </div>
@@ -1114,16 +1164,20 @@ export function OpenApiManager() {
                                     <div className="flex items-start gap-3">
                                         <Globe className="w-5 h-5 text-indigo-500 dark:text-indigo-400 shrink-0 mt-0.5" />
                                         <div className="space-y-1">
-                                            <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">자동 인증 활성화</p>
+                                            <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                                                {t('openapiTab.manager.testAuthActive')}
+                                            </p>
                                             <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
-                                                현재 로그인된 세션의 인증 정보(JWT)를 사용하여 내부 중계 API를 안전하게 실행합니다.
+                                                {t('openapiTab.manager.testAuthDesc')}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="mt-1 pt-3 border-t border-indigo-200/50 dark:border-indigo-900/30">
                                         <div className="flex justify-between items-center mb-1.5">
-                                            <label className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">외부 실행용 엔드포인트</label>
+                                            <label className="text-[10px] font-bold text-indigo-400 dark:text-indigo-500 uppercase tracking-wider">
+                                                {t('openapiTab.manager.testExternalEndpoint')}
+                                            </label>
                                             <button
                                                 onClick={() => {
                                                     const baseUrl = window.location.port === '5173'
@@ -1137,7 +1191,7 @@ export function OpenApiManager() {
                                                 className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium"
                                             >
                                                 {urlCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                                {urlCopied ? '복사완료' : 'URL 복사'}
+                                                {urlCopied ? t('openapiTab.manager.copyUrlSuccess') : t('openapiTab.manager.copyUrlBtn')}
                                             </button>
                                         </div>
                                         <div className="bg-white/60 dark:bg-slate-800 p-2 rounded-lg border border-indigo-200 dark:border-indigo-900/50 text-[11px] font-mono text-indigo-900 dark:text-indigo-200 break-all">
@@ -1153,7 +1207,7 @@ export function OpenApiManager() {
                                     <div className="space-y-3">
                                         <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 flex items-center gap-2 font-pretendard">
                                             <LinkIcon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                                            파라미터 입력 (Query String)
+                                            {t('openapiTab.manager.testParamInput')}
                                         </label>
                                         <div className="grid grid-cols-2 gap-3 bg-gray-50/50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800">
                                             {Object.keys(testModal.testParams).map(key => (
@@ -1171,13 +1225,17 @@ export function OpenApiManager() {
                                                 </div>
                                             ))}
                                         </div>
-                                        <p className="text-[10px] text-gray-400 dark:text-slate-600 font-pretendard">설정된 Params Schema를 기반으로 동적 입력 필드가 생성되었습니다.</p>
+                                        <p className="text-[10px] text-gray-400 dark:text-slate-600 font-pretendard">
+                                            {t('openapiTab.manager.testParamHint')}
+                                        </p>
                                     </div>
                                 )}
 
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center">
-                                        <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 font-pretendard">실행 결과</label>
+                                        <label className="text-sm font-semibold text-gray-700 dark:text-slate-300 font-pretendard">
+                                            {t('openapiTab.manager.testResultLabel')}
+                                        </label>
                                         <div className="flex items-center gap-2">
                                             {!!testModal.result && (
                                                 <button
@@ -1189,7 +1247,7 @@ export function OpenApiManager() {
                                                     className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg transition-all font-pretendard"
                                                 >
                                                     {resultCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                                    {resultCopied ? '복사됨' : '결과 복사'}
+                                                    {resultCopied ? t('openapiTab.manager.copyResultSuccess') : t('openapiTab.manager.copyResultBtn')}
                                                 </button>
                                             )}
                                             {testModal.loading && <div className="w-4 h-4 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />}
@@ -1197,7 +1255,9 @@ export function OpenApiManager() {
                                     </div>
                                     <div className="bg-gray-900 rounded-xl p-4 overflow-hidden border border-gray-800 relative group">
                                         <pre className="text-xs text-green-400 dark:text-green-500 font-mono overflow-auto max-h-80 custom-scrollbar">
-                                            {testModal.result ? JSON.stringify(testModal.result, null, 2) : (testModal.loading ? '실행 중...' : '테스트를 실행해주세요.')}
+                                            {testModal.result ? JSON.stringify(testModal.result, null, 2) 
+                                            : (testModal.loading 
+                                            ? t('openapiTab.manager.testRunning')  : t('openapiTab.manager.testPrompt'))}
                                         </pre>
                                     </div>
                                 </div>
@@ -1210,7 +1270,7 @@ export function OpenApiManager() {
                                     className="px-6 py-2 bg-green-600 dark:bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition shadow-md flex items-center gap-2 disabled:opacity-50 font-pretendard"
                                 >
                                     <Play className="w-4 h-4" />
-                                    실행하기
+                                    {t('openapiTab.manager.testRunBtn')}
                                 </button>
                             </footer>
                         </div>
@@ -1247,7 +1307,7 @@ export function OpenApiManager() {
                                     onClick={() => setGuideModal({ open: false })}
                                     className="px-6 py-2 bg-indigo-600 dark:bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-500 transition shadow-md font-pretendard"
                                 >
-                                    확인
+                                    {t('openapiTab.manager.guideConfirmBtn')}
                                 </button>
                             </footer>
                         </div>
@@ -1283,7 +1343,7 @@ function BatchFileList({ batchId }: { batchId: string }) {
     }, [batchId]);
 
     if (loading) return <div className="flex justify-center p-8"><div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" /></div>;
-    if (files.length === 0) return <div className="text-center py-8 text-sm text-gray-400 dark:text-slate-600 italic font-pretendard">첨부된 파일이 없습니다.</div>;
+    if (files.length === 0) return <div className="text-center py-8 text-sm text-gray-400 dark:text-slate-600 italic font-pretendard">{t('openapiTab.manager.noUPloadedFiles')}</div>;
 
     return (
         <div className="space-y-2">
@@ -1299,9 +1359,9 @@ function BatchFileList({ batchId }: { batchId: string }) {
                         </div>
                     </div>
                     <button
-                        onClick={(e) => { e.stopPropagation(); handleDownload(file.file_id, file.org_file_nm); }}
+                        onClick={(e) => { e.stopPropagation(); handleDownload(file.file_id, file.org_file_nm,t); }}
                         className="p-2 text-gray-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
-                        title="다운로드"
+                        title={t('openapiTab.manager.downloadBtnText')}
                     >
                         <Upload className="w-5 h-5 rotate-180" />
                     </button>
