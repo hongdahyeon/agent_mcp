@@ -43,6 +43,7 @@ const SESSION_TIMEOUT = 3 * 60 * 60 * 1000; // 3 hours
 
 // 각 사용자의 사용량을 표시하는 컴포넌트
 function UsageBadge({ usageData }: { usageData: UsageData | null }) {
+  const { t } = useLanguage();
   if (!usageData) return null;
 
   const { usage, limit, remaining } = usageData;
@@ -56,13 +57,16 @@ function UsageBadge({ usageData }: { usageData: UsageData | null }) {
   }
 
   return (
-    <div className={clsx("flex items-center px-3 py-1.5 rounded-full text-xs font-medium mr-4 border border-transparent shadow-sm", badgeColor)} title="오늘 사용량 / 일일 한도">
+    <div className={clsx("flex items-center px-3 py-1.5 rounded-full text-xs font-medium mr-4 border border-transparent shadow-sm", badgeColor)} title={t('appUsageBadgeTooltip')}>
       <BarChart4 className="w-3.5 h-3.5 mr-1.5" />
       <span>
         {isUnlimited ? (
-          `사용: ${usage} (무제한)`
+          t('appUsageBadgeUnlimited').replace('{usage}', String(usage))
         ) : (
-          `사용: ${usage} / ${limit} (잔여: ${remaining})`
+          t('appUsageBadgeLimited')
+            .replace('{usage}', String(usage))
+            .replace('{limit}', String(limit))
+            .replace('{remaining}', String(remaining))
         )}
       </span>
     </div>
