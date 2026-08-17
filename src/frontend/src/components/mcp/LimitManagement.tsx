@@ -17,8 +17,10 @@ import type { Limit, LimitFormData } from '../../types/TargetLimitUsageMng';
 
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export function LimitManagement() {
+    const { t } = useLanguage();
     const [limits, setLimits] = useState<Limit[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -83,18 +85,18 @@ export function LimitManagement() {
                 headers: getAuthHeaders()
             });
 
-            if (!res.ok) throw new Error('Failed to fetch limit policies');
+            if (!res.ok) throw new Error(t('mcp.limit.fetchFail'));
 
             const data = await res.json();
             // Response format: { items: [], total: N, page: N, size: N }
             setLimits(data.items);
             setTotalItems(data.total);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            setError(err instanceof Error ? err.message : t('mcp.limit.fetchFail'));
         } finally {
             setLoading(false);
         }
-    }, [page, pageSize]);
+    }, [page, pageSize, t]);
 
     useEffect(() => {
         fetchLimits(page, pageSize);
@@ -154,19 +156,19 @@ export function LimitManagement() {
                 body: JSON.stringify(formData)
             });
 
-            if (!res.ok) throw new Error('Failed to save policy');
+            if (!res.ok) throw new Error(t('mcp.limit.saveFail'));
 
             await fetchLimits();
             setIsModalOpen(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save policy');
+            setError(err instanceof Error ? err.message : t('mcp.limit.saveFail'));
         } finally {
             setProcessing(false);
         }
     };
 
     const handleDelete = async (id: number) => {
-        const message = '정말 이 정책을 삭제하시겠습니까?';
+        const message = t('mcp.limit.deleteConfirm');
         if (!confirm(message)) return;
 
         try {
@@ -175,11 +177,11 @@ export function LimitManagement() {
                 headers: getAuthHeaders()
             });
 
-            if (!res.ok) throw new Error('Failed to delete policy');
+            if (!res.ok) throw new Error(t('mcp.limit.deleteFail'));
 
             await fetchLimits();
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to delete policy');
+            setError(err instanceof Error ? err.message : t('mcp.limit.deleteFail'));
         }
     };
 
@@ -192,7 +194,7 @@ export function LimitManagement() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            사용 제한 관리
+                            {t('mcp.limit.title')}
                         </h2>
                     </div>
                 </div>
@@ -201,7 +203,7 @@ export function LimitManagement() {
                     className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm"
                 >
                     <Plus className="w-4 h-4 mr-2" />
-                    정책 추가
+                    {t('mcp.limit.addPolicyBtn')}
                 </button>
             </header>
 
@@ -219,16 +221,16 @@ export function LimitManagement() {
                             <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                                        대상 (Type / ID)
+                                        {t('mcp.limit.thTarget')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                                        제한 횟수 (Daily)
+                                        {t('mcp.limit.thDailyLimit')}
                                     </th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                                        설명
+                                        {t('mcp.limit.thDescription')}
                                     </th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                                        관리
+                                        {t('mcp.limit.thActions')}
                                     </th>
                                 </tr>
                             </thead>
@@ -236,13 +238,13 @@ export function LimitManagement() {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-slate-500">
-                                            로딩 중...
+                                            {t('mcp.limit.loading')}
                                         </td>
                                     </tr>
                                 ) : limits.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-slate-500">
-                                            등록된 정책이 없습니다.
+                                            {t('mcp.limit.noPolicies')}
                                         </td>
                                     </tr>
                                 ) : (
@@ -274,11 +276,11 @@ export function LimitManagement() {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {limit.max_count === -1 ? (
                                                     <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                                        무제한
+                                                        {t('mcp.limit.unlimited')}
                                                     </span>
                                                 ) : (
                                                     <span className="text-sm text-gray-900 font-bold dark:text-slate-100">
-                                                        {limit.max_count.toLocaleString()}회
+                                                        {t('mcp.limit.countUnit').replace('{count}', limit.max_count.toLocaleString())}
                                                     </span>
                                                 )}
                                             </td>
@@ -291,14 +293,14 @@ export function LimitManagement() {
                                                 <button
                                                     onClick={() => handleOpenModal(limit)}
                                                     className="text-indigo-600 hover:text-indigo-900 mr-4"
-                                                    title="수정"
+                                                    title={t('mcp.limit.editTitle')}
                                                 >
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(limit.id)}
                                                     className="text-red-600 hover:text-red-900"
-                                                    title="삭제"
+                                                    title={t('mcp.limit.deleteTitle')}
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
@@ -334,7 +336,7 @@ export function LimitManagement() {
                                         <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-slate-100">
-                                        {editingLimit ? '정책 수정' : '새 정책 추가'}
+                                        {editingLimit ? t('mcp.limit.modalTitleEdit') : t('mcp.limit.modalTitleAdd')}
                                     </h3>
                                 </div>
                                 <button
@@ -351,7 +353,7 @@ export function LimitManagement() {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="col-span-1">
                                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                                대상 유형
+                                                {t('mcp.limit.labelTargetType')}
                                             </label>
                                             <select
                                                 className="block w-full border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
@@ -365,7 +367,7 @@ export function LimitManagement() {
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                                {formData.target_type === 'USER' ? '사용자 선택' : formData.target_type === 'TOKEN' ? '토큰 선택' : '역할 선택'}
+                                                {formData.target_type === 'USER' ? t('mcp.limit.labelTargetIdUser') : formData.target_type === 'TOKEN' ? t('mcp.limit.labelTargetIdToken') : t('mcp.limit.labelTargetIdRole')}
                                             </label>
                                             {formData.target_type === 'USER' ? (
                                                 <select
@@ -374,7 +376,7 @@ export function LimitManagement() {
                                                     value={formData.target_id}
                                                     onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                                                 >
-                                                    <option value="">사용자를 선택하세요</option>
+                                                    <option value="">{t('mcp.limit.placeholderSelectUser')}</option>
                                                     {userList.map(user => (
                                                         <option key={user.uid} value={user.user_id}>
                                                             {user.user_nm} ({user.user_id})
@@ -388,7 +390,7 @@ export function LimitManagement() {
                                                     value={formData.target_id}
                                                     onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                                                 >
-                                                    <option value="">토큰을 선택하세요</option>
+                                                    <option value="">{t('mcp.limit.placeholderSelectToken')}</option>
                                                     {tokenList.map(token => (
                                                         <option key={token.id} value={token.id}>
                                                             {token.name} (ID: {token.id})
@@ -402,9 +404,9 @@ export function LimitManagement() {
                                                     value={formData.target_id}
                                                     onChange={(e) => setFormData({ ...formData, target_id: e.target.value })}
                                                 >
-                                                    <option value="">역할을 선택하세요</option>
-                                                    <option value="ROLE_USER">ROLE_USER (일반 사용자)</option>
-                                                    <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
+                                                    <option value="">{t('mcp.limit.placeholderSelectRole')}</option>
+                                                    <option value="ROLE_USER">{t('mcp.limit.roleUserOption')}</option>
+                                                    <option value="ROLE_ADMIN">{t('mcp.limit.roleAdminOption')}</option>
                                                 </select>
                                             )}
                                         </div>
@@ -413,7 +415,7 @@ export function LimitManagement() {
                                     {/* Limit Count */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                            일일 제한 횟수 (-1: 무제한)
+                                            {t('mcp.limit.labelDailyLimit')}
                                         </label>
                                         <div className="relative rounded-lg shadow-sm">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -432,13 +434,13 @@ export function LimitManagement() {
                                     {/* Description */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                            설명 (Optional)
+                                            {t('mcp.limit.labelDescription')}
                                         </label>
                                         <textarea
                                             className="block w-full border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all h-20 resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            placeholder="설명을 입력하세요."
+                                            placeholder={t('mcp.limit.placeholderDescription')}
                                         />
                                     </div>
                                 </div>
@@ -449,7 +451,7 @@ export function LimitManagement() {
                                         onClick={() => setIsModalOpen(false)}
                                         className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                                     >
-                                        취소
+                                        {t('mcp.limit.btnCancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -457,7 +459,7 @@ export function LimitManagement() {
                                         className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm disabled:opacity-50 flex items-center"
                                     >
                                         {processing && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
-                                        저장
+                                        {t('mcp.limit.btnSave')}
                                     </button>
                                 </footer>
                             </form>
