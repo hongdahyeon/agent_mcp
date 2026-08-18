@@ -239,11 +239,11 @@ export function UsageHistory() {
                                                 <td className="px-6 py-4 text-sm text-gray-500 dark:text-slate-400">{s.limit === -1 ? '-' : s.remaining}</td>
                                                 <td className="px-6 py-4 text-sm">
                                                     {s.limit !== -1 && s.remaining === 0 ? (
-                                                        <span className="text-red-600 dark:text-red-400 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">한도 초과</span>
+                                                        <span className="text-red-600 dark:text-red-400 font-medium text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-full">{t('mcp.usageHistory.limitExceeded')}</span>
                                                     ) : s.limit !== -1 && s.remaining < 5 ? (
-                                                        <span className="text-orange-600 dark:text-orange-400 font-medium text-xs bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">임박</span>
+                                                        <span className="text-orange-600 dark:text-orange-400 font-medium text-xs bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">{t('mcp.usageHistory.imminent')}</span>
                                                     ) : (
-                                                        <span className="text-green-600 dark:text-green-400 font-medium text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">정상</span>
+                                                        <span className="text-green-600 dark:text-green-400 font-medium text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">{t('mcp.usageHistory.normal')}</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -398,12 +398,12 @@ export function UsageHistory() {
                                                     {log.tool_success === 'SUCCESS' ? (
                                                         <div className="flex items-center text-green-600 dark:text-green-400 text-sm">
                                                             <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                                                            성공
+                                                            {t('mcp.usageHistory.success')}
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center text-red-600 dark:text-red-400 text-sm">
                                                             <XCircle className="w-4 h-4 mr-1.5" />
-                                                            실패
+                                                            {t('mcp.usageHistory.fail')}
                                                         </div>
                                                     )}
                                                 </td>
@@ -411,9 +411,9 @@ export function UsageHistory() {
                                                     <div className="flex items-center space-x-2">
                                                         <span className="truncate" title={log.tool_params}>{log.tool_params}</span>
                                                         <button
-                                                            onClick={() => openJsonModal('파라미터 상세 (Parameters)', log.tool_params)}
+                                                            onClick={() => openJsonModal(t('mcp.usageHistory.paramDetails'), log.tool_params)}
                                                             className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                                                            title="상세 보기"
+                                                            title={t('mcp.usageHistory.viewDetails')}
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>
@@ -423,9 +423,9 @@ export function UsageHistory() {
                                                     <div className="flex items-center space-x-2">
                                                         <span className="truncate" title={log.tool_result}>{log.tool_result}</span>
                                                         <button
-                                                            onClick={() => openJsonModal('결과 상세 (Result)', log.tool_result)}
+                                                            onClick={() => openJsonModal(t('mcp.usageHistory.resultDetails'), log.tool_result)}
                                                             className="p-1 hover:bg-gray-100 dark:hover:bg-slate-800 rounded text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex-shrink-0"
-                                                            title="상세 보기"
+                                                            title={t('mcp.usageHistory.viewDetails')}
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>
