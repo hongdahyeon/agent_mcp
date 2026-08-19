@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Tag, Folder, Edit2, Trash2, X, Check, Search, ChevronRight, AlertCircle, Info } from 'lucide-react';
 import { getAuthHeaders } from '../../utils/auth';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface MetaItem {
     id: number | string;
@@ -15,6 +16,7 @@ interface ApiItem {
 }
 
 export const OpenApiMetaManager = () => {
+    const { t } = useLanguage();
     const [categories, setCategories] = useState<MetaItem[]>([]);
     const [tags, setTags] = useState<MetaItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,7 +63,7 @@ export const OpenApiMetaManager = () => {
                 fetchStats();
             } else {
                 const err = await res.json();
-                const message = err.detail || '수정 중 오류가 발생했습니다.';
+                const message = err.detail || t('openapiTab.metaTab.updateError');
                 alert(message);
             }
         } catch (err) {
@@ -71,12 +73,10 @@ export const OpenApiMetaManager = () => {
 
     const handleDelete = async (id: number | string, type: 'category' | 'tag', count: number) => {
         if (count > 0) {
-            const message = '연관된 OpenAPI가 있는 항목은 삭제할 수 없습니다.';
-            alert(message);
+            alert(t('openapiTab.metaTab.deleteHasApis'));
             return;
         }
-        const message = '정말 삭제하시겠습니까?';
-        if (!confirm(message)) return;
+        if (!confirm(t('openapiTab.metaTab.deleteHasApis'))) return;
 
         try {
             const endpoint = type === 'category' ? `/api/openapi/categories/${id}` : `/api/openapi/tags/${id}`;
@@ -91,7 +91,7 @@ export const OpenApiMetaManager = () => {
                 }
             } else {
                 const err = await res.json();
-                const message = err.detail || '삭제 중 오류가 발생했습니다.';
+                const message = err.detail || t('openapiTab.metaTab.deleteError');
                 alert(message);
             }
         } catch (err) {
@@ -114,7 +114,7 @@ export const OpenApiMetaManager = () => {
     };
 
     if (loading && categories.length === 0) {
-        return <div className="p-8 text-center text-gray-500">데이터를 불러오는 중...</div>;
+        return <div className="p-8 text-center text-gray-500">{t('openapiTab.metaTab.loading')}</div>;
     }
 
     const items = activeTab === 'category' ? categories : tags;
@@ -129,13 +129,13 @@ export const OpenApiMetaManager = () => {
                             onClick={() => { setActiveTab('category'); setEditingId(null); }}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'category' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
                         >
-                            <Folder className="w-4 h-4" /> 분류 관리
+                            <Folder className="w-4 h-4" /> {t('openapiTab.metaTab.categoryTab')}
                         </button>
                         <button
                             onClick={() => { setActiveTab('tag'); setEditingId(null); }}
                             className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tag' ? 'bg-emerald-600 text-white shadow-md' : 'text-gray-500 hover:text-gray-700 dark:text-slate-400'}`}
                         >
-                            <Tag className="w-4 h-4" /> 태그 관리
+                            <Tag className="w-4 h-4" /> {t('openapiTab.metaTab.tagTab')}
                         </button>
                     </div>
                 </header>
@@ -179,7 +179,7 @@ export const OpenApiMetaManager = () => {
                                 <button
                                     onClick={() => { setEditingId(item.id); setEditName(item.name); }}
                                     className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-all"
-                                    title="이름 수정"
+                                    title={t('openapiTab.metaTab.editNameTooltip')}
                                 >
                                     <Edit2 className="w-3.5 h-3.5" />
                                 </button>
@@ -187,7 +187,10 @@ export const OpenApiMetaManager = () => {
                                     onClick={() => handleDelete(item.id, activeTab, item.count)}
                                     className={`p-1.5 rounded-lg transition-all ${item.count > 0 ? 'text-gray-200 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:bg-white dark:hover:bg-slate-800'}`}
                                     disabled={item.count > 0}
-                                    title={item.count > 0 ? "연관 API가 있어 삭제 불가" : "삭제"}
+                                    title={item.count > 0 
+                                        ? t('openapiTab.metaTab.deleteHasApisTooltip') 
+                                        : t('openapiTab.metaTab.deleteTooltip')
+                                    }
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -206,7 +209,7 @@ export const OpenApiMetaManager = () => {
                         {selectedMeta ? (
                             <><span className="text-indigo-600 dark:text-indigo-400">"{selectedMeta.name}"</span> 연관 OpenAPI 목록</>
                         ) : (
-                            '항목을 선택하여 연관 API 확인'
+                            t('openapiTab.metaTab.selectPromptHeader')
                         )}
                     </h3>
                 </header>
@@ -215,14 +218,16 @@ export const OpenApiMetaManager = () => {
                     {!selectedMeta ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
                             <Info className="w-12 h-12 opacity-20" />
-                            <p className="text-sm italic">왼쪽 목록에서 분류나 태그를 선택해 주세요.</p>
+                            <p className="text-sm italic">
+                                {t('openapiTab.metaTab.selectPromptDesc')}
+                            </p>
                         </div>
                     ) : apisLoading ? (
-                        <div className="p-8 text-center text-gray-500">목록을 불러오는 중...</div>
+                        <div className="p-8 text-center text-gray-500"> {t('openapiTab.metaTab.loadingApis')}</div>
                     ) : relatedApis.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
                             <AlertCircle className="w-12 h-12 opacity-20" />
-                            <p className="text-sm italic">연관된 OpenAPI가 없습니다.</p>
+                            <p className="text-sm italic">{t('openapiTab.metaTab.noRelatedApis')}</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
