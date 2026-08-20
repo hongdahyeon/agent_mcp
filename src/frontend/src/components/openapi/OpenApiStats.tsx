@@ -19,12 +19,14 @@ import { getAuthHeaders } from '../../utils/auth';
 import type { OpenApiUsageLog, OpenApiStats } from '../../types/openapi';
 import { Pagination } from '../common/Pagination';
 import clsx from 'clsx';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface Props {
     theme: 'light' | 'dark';
 }
 
 export default function OpenApiStatsView({ theme }: Props) {
+    const { t } = useLanguage();
     const isDark = theme === 'dark';
     const [stats, setStats] = useState<OpenApiStats | null>(null);
     const [logs, setLogs] = useState<OpenApiUsageLog[]>([]);
@@ -120,8 +122,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             window.URL.revokeObjectURL(downloadUrl);
         } catch (err) {
             console.error("Export error:", err);
-            const message = "내보내기 중 오류가 발생했습니다.";
-            alert(message);
+            alert(t('openapiTab.statsTab.exportError'));
         }
     };
 
@@ -155,7 +156,9 @@ export default function OpenApiStatsView({ theme }: Props) {
             label: { show: false },
             data: (stats?.resultStats || []).map(s => ({
                 value: s.cnt,
-                name: s.success === 'SUCCESS' ? '성공' : '실패',
+                name: s.success === 'SUCCESS'
+                    ? t('openapiTab.statsTab.successLabel')
+                    : t('openapiTab.statsTab.failLabel'),
                 itemStyle: { color: s.success === 'SUCCESS' ? '#10B981' : '#EF4444' }
             }))
         }]
@@ -188,7 +191,7 @@ export default function OpenApiStatsView({ theme }: Props) {
         tooltip: { trigger: 'item' },
         legend: { bottom: '0%', textStyle: { color: isDark ? '#94a3b8' : '#64748b' } },
         series: [{
-            name: '사용자/토큰',
+            name: t('openapiTab.statsTab.userTokenPie'),
             type: 'pie',
             radius: '60%',
             itemStyle: {
@@ -218,7 +221,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             axisLabel: { color: isDark ? '#94a3b8' : '#64748b' }
         },
         series: [{
-            name: '사용 횟수',
+            name: t('openapiTab.statsTab.usageCountUnit'),
             type: 'bar',
             data: labelToolStats.map(s => s.cnt).reverse(),
             itemStyle: { color: '#6366f1', borderRadius: [0, 5, 5, 0] }
@@ -226,7 +229,7 @@ export default function OpenApiStatsView({ theme }: Props) {
     }), [labelToolStats, isDark]);
 
     // Heatmap Options
-    const days = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'], []);
+    const days = useMemo(() => t('openapiTab.statsTab.days'), []);
     const hours = useMemo(() => Array.from({ length: 24 }, (_, i) => `${i}시`), []);
     const heatmapData = useMemo(() => (stats?.heatmapStats || []).map(item => [
         parseInt(item.hour),
@@ -280,14 +283,16 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
                         <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard uppercase tracking-wider">OpenAPI 사용 통계</h2>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100 font-pretendard uppercase tracking-wider">
+                        {t('openapiTab.statsTab.title')}
+                    </h2>
                 </div>
                 <button
                     onClick={() => { fetchStats(); fetchLogs(1); if (selectedLabel) fetchLabelToolStats(selectedLabel); }}
                     className="flex items-center px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors font-pretendard shadow-sm"
                 >
                     <RefreshCw className={clsx("w-4 h-4 mr-2", loading && "animate-spin")} />
-                    데이터 새로고침
+                    {t('openapiTab.statsTab.title')}
                 </button>
             </header>
 
@@ -295,9 +300,12 @@ export default function OpenApiStatsView({ theme }: Props) {
             <div className="flex-none bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300 hover:shadow-md">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 flex items-center font-pretendard">
-                        <BarChart className="w-4 h-4 mr-2 text-indigo-500" /> 시간대별/요일별 사용 패턴
+                        <BarChart className="w-4 h-4 mr-2 text-indigo-500" /> 
+                        {t('openapiTab.statsTab.patternSectionTitle')}
                     </h3>
-                    <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">7x24 사용량 히트맵</span>
+                    <span className="text-[10px] text-gray-400 font-mono tracking-widest uppercase">
+                        {t('openapiTab.statsTab.heatmapLabel')}
+                    </span>
                 </div>
                 <div className="h-[250px]">
                     {mounted && <ReactECharts key={`heatmap-${theme}`} theme={isDark ? 'dark' : undefined} option={heatmapOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
@@ -310,14 +318,16 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200 transition-colors duration-300">
                         <div className="px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-red-50 dark:bg-red-900/10 flex items-center">
                             <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-                            <h3 className="font-bold text-red-900 dark:text-red-400 font-pretendard">상세 실패 사유</h3>
+                            <h3 className="font-bold text-red-900 dark:text-red-400 font-pretendard">
+                                {t('openapiTab.statsTab.errorModalHeader')}
+                            </h3>
                         </div>
                         <div className="p-6">
                             <div className="bg-gray-50 dark:bg-slate-800/50 p-4 rounded-lg border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 font-mono break-all whitespace-pre-wrap max-h-60 overflow-y-auto">
                                 {selectedError}
                             </div>
                             <p className="mt-4 text-xs text-gray-500 dark:text-slate-500 flex items-center font-pretendard">
-                                <Info className="w-3 h-3 mr-1" /> 위 결과는 API 호출 시 발생한 실제 에러 내용입니다.
+                                <Info className="w-3 h-3 mr-1" /> {t('openapiTab.statsTab.errorModalHint')}
                             </p>
                         </div>
                         <div className="px-6 py-4 bg-gray-50 dark:bg-slate-800/50 border-t border-gray-100 dark:border-slate-800 flex justify-end">
@@ -325,7 +335,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                                 onClick={() => setSelectedError(null)}
                                 className="px-6 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors font-pretendard"
                             >
-                                닫기
+                                {t('openapiTab.statsTab.closeBtn')}
                             </button>
                         </div>
                     </div>
@@ -336,7 +346,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             <div className="flex-none grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                     <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-4 flex items-center font-pretendard">
-                        <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" /> 성공/실패 비율
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" /> {t('openapiTab.statsTab.successRateSection')}
                     </h3>
                     <div className="h-[250px]">
                         {mounted && <ReactECharts key={`success-${theme}`} theme={isDark ? 'dark' : undefined} option={successOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
@@ -345,7 +355,7 @@ export default function OpenApiStatsView({ theme }: Props) {
 
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                     <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-4 flex items-center font-pretendard">
-                        <Globe className="w-4 h-4 mr-2 text-blue-500" /> 도구별 사용량 (Top 10)
+                        <Globe className="w-4 h-4 mr-2 text-blue-500" /> {t('openapiTab.statsTab.toolTop10Section')}
                     </h3>
                     <div className="h-[250px]">
                         {mounted && <ReactECharts key={`tool-${theme}`} theme={isDark ? 'dark' : undefined} option={toolOption} style={{ height: '100%' }} notMerge={true} lazyUpdate={true} />}
@@ -355,9 +365,11 @@ export default function OpenApiStatsView({ theme }: Props) {
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-semibold text-gray-500 dark:text-slate-400 flex items-center font-pretendard">
-                            <Users className="w-4 h-4 mr-2 text-indigo-500" /> 사용자/토큰별 사용량
+                            <Users className="w-4 h-4 mr-2 text-indigo-500" /> {t('openapiTab.statsTab.userUsageSection')}
                         </h3>
-                        <span className="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">분석하려면 클릭</span>
+                        <span className="text-[10px] text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">
+                            {t('openapiTab.statsTab.analyzeHintBadge')}
+                        </span>
                     </div>
                     <div className="h-[250px]">
                         {mounted && (
@@ -383,14 +395,14 @@ export default function OpenApiStatsView({ theme }: Props) {
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center">
                         <Users className="w-4 h-4 mr-2 text-indigo-500" />
-                        {selectedLabel ? <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">[{selectedLabel}]</span> : "사용자/토큰"} 상세 분석
+                        {selectedLabel ? <span className="text-indigo-600 dark:text-indigo-400 font-bold ml-1">[{selectedLabel}]</span> : "사용자/토큰"} {t('openapiTab.statsTab.detailAnalysisTitle')}
                     </h3>
                     {selectedLabel && (
                         <button
                             onClick={() => setSelectedLabel(null)}
                             className="text-xs text-gray-400 hover:text-indigo-500 underline decoration-dotted underline-offset-4"
                         >
-                            선택 초기화
+                            {t('openapiTab.statsTab.resetSelection')}
                         </button>
                     )}
                 </div>
@@ -398,7 +410,7 @@ export default function OpenApiStatsView({ theme }: Props) {
                 {!selectedLabel ? (
                     <div className="h-[200px] flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 space-y-2">
                         <Users className="w-8 h-8 opacity-20" />
-                        <p className="text-xs">사용자/토큰 차트의 항목을 클릭하여 도구 사용 통계를 조회하세요.</p>
+                        <p className="text-xs">{t('openapiTab.statsTab.clickUserChartPrompt')}</p>
                     </div>
                 ) : loadingLabelStats ? (
                     <div className="h-[200px] flex items-center justify-center">
@@ -406,13 +418,13 @@ export default function OpenApiStatsView({ theme }: Props) {
                     </div>
                 ) : labelToolStats.length > 0 ? (
                     <div className="h-[200px]">
-                        <div className="text-[10px] text-gray-400 uppercase mb-2">주 사용 OpenAPI TOP 5</div>
+                        <div className="text-[10px] text-gray-400 uppercase mb-2">{t('openapiTab.statsTab.top5ToolsLabel')}</div>
                         {mounted && <ReactECharts key={`label-tool-${selectedLabel}-${theme}`} theme={isDark ? 'dark' : undefined} option={labelToolOption} style={{ height: '170px' }} notMerge={true} lazyUpdate={true} />}
                     </div>
                 ) : (
                     <div className="h-[200px] flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 space-y-1">
                         <XCircle className="w-8 h-8 opacity-20" />
-                        <p className="text-xs font-bold">사용한 도구가 없습니다</p>
+                        <p className="text-xs font-bold">{t('openapiTab.statsTab.noToolsUsed')}</p>
                     </div>
                 )}
             </div>
@@ -421,7 +433,7 @@ export default function OpenApiStatsView({ theme }: Props) {
             <div className="flex-1 min-h-[400px] bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden flex flex-col min-h-0 transition-colors duration-300">
                 <div className="flex-none px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                     <h3 className="text-sm font-semibold text-gray-700 dark:text-slate-200 flex items-center font-pretendard">
-                        <History className="w-4 h-4 mr-2" /> 상세 호출 이력
+                        <History className="w-4 h-4 mr-2" /> {t('openapiTab.statsTab.historySectionTitle')}
                     </h3>
                     <div className="flex items-center space-x-3">
                         <div className="flex bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-0.5">
@@ -441,7 +453,9 @@ export default function OpenApiStatsView({ theme }: Props) {
                                 EXCEL
                             </button>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-slate-400">총 {total}건</span>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">
+                            {t('openapiTab.statsTab.totalCount').replace('{count}', String(total))}
+                        </span>
                     </div>
                 </div>
 
@@ -449,16 +463,20 @@ export default function OpenApiStatsView({ theme }: Props) {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">시간</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">주체</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">도구 ID</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">상태</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">IP</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">{t('openapiTab.statsTab.tableTime')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">{t('openapiTab.statsTab.tableSubject')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">{t('openapiTab.statsTab.tableToolId')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">{t('openapiTab.statsTab.tableStatus')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase font-pretendard">{t('openapiTab.statsTab.tableIp')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
                             {loading && logs.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-slate-400 font-pretendard">로딩 중...</td></tr>
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-slate-400 font-pretendard">
+                                        {t('openapiTab.statsTab.loading')}
+                                    </td>
+                                </tr>
                             ) : logs.length === 0 ? (
                                 <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-500 dark:text-slate-400 font-pretendard">이력이 없습니다.</td></tr>
                             ) : (
@@ -487,20 +505,20 @@ export default function OpenApiStatsView({ theme }: Props) {
                                         <td className="px-6 py-4 text-sm font-pretendard">
                                             {log.success === 'SUCCESS' ? (
                                                 <span className="inline-flex items-center text-green-600 dark:text-green-400">
-                                                    <CheckCircle2 className="w-3 h-3 mr-1" /> 성공
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" /> {t('openapiTab.statsTab.successStatus')}
                                                     <span className="ml-1 text-xs text-gray-400 dark:text-slate-500 font-mono">({log.status_code})</span>
                                                 </span>
                                             ) : (
                                                 <div className="flex items-center space-x-2">
                                                     <span className="inline-flex items-center text-red-600 dark:text-red-400">
-                                                        <XCircle className="w-3 h-3 mr-1" /> 실패
+                                                        <XCircle className="w-3 h-3 mr-1" />  {t('openapiTab.statsTab.failStatus')}
                                                         <span className="ml-1 text-xs text-gray-400 dark:text-slate-500 font-mono">({log.status_code})</span>
                                                     </span>
                                                     {log.error_msg && (
                                                         <button
                                                             onClick={() => setSelectedError(log.error_msg)}
                                                             className="p-1 hover:bg-red-50 dark:hover:bg-red-900/30 rounded text-gray-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                                                            title="상세 사유 보기"
+                                                            title={t('openapiTab.statsTab.viewErrorTooltip')}
                                                         >
                                                             <Eye className="w-3.5 h-3.5" />
                                                         </button>
