@@ -14,8 +14,10 @@ import {
 import { getAuthHeaders } from '../../utils/auth';
 import type { SchedulerJob, SystemHealth } from '../../types/system';
 import { clsx } from 'clsx';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function SchedulerManager() {
+  const { t } = useLanguage();
   const [jobs, setJobs] = useState<SchedulerJob[]>([]);
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,15 +60,15 @@ export default function SchedulerManager() {
       if (!res.ok) throw new Error(`Failed to ${action} scheduler`);
       await fetchData();
     } catch (err) {
-      const message = (err as Error).message;
-      alert(message);
+      console.error(err);
+      alert(t('systemTab.scheduler.controlFail'));
     } finally {
       setActionLoading(false);
     }
   };
 
   const deleteJob = async (id: string) => {
-    const message = '정말 이 작업을 삭제하시겠습니까?';
+    const message = t('systemTab.scheduler.deleteConfirm');
     if (!confirm(message)) return;
     try {
       const res = await fetch(`/api/system/scheduler/jobs/${id}`, {
@@ -76,8 +78,8 @@ export default function SchedulerManager() {
       if (!res.ok) throw new Error('Failed to delete job');
       await fetchData();
     } catch (err) {
-      const message = (err as Error).message;
-      alert(message);
+      console.error(err);
+      alert(t('systemTab.scheduler.deleteFail'));
     }
   };
 
@@ -85,7 +87,7 @@ export default function SchedulerManager() {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400">
         <RefreshCw className="w-8 h-8 animate-spin mr-2" />
-        데이터 로딩 중...
+        {t('systemTab.scheduler.loading')}
       </div>
     );
   }
@@ -93,7 +95,7 @@ export default function SchedulerManager() {
   const isRunning = health?.scheduler === 'ON';
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 font-pretendard">
       {/* Header */}
       <header className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors">
         <div className="flex items-center space-x-3">
@@ -101,15 +103,15 @@ export default function SchedulerManager() {
             <Clock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">스케줄러 관리</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">SMTP 예약 발송 엔진 및 작업 목록을 제어합니다.</p>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">{t('systemTab.scheduler.title')}</h2>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('systemTab.scheduler.subtitle')}</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
            <button
             onClick={() => fetchData()}
             className="p-2 text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
-            title="새로고침"
+            title={t('systemTab.scheduler.refresh')}
           >
             <RefreshCw className={clsx("w-5 h-5", actionLoading && "animate-spin")} />
           </button>
@@ -130,12 +132,12 @@ export default function SchedulerManager() {
               )} />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-slate-400">엔진 상태</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('systemTab.scheduler.engineStatus')}</p>
               <h4 className={clsx(
                 "text-lg font-bold",
                 isRunning ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
               )}>
-                {isRunning ? 'RUNNING' : 'STOPPED'}
+                {isRunning ? t('systemTab.scheduler.statusRunning') : t('systemTab.scheduler.statusStopped')}
               </h4>
             </div>
           </div>
@@ -150,7 +152,7 @@ export default function SchedulerManager() {
             )}
           >
             {isRunning ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
-            <span>{isRunning ? '중지' : '시작'}</span>
+            <span>{isRunning ? t('systemTab.scheduler.btnStop') : t('systemTab.scheduler.btnStart')}</span>
           </button>
         </div>
 
@@ -160,8 +162,8 @@ export default function SchedulerManager() {
               <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-slate-400">예약된 작업</p>
-              <h4 className="text-lg font-bold text-gray-800 dark:text-slate-100">{jobs.length} 건</h4>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('systemTab.scheduler.scheduledJobs')}</p>
+              <h4 className="text-lg font-bold text-gray-800 dark:text-slate-100">{t('systemTab.scheduler.jobsCount').replace('{count}', String(jobs.length))}</h4>
             </div>
           </div>
         </div>
@@ -172,7 +174,7 @@ export default function SchedulerManager() {
               <Activity className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-slate-400">리소스 점검</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('systemTab.scheduler.resourceCheck')}</p>
               <div className="flex items-center space-x-2 mt-1">
                 {health?.db === 'OK' ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <AlertCircle className="w-4 h-4 text-red-500" />}
                 <span className="text-xs dark:text-slate-300">DB</span>
@@ -187,17 +189,17 @@ export default function SchedulerManager() {
       {/* Jobs Table */}
       <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
         <div className="p-4 border-b border-gray-50 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50">
-          <h3 className="font-bold text-gray-700 dark:text-slate-200">등록된 작업 목록</h3>
+          <h3 className="font-bold text-gray-700 dark:text-slate-200">{t('systemTab.scheduler.tableTitle')}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead className="bg-gray-50 dark:bg-slate-800/50 text-gray-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
               <tr>
-                <th className="px-6 py-3">Job ID</th>
-                <th className="px-6 py-3">작업명</th>
-                <th className="px-6 py-3">다음 실행 시간</th>
-                <th className="px-6 py-3">인자(Args)</th>
-                <th className="px-6 py-3 text-right">관리</th>
+                <th className="px-6 py-3">{t('systemTab.scheduler.thJobId')}</th>
+                <th className="px-6 py-3">{t('systemTab.scheduler.thJobName')}</th>
+                <th className="px-6 py-3">{t('systemTab.scheduler.thNextRun')}</th>
+                <th className="px-6 py-3">{t('systemTab.scheduler.thArgs')}</th>
+                <th className="px-6 py-3 text-right">{t('systemTab.scheduler.thActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-sm">
@@ -218,7 +220,7 @@ export default function SchedulerManager() {
                     <button
                       onClick={() => deleteJob(job.id)}
                       className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                      title="작업 취소"
+                      title={t('systemTab.scheduler.tooltipCancel')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -227,7 +229,7 @@ export default function SchedulerManager() {
               )) : (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-400 dark:text-slate-500">
-                    현재 예약된 작업이 없습니다.
+                    {t('systemTab.scheduler.noJobs')}
                   </td>
                 </tr>
               )}
