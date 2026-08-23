@@ -3,6 +3,7 @@ import { AlertCircle, Columns, Database, FileText, RefreshCw, Table } from 'luci
 import { useEffect, useState, useCallback } from 'react';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /**
  * 스키마 및 데이터 관리 컴포넌트
@@ -20,6 +21,7 @@ export interface ColumnDefinition {
 }
 
 export function SchemaManager() {
+  const { t } = useLanguage();
   const [tables, setTables] = useState<string[]>([]); // 테이블 목록
   const [selectedTable, setSelectedTable] = useState<string | null>(null); // 현재 선택된 테이블 이름
   const [schema, setSchema] = useState<ColumnDefinition[]>([]); // 선택된 테이블의 스키마 정보
@@ -171,7 +173,7 @@ export function SchemaManager() {
 
   // 데이터 조회 테이블 렌더링
   const renderDataTable = () => {
-    if (dataRows.length === 0) return <div className="p-8 text-center text-gray-500 dark:text-slate-400">데이터가 없습니다.</div>;
+    if (dataRows.length === 0) return <div className="p-8 text-center text-gray-500 dark:text-slate-400">{t('systemTab.schema.noData')}</div>;
     const columns = Object.keys(dataRows[0]);
     return (
       <div className="flex-1 overflow-x-auto flex flex-col"> {/* Scrollable container for data */}
@@ -211,9 +213,9 @@ export function SchemaManager() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-              스키마 및 데이터 관리
+              {t('systemTab.schema.title')}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">데이터베이스 테이블 구조를 확인하고 데이터를 조회합니다.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('systemTab.schema.subtitle')}</p>
           </div>
         </div>
       </header>
@@ -230,8 +232,8 @@ export function SchemaManager() {
         {/* Left: Table List */}
         <div className="w-1/4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 flex flex-col transition-colors duration-300">
           <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50 rounded-t-xl transition-colors">
-            <h3 className="font-semibold text-gray-700 dark:text-slate-300">Tables</h3>
-            <button onClick={fetchTables} className="text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            <h3 className="font-semibold text-gray-700 dark:text-slate-300">{t('systemTab.schema.tablesTitle')}</h3>
+            <button onClick={fetchTables} title={t('systemTab.schema.refresh')} className="text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
               <RefreshCw className={clsx("w-4 h-4", loading && "animate-spin")} />
             </button>
           </div>
@@ -276,7 +278,7 @@ export function SchemaManager() {
                       activeTab === 'schema' ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"
                     )}
                   >
-                    <Columns className="w-4 h-4" /> 스키마
+                    <Columns className="w-4 h-4" /> {t('systemTab.schema.tabSchema')}
                   </button>
                   <button
                     onClick={() => setActiveTab('data')}
@@ -285,7 +287,7 @@ export function SchemaManager() {
                       activeTab === 'data' ? "bg-green-100 text-green-700" : "text-gray-600 hover:bg-gray-100"
                     )}
                   >
-                    <FileText className="w-4 h-4" /> 데이터
+                    <FileText className="w-4 h-4" /> {t('systemTab.schema.tabData')}
                   </button>
                 </div>
               </div>
@@ -322,7 +324,7 @@ export function SchemaManager() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-slate-600">
               <Database className="w-16 h-16 mb-4 opacity-20" />
-              <p>왼쪽 목록에서 테이블을 선택해주세요</p>
+              <p>{t('systemTab.schema.selectPrompt')}</p>
             </div>
           )}
         </div>
