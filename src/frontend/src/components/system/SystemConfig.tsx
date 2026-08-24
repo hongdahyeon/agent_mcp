@@ -3,9 +3,11 @@ import { Settings, Plus, Edit2, Trash2, Save, X, Search } from 'lucide-react';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
 import type { SystemConfig, ConfigFormData } from '../../types/systemConfig';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 export function SystemConfig() {
+    const { t } = useLanguage();
     const [configs, setConfigs] = useState<SystemConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function SystemConfig() {
     };
 
     const handleDelete = async (name: string) => {
-        if (!window.confirm(`'${name}'를 삭제하시겠습니까?`)) return;
+        if (!window.confirm(t('systemTab.config.deleteConfirm').replace('{name}', name))) return;
 
         try {
             const res = await fetch(`/api/system/config/${name}`, {
@@ -91,7 +93,7 @@ export function SystemConfig() {
 
             setConfigs(prev => prev.filter(c => c.name !== name));
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Delete failed';
+            const message = err instanceof Error ? err.message : t('systemTab.config.deleteFail');
             alert(message);
         }
     };
@@ -101,7 +103,7 @@ export function SystemConfig() {
 
         // Simple Validation
         if (!formData.name.trim() || !formData.configuration.trim() || !formData.description.trim()) {
-            const message = "입력값을 확인해주세요.";
+            const message = t('systemTab.config.valEmpty');
             alert(message);
             return;
         }
@@ -110,7 +112,7 @@ export function SystemConfig() {
         try {
             JSON.parse(formData.configuration);
         } catch {
-            const message = "Configuration은 유효한 JSON 형식이어야 합니다.";
+            const message = t('systemTab.config.valJson');
             alert(message);
             return;
         }
@@ -127,13 +129,13 @@ export function SystemConfig() {
 
             if (!res.ok) {
                 const errorData = await res.json();
-                throw new Error(errorData.detail || 'Failed to save config');
+                throw new Error(errorData.detail || t('systemTab.config.saveFail'));
             }
 
             await fetchConfigs();
             setIsModalOpen(false);
         } catch (err) {
-            const message = err instanceof Error ? err.message : 'Save failed';
+            const message = err instanceof Error ? err.message : t('systemTab.config.saveFail');
             alert(message);
         }
     };
@@ -143,8 +145,8 @@ export function SystemConfig() {
         c.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return <div className="p-8 text-center text-gray-500 dark:text-slate-400">로딩 중...</div>;
-    if (error) return <div className="p-8 text-center text-red-500 dark:text-red-400">에러: {error}</div>;
+    if (loading) return <div className="p-8 text-center text-gray-500 dark:text-slate-400 font-pretendard">{t('systemTab.config.loading')}</div>;
+    if (error) return <div className="p-8 text-center text-red-500 dark:text-red-400 font-pretendard">{t('systemTab.config.error').replace('{error}', error)}</div>;
 
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 font-pretendard">
@@ -155,9 +157,9 @@ export function SystemConfig() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            시스템 설정
+                            {t('systemTab.config.title')}
                         </h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">시스템 설정 관리</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('systemTab.config.subtitle')}</p>
                     </div>
                 </div>
 
@@ -165,13 +167,13 @@ export function SystemConfig() {
 
             {/* Search Bar & Action */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
-                <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-slate-100">검색 및 관리</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-slate-100">{t('systemTab.config.searchTitle')}</h2>
                 <div className="flex gap-4">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="설정 명칭 또는 설명 검색..."
+                            placeholder={t('systemTab.config.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 sm:text-sm transition-all"
@@ -182,7 +184,7 @@ export function SystemConfig() {
                         className="flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm shrink-0 font-medium"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        추가
+                        {t('systemTab.config.addBtn')}
                     </button>
                 </div>
             </div>
@@ -193,18 +195,18 @@ export function SystemConfig() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이름</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">설정 (JSON)</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">설명</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">마지막 수정일</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">액션</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.config.thName')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.config.thConfig')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.config.thDesc')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.config.thRegDate')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.config.thActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800 transition-colors">
                             {filteredConfigs.length === 0 ? (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-slate-400">
-                                        No configurations found.
+                                        {t('systemTab.config.noConfigs')}
                                     </td>
                                 </tr>
                             ) : (
@@ -228,14 +230,14 @@ export function SystemConfig() {
                                             <button
                                                 onClick={() => handleOpenEdit(config)}
                                                 className="text-blue-600 hover:text-blue-900 mr-3"
-                                                title="Edit"
+                                                title={t('systemTab.config.tooltipEdit')}
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(config.name)}
                                                 className="text-red-600 hover:text-red-900"
-                                                title="Delete"
+                                                title={t('systemTab.config.tooltipDelete')}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -262,13 +264,12 @@ export function SystemConfig() {
             </div>
 
             {/* Modal */}
-            {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-pretendard">
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 transition-colors">
                             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">
-                                {isEditMode ? '설정 수정' : '새 설정 추가'}
+                                {isEditMode ? t('systemTab.config.modalTitleEdit') : t('systemTab.config.modalTitleAdd')}
                             </h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
@@ -282,7 +283,7 @@ export function SystemConfig() {
                             <div className="p-6 space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                        이름 (Key) <span className="text-red-500 font-bold">*</span>
+                                        {t('systemTab.config.labelName')} <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -292,12 +293,12 @@ export function SystemConfig() {
                                         placeholder="e.g. mail.host"
                                         className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${isEditMode ? 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-500 cursor-not-allowed border-gray-200 dark:border-slate-700' : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100'}`}
                                     />
-                                    {isEditMode && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">이름은 생성 후 변경할 수 없습니다.</p>}
+                                    {isEditMode && <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{t('systemTab.config.editHint')}</p>}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                        설정 (JSON) <span className="text-red-500 font-bold">*</span>
+                                        {t('systemTab.config.labelConfig')} <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <textarea
                                         value={formData.configuration}
@@ -310,12 +311,12 @@ export function SystemConfig() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                                        설명 <span className="text-red-500 font-bold">*</span>
+                                        {t('systemTab.config.labelDesc')} <span className="text-red-500 font-bold">*</span>
                                     </label>
                                     <textarea
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        placeholder="설정에 대한 간단한 설명"
+                                        placeholder={t('systemTab.config.descPlaceholder')}
                                         rows={2}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
                                     />
@@ -328,14 +329,14 @@ export function SystemConfig() {
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                                 >
-                                    취소
+                                    {t('systemTab.config.cancelBtn')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm flex items-center"
                                 >
                                     <Save className="w-4 h-4 mr-2" />
-                                    저장
+                                    {t('systemTab.config.saveBtn')}
                                 </button>
                             </div>
                         </form>
