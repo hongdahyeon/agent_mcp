@@ -13,12 +13,14 @@ import { useCallback, useEffect, useState } from 'react';
 import type { User as UserType } from '../../types/auth';
 import { getAuthHeaders } from '../../utils/auth';
 import { Pagination } from '../common/Pagination';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 /*
 * 사용자 관리 화면에 대한 컴포넌트
 */
 
 export function Users() {
+    const { t } = useLanguage();
     const [users, setUsers] = useState<UserType[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -77,12 +79,12 @@ export function Users() {
         } catch (err: unknown) {
             console.error("Error in fetchUsers:", err);
             const message = err instanceof Error ? err.message : 'Unknown error';
-            setError(`사용자 목록을 불러오는데 실패했습니다: ${message} `);
+            setError(t('systemTab.users.fetchFail').replace('{message}', message));
             console.error(`사용자 목록 조회 실패: ${message}`)
         } finally {
             setLoading(false);
         }
-    }, [pageSize]);
+    }, [pageSize, t]);
 
     useEffect(() => {
         fetchUsers(1);
@@ -135,7 +137,7 @@ export function Users() {
 
     // 사용자 삭제 (Soft Delete)
     const handleDeleteUser = async (user: UserType) => {
-        const message = `${user.user_nm} (${user.user_id}) 사용자를 삭제하시겠습니까? \n삭제된 사용자는 더 이상 로그인이 불가능합니다.`
+        const message = t('systemTab.users.deleteConfirm').replace('{name}', user.user_nm).replace('{id}', user.user_id);
         if (!window.confirm(message)) {
             return;
         }
@@ -155,14 +157,12 @@ export function Users() {
                 throw new Error(errorData.detail || 'Failed to delete user');
             }
 
-            const message = '사용자가 삭제되었습니다.';
-            alert(message);
+            alert(t('systemTab.users.deleteSuccess'));
             fetchUsers(page);
         } catch (err: unknown) {
             console.error("Error in handleDeleteUser:", err);
             const message = err instanceof Error ? err.message : 'Unknown error';
-            const alertMessage = `사용자 삭제 실패: ${message}`
-            alert(alertMessage);
+            alert(t('systemTab.users.deleteFail').replace('{message}', message));
         }
     };
 
@@ -199,8 +199,7 @@ export function Users() {
     // OTP 발송
     const sendOtp = async () => {
         if (!formData.user_email || emailCheckStatus !== 'available') {
-            const message = '이메일 중복 확인을 먼저 완료해주세요.'
-            alert(message);
+            alert(t('systemTab.users.otpNeedEmailCheck'));
             return;
         }
         setIsSendingOtp(true);
@@ -212,16 +211,13 @@ export function Users() {
             });
             if (res.ok) {
                 setIsOtpSent(true);
-                const message = '인증 코드가 이메일로 발송되었습니다.'
-                alert(message);
+                alert(t('systemTab.users.otpSent'));
             } else {
                 const data = await res.json();
-                const message = data.detail || 'OTP 발송 실패';
-                alert(message);
+                alert(data.detail || t('systemTab.users.otpSendFail'));
             }
         } catch {
-            const message = 'OTP 발송 중 오류가 발생했습니다.';
-            alert(message);
+            alert(t('systemTab.users.otpSendErr'));
         } finally {
             setIsSendingOtp(false);
         }
@@ -243,16 +239,13 @@ export function Users() {
             });
             if (res.ok) {
                 setIsOtpVerified(true);
-                const message = '이메일 인증이 완료되었습니다.';
-                alert(message);
+                alert(t('systemTab.users.otpVerifyOk'));
             } else {
                 const data = await res.json();
-                const message = data.detail?.message || '인증 코드 확인 실패';
-                alert(message);
+                alert(data.detail?.message || t('systemTab.users.otpVerifyFail'));
             }
         } catch {
-            const message = '인증 코드 확인 중 오류가 발생했습니다.'
-            alert(message);
+            alert(t('systemTab.users.otpVerifyErr'));
         } finally {
             setIsVerifyingOtp(false);
         }
@@ -264,23 +257,19 @@ export function Users() {
 
         if (modalMode === 'create') {
             if (idCheckStatus !== 'available') {
-                const message = '아이디 중복 확인이 필요합니다.'
-                alert(message);
+                alert(t('systemTab.users.needIdCheck'));
                 return;
             }
             if (!formData.user_email || emailCheckStatus !== 'available') {
-                const message = '이메일 중복 확인이 필요합니다.'
-                alert(message);
+                alert(t('systemTab.users.needEmailCheck'));
                 return;
             }
             if (!isOtpVerified) {
-                const message = '이메일 인증이 필요합니다.'
-                alert(message);
+                alert(t('systemTab.users.needOtp'));
                 return;
             }
             if (!formData.password) {
-                const message = '비밀번호를 입력해주세요.'
-                alert(message);
+                alert(t('systemTab.users.needPassword'));
                 return;
             }
         } else {
@@ -288,13 +277,11 @@ export function Users() {
             const currentUser = users.find(u => u.user_id === formData.user_id);
             if (currentUser && currentUser.user_email !== formData.user_email) {
                 if (emailCheckStatus !== 'available') {
-                    const message1 = '변경된 이메일 중복 확인이 필요합니다.'
-                    alert(message1);
+                    alert(t('systemTab.users.needNewEmailCheck'));
                     return;
                 }
                 if (!isOtpVerified) {
-                    const message2 = '변경된 이메일에 대한 인증이 필요합니다.'
-                    alert(message2);
+                    alert(t('systemTab.users.needNewOtp'));
                     return;
                 }
             }
@@ -315,17 +302,15 @@ export function Users() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.detail || '저장 실패');
+                throw new Error(data.detail || t('systemTab.users.saveFail'));
             }
 
             setIsModalOpen(false);
             fetchUsers(modalMode === 'create' ? 1 : page);
-            const message = '저장되었습니다.';
-            alert(message);
+            alert(t('systemTab.users.saveSuccess'));
         } catch (err) {
             if (err instanceof Error) {
-                const message = err.message;
-                alert(message);
+                alert(err.message);
             }
         }
     };
@@ -333,8 +318,8 @@ export function Users() {
     // is_enable 토글 수정
     const toggleEnable = async (user: UserType) => {
         const newStatus = user.is_enable === 'Y' ? 'N' : 'Y';
-        const actionText = newStatus === 'Y' ? '활성화' : '비활성화';
-        if (!confirm(`${user.user_nm} 님의 상태를 ${actionText} 하시겠습니까?`)) return;
+        const actionText = newStatus === 'Y' ? t('systemTab.users.enableText') : t('systemTab.users.disableText');
+        if (!confirm(t('systemTab.users.enableConfirm').replace('{name}', user.user_nm).replace('{action}', actionText))) return;
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
                 method: 'PUT',
@@ -344,20 +329,19 @@ export function Users() {
                 },
                 body: JSON.stringify({ is_enable: newStatus })
             });
-            if (!res.ok) throw new Error('상태 변경 실패');
+            if (!res.ok) throw new Error(t('systemTab.users.toggleError'));
 
             fetchUsers(page); // 현재 페이지 유지
         } catch {
-            const message = '상태 변경 중 오류가 발생했습니다.'
-            alert(message);
+            alert(t('systemTab.users.toggleError'));
         }
     };
 
     // is_locked 토글 수정
     const toggleLock = async (user: UserType) => {
         const newStatus = user.is_locked === 'Y' ? 'N' : 'Y';
-        const actionText = newStatus === 'Y' ? '계정 잠금' : '계정 풀림';
-        if (!confirm(`${user.user_nm} 님을 ${actionText} 하시겠습니까?`)) return;
+        const actionText = newStatus === 'Y' ? t('systemTab.users.lockAction') : t('systemTab.users.unlockAction');
+        if (!confirm(t('systemTab.users.lockConfirm').replace('{name}', user.user_nm).replace('{action}', actionText))) return;
 
         try {
             const res = await fetch(`/api/users/${user.user_id}`, {
@@ -371,17 +355,16 @@ export function Users() {
                     login_fail_count: newStatus === 'N' ? 0 : user.login_fail_count
                 })
             });
-            if (!res.ok) throw new Error(`${actionText} 실패`);
+            if (!res.ok) throw new Error(t('systemTab.users.lockToggleError').replace('{action}', actionText));
 
             fetchUsers(page);
         } catch {
-            const message = `${actionText} 중 오류가 발생했습니다.`
-            alert(message);
+            alert(t('systemTab.users.lockToggleError').replace('{action}', actionText));
         }
     };
 
 
-    if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500">Loading users...</div>;
+    if (loading && users.length === 0) return <div className="p-8 text-center text-gray-500 font-pretendard">{t('systemTab.users.loading')}</div>;
 
     return (
         <div className="flex flex-col space-y-4 font-pretendard">
@@ -392,17 +375,17 @@ export function Users() {
                     </div>
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-slate-100">
-                            사용자 관리
+                            {t('systemTab.users.title')}
                         </h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">시스템 사용자를 조회하고 관리합니다.</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{t('systemTab.users.subtitle')}</p>
                     </div>
                 </div>
                 <button
                     onClick={handleOpenCreate}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm font-medium text-sm"
                 >
                     <UserPlus className="w-4 h-4" />
-                    사용자 추가
+                    {t('systemTab.users.addUserBtn')}
                 </button>
             </header>
 
@@ -418,14 +401,14 @@ export function Users() {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-800">
                         <thead className="bg-gray-50 dark:bg-slate-800/50 sticky top-0 z-10 transition-colors">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">ID / 이름</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">이메일</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">권한</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">상태</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">승인상태</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">잠금</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">마지막 접속</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">관리</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thIdName')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thEmail')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thRole')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thStatus')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thApproval')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thLock')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thLastLogin')}</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wider">{t('systemTab.users.thActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-800">
@@ -458,12 +441,12 @@ export function Users() {
                                             {user.is_enable === 'Y' ? (
                                                 <>
                                                     <ToggleRight className="w-8 h-8 text-green-500 group-hover:text-green-600" />
-                                                    <span className="text-sm text-green-600 font-medium">활성화</span>
+                                                    <span className="text-sm text-green-600 font-medium">{t('systemTab.users.enableY')}</span>
                                                 </>
                                             ) : (
                                                 <>
                                                     <ToggleLeft className="w-8 h-8 text-gray-400 group-hover:text-gray-500" />
-                                                    <span className="text-sm text-gray-500">비활성화</span>
+                                                    <span className="text-sm text-gray-500">{t('systemTab.users.enableN')}</span>
                                                 </>
                                             )}
                                         </button>
@@ -475,7 +458,7 @@ export function Users() {
                                                 ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/50"
                                                 : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/50"
                                         )}>
-                                            {user.is_approved === 'Y' ? '승인' : '미승인'}
+                                            {user.is_approved === 'Y' ? t('systemTab.users.approvedY') : t('systemTab.users.approvedN')}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -483,19 +466,19 @@ export function Users() {
                                             {user.is_locked === 'Y' ? (
                                                 <>
                                                     <span className="flex items-center gap-1 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded text-xs font-medium border border-red-100 dark:border-red-800/50 transition-colors">
-                                                        <Lock className="w-3 h-3" /> 계정 잠금 ({user.login_fail_count})
+                                                        <Lock className="w-3 h-3" /> {t('systemTab.users.badgeLocked').replace('{count}', String(user.login_fail_count))}
                                                     </span>
                                                     <button
                                                         onClick={() => toggleLock(user)}
                                                         className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                                                        title="계정 풀림"
+                                                        title={t('systemTab.users.tooltipUnlock')}
                                                     >
                                                         <Unlock className="w-4 h-4" />
                                                     </button>
                                                 </>
                                             ) : (
                                                 <span className="flex items-center gap-1 text-gray-500 dark:text-slate-400 bg-gray-50 dark:bg-slate-800 px-2 py-0.5 rounded text-xs border border-gray-100 dark:border-slate-800 transition-colors">
-                                                    <Unlock className="w-3 h-3" /> 계정 풀림
+                                                    <Unlock className="w-3 h-3" /> {t('systemTab.users.badgeUnlocked')}
                                                 </span>
                                             )}
                                         </div>
@@ -507,15 +490,15 @@ export function Users() {
                                         <div className="flex items-center justify-end gap-1">
                                             <button
                                                 onClick={() => handleOpenUpdate(user)}
-                                                className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="정보 수정"
+                                                className="text-blue-600 hover:text-blue-900 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                                                title={t('systemTab.users.tooltipEdit')}
                                             >
                                                 <Edit2 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteUser(user)}
-                                                className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition-colors"
-                                                title="사용자 삭제"
+                                                className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                                title={t('systemTab.users.tooltipDelete')}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -544,15 +527,13 @@ export function Users() {
             {/* 하단 여백 추가 */}
             <div className="h-10 flex-none" />
 
-
-
             {/* Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in font-pretendard">
                     <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col animate-scale-in border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                         <header className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/50 transition-colors">
                             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100">
-                                {modalMode === 'create' ? '사용자 추가' : '사용자 정보 수정'}
+                                {modalMode === 'create' ? t('systemTab.users.modalCreate') : t('systemTab.users.modalUpdate')}
                             </h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
@@ -567,7 +548,7 @@ export function Users() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <UserIcon className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        아이디
+                                        {t('systemTab.users.labelUserId')}
                                     </label>
                                     <div className="flex gap-2">
                                         <input
@@ -580,7 +561,7 @@ export function Users() {
                                             }}
                                             disabled={modalMode === 'update'}
                                             className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all ${modalMode === 'update' ? 'bg-gray-50 dark:bg-slate-800 text-gray-400 dark:text-slate-600 cursor-not-allowed border-gray-200 dark:border-slate-800' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-900 dark:text-slate-100'}`}
-                                            placeholder="영문/숫자 입력"
+                                            placeholder={t('systemTab.users.placeholderUserId')}
                                             required
                                         />
                                         {modalMode === 'create' && (
@@ -588,20 +569,20 @@ export function Users() {
                                                 type="button"
                                                 onClick={checkUserId}
                                                 disabled={!formData.user_id || idCheckStatus === 'checking'}
-                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
                                             >
-                                                {idCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                                {idCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('systemTab.users.btnCheck')}
                                             </button>
                                         )}
                                     </div>
-                                    {idCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">사용 가능한 아이디입니다.</p>}
-                                    {idCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">이미 사용 중인 아이디입니다.</p>}
+                                    {idCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">{t('systemTab.users.idAvailable')}</p>}
+                                    {idCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">{t('systemTab.users.idTaken')}</p>}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        이메일
+                                        {t('systemTab.users.labelEmail')}
                                     </label>
                                     <div className="flex gap-2">
                                         <input
@@ -626,23 +607,23 @@ export function Users() {
                                             <button
                                                 type="button"
                                                 onClick={() => setIsEmailEditing(true)}
-                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors"
+                                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                                             >
-                                                이메일 수정
+                                                {t('systemTab.users.btnEditEmail')}
                                             </button>
                                         ) : (
                                             <button
                                                 type="button"
                                                 onClick={checkEmail}
                                                 disabled={!formData.user_email || emailCheckStatus === 'checking'}
-                                                className="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-semibold hover:bg-blue-100 transition-colors disabled:opacity-50"
+                                                className="px-3 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-50"
                                             >
-                                                {emailCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : '중복확인'}
+                                                {emailCheckStatus === 'checking' ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('systemTab.users.btnCheck')}
                                             </button>
                                         )}
                                     </div>
-                                    {emailCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">사용 가능한 이메일입니다.</p>}
-                                    {emailCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">이미 사용 중인 이메일입니다.</p>}
+                                    {emailCheckStatus === 'available' && <p className="text-[11px] text-green-600 mt-1 ml-1">{t('systemTab.users.emailAvailable')}</p>}
+                                    {emailCheckStatus === 'taken' && <p className="text-[11px] text-red-600 mt-1 ml-1">{t('systemTab.users.emailTaken')}</p>}
                                     
                                     {/* OTP flow */}
                                     {emailCheckStatus === 'available' && (
@@ -652,7 +633,7 @@ export function Users() {
                                                     type="text"
                                                     value={otpCode}
                                                     onChange={(e) => setOtpCode(e.target.value)}
-                                                    placeholder="인증코드"
+                                                    placeholder={t('systemTab.users.placeholderOtp')}
                                                     disabled={isOtpVerified}
                                                     className="flex-1 px-4 py-2 text-sm border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                                 />
@@ -663,7 +644,7 @@ export function Users() {
                                                         disabled={isSendingOtp}
                                                         className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
                                                     >
-                                                        {isSendingOtp ? '발송중...' : '인증코드 발송'}
+                                                        {isSendingOtp ? t('systemTab.users.btnSendingOtp') : t('systemTab.users.btnSendOtp')}
                                                     </button>
                                                 ) : (
                                                     <button
@@ -672,11 +653,11 @@ export function Users() {
                                                         disabled={isVerifyingOtp || isOtpVerified || !otpCode}
                                                         className={`px-3 py-2 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${isOtpVerified ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-700'}`}
                                                     >
-                                                        {isOtpVerified ? '인증완료' : isVerifyingOtp ? '확인중...' : '인증확인'}
+                                                        {isOtpVerified ? t('systemTab.users.btnVerifiedOtp') : isVerifyingOtp ? t('systemTab.users.btnVerifyingOtp') : t('systemTab.users.btnVerifyOtp')}
                                                     </button>
                                                 )}
                                             </div>
-                                            {isOtpSent && !isOtpVerified && <p className="text-[10px] text-indigo-500 ml-1">이메일로 발송된 인증코드를 입력해주세요.</p>}
+                                            {isOtpSent && !isOtpVerified && <p className="text-[10px] text-indigo-500 ml-1">{t('systemTab.users.otpHint')}</p>}
                                         </div>
                                     )}
                                 </div>
@@ -685,14 +666,14 @@ export function Users() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                             <Shield className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                            비밀번호
+                                            {t('systemTab.users.labelPassword')}
                                         </label>
                                         <input
                                             type="password"
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                                            placeholder="초기 비밀번호"
+                                            placeholder={t('systemTab.users.placeholderPassword')}
                                             required
                                         />
                                     </div>
@@ -701,14 +682,14 @@ export function Users() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <UserIcon className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        이름
+                                        {t('systemTab.users.labelName')}
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.user_nm}
                                         onChange={(e) => setFormData({ ...formData, user_nm: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
-                                        placeholder="홍길동"
+                                        placeholder={t('systemTab.users.placeholderName')}
                                         required
                                     />
                                 </div>
@@ -716,45 +697,45 @@ export function Users() {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <Shield className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        권한
+                                        {t('systemTab.users.labelRole')}
                                     </label>
                                     <select
                                         value={formData.role}
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                     >
-                                        <option value="ROLE_USER">ROLE_USER (일반)</option>
-                                        <option value="ROLE_ADMIN">ROLE_ADMIN (관리자)</option>
+                                        <option value="ROLE_USER">{t('systemTab.users.roleUserOption')}</option>
+                                        <option value="ROLE_ADMIN">{t('systemTab.users.roleAdminOption')}</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <Shield className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        승인 활성화 여부
+                                        {t('systemTab.users.labelApproved')}
                                     </label>
                                     <select
                                         value={formData.is_approved}
                                         onChange={(e) => setFormData({ ...formData, is_approved: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                     >
-                                        <option value="Y">활성화 (Y)</option>
-                                        <option value="N">비활성화 (N)</option>
+                                        <option value="Y">{t('systemTab.users.approvedY')}</option>
+                                        <option value="N">{t('systemTab.users.approvedN')}</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                         <AlertCircle className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                        활성화 여부
+                                        {t('systemTab.users.labelEnable')}
                                     </label>
                                     <select
                                         value={formData.is_enable}
                                         onChange={(e) => setFormData({ ...formData, is_enable: e.target.value })}
                                         className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                     >
-                                        <option value="Y">활성화 (Y)</option>
-                                        <option value="N">비활성화 (N)</option>
+                                        <option value="Y">{t('systemTab.users.enableY')}</option>
+                                        <option value="N">{t('systemTab.users.enableN')}</option>
                                     </select>
                                 </div>
 
@@ -762,15 +743,15 @@ export function Users() {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1 flex items-center">
                                             <Lock className="w-4 h-4 mr-1.5 text-gray-400 dark:text-slate-500" />
-                                            계정 잠금 여부
+                                            {t('systemTab.users.labelLock')}
                                         </label>
                                         <select
                                             value={formData.is_locked}
                                             onChange={(e) => setFormData({ ...formData, is_locked: e.target.value })}
                                             className="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
                                         >
-                                            <option value="N">계정 풀림 (N)</option>
-                                            <option value="Y">계정 잠금 (Y)</option>
+                                            <option value="N">{t('systemTab.users.lockN')}</option>
+                                            <option value="Y">{t('systemTab.users.lockY')}</option>
                                         </select>
                                     </div>
                                 )}
@@ -782,13 +763,13 @@ export function Users() {
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-slate-300 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
                                 >
-                                    취소
+                                    {t('systemTab.users.btnCancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-colors shadow-sm"
                                 >
-                                    저장
+                                    {t('systemTab.users.btnSave')}
                                 </button>
                             </footer>
                         </form>
